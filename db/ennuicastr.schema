@@ -1,0 +1,108 @@
+PRAGMA journal_mode=WAL;
+
+CREATE TABLE IF NOT EXISTS users (
+    uid TEXT UNIQUE,
+    /* login should be of the form service_provider:key, such as paypal:24601 */
+    login TEXT UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS users_login ON users (login);
+
+CREATE TABLE IF NOT EXISTS emails (
+    uid TEXT UNIQUE,
+    email TEXT
+);
+
+CREATE INDEX IF NOT EXISTS emails_uid ON emails (uid);
+
+CREATE TABLE IF NOT EXISTS credits (
+    uid TEXT PRIMARY KEY,
+    /* how many credits the user currently has remaining */
+    credits BIGINT,
+    /* how many credits the user has ever purchased */
+    purchased BIGINT
+);
+
+/* Recordings that are either active or at least not expired */
+CREATE TABLE IF NOT EXISTS recordings (
+    uid TEXT,
+    /* recording ID */
+    rid INTEGER PRIMARY KEY,
+    /* TCP port */
+    port INTEGER,
+    /* Recording name (user set) */
+    name TEXT,
+    /* Recording format (user set, just a default) */
+    format TEXT,
+    /* Continuous mode? (user set, just a default) */
+    continuous BOOLEAN,
+    /* RTC mode? */
+    rtc BOOLEAN,
+    /* Key required to join the recording */
+    key INTEGER,
+    /* Key required to join as master */
+    master INTEGER,
+    /* Current recording status */
+    status INTEGER,
+    /* When the recording was initialized */
+    init TEXT,
+    /* When the recording was started */
+    start TEXT,
+    /* And finished (or NULL if ongoing, but a crash could cause this to be
+     * incomplete) */
+    end TEXT,
+    /* The expiry (deletion time) */
+    expiry TEXT,
+    /* The number of users recorded */
+    tracks INTEGER,
+    /* The number of credits expended by this recording */
+    cost INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS recordings_uid ON recordings (uid);
+CREATE INDEX IF NOT EXISTS recordings_expiry ON recordings (expiry);
+
+/* "Share" links between UIDs and recordings. Obviously anyone can access a
+ * recording they own, but you can also share recordings with this */
+CREATE TABLE IF NOT EXISTS recording_share (
+    uid TEXT,
+    rid INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS recording_share_uid ON recording_share (uid);
+
+/* Tokens to share recordings */
+CREATE TABLE IF NOT EXISTS recording_share_tokens (
+    rid INTEGER,
+    token TEXT UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS recording_share_tokens_token ON recording_share_tokens (token);
+
+/* Former recordings (expired) */
+CREATE TABLE IF NOT EXISTS old_recordings (
+    uid TEXT,
+    rid INTEGER,
+    init TEXT,
+    start TEXT,
+    end TEXT,
+    expiry TEXT,
+    tracks INTEGER,
+    cost INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS old_recordings_uid_rid_expiry ON old_recordings (uid, rid, expiry);
+
+/* Default choices for recordings */
+CREATE TABLE IF NOT EXISTS defaults (
+    uid TEXT UNIQUE,
+    /* Recording name */
+    name TEXT,
+    /* Display name */
+    dname TEXT,
+    format TEXT,
+    continuous BOOLEAN,
+    rtc BOOLEAN
+);
+
+CREATE INDEX IF NOT EXISTS defaults_uid ON defaults (uid);

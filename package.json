@@ -1,0 +1,20 @@
+{
+  "name": "ennuicastr-server",
+  "version": "0.0.1",
+  "description": "",
+  "main": "config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yahweasel",
+  "license": "ISC",
+  "dependencies": {
+    "cookie": "^0.4.0",
+    "cyclic-32": "^1.1.0",
+    "node-fastcgi": "^1.3.3",
+    "node-rest-client-promise": "^3.1.1",
+    "nodejs-server-pages": "file:../nodejs-server-pages",
+    "sqlite3": "^4.1.1",
+    "ws": "^7.2.1"
+  }
+}

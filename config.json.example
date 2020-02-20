@@ -1,0 +1,21 @@
+{
+    "site": "https://ennuicastr.com/",
+    "panel": "https://ennuicastr.com/panel/",
+    "client": "https://r.ennuicastr.com/",
+    "clientRepo": "~/ennuicastr",
+    "db": "~/ennuicastr-server/db",
+    "rec": "~/ennuicastr-server/rec",
+    "cert": "~/cert",
+    "sock": "/tmp/ennuicastr-server.sock",
+
+    "creditCost": {
+        "currency": 100,
+        "credits": 3600
+    },
+    "maxCredits": 86400,
+
+    "paypal": {
+        "clientId": "",
+        "secret": ""
+    }
+}

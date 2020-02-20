@@ -1,0 +1,11 @@
+PRAGMA journal_mode=WAL;
+
+CREATE TABLE IF NOT EXISTS log (
+    time TEXT,
+    type TEXT,
+    uid TEXT,
+    rid INTEGER,
+    details TEXT
+);
+
+CREATE INDEX IF NOT EXISTS log_time ON log (time);
