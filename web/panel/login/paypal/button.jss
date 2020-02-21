@@ -24,7 +24,7 @@ paypal.use( ['login'], function (login) {
   login.render ({
     "appid":"<?JS= config.paypal.clientId ?>",
     "authend":"sandbox",
-    "scopes":"openid email",
+    "scopes":"openid profile",
     "containerid":"cwppButton",
     "responseType":"code",
     "locale":"en-us",

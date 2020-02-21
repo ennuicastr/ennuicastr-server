@@ -35,6 +35,12 @@ const loginProvider = (function() {
     }
     return null;
 })();
+const loginName = await (async function() {
+    var row = await db.getP("SELECT name FROM names WHERE uid=@UID;", {"@UID": uid});
+    if (row)
+        return row.name;
+    return null;
+})();
 const email = await (async function() {
     var row = await db.getP("SELECT email FROM emails WHERE uid=@UID;", {"@UID": uid});
     if (row)
@@ -43,11 +49,19 @@ const email = await (async function() {
 })();
 const accountCredits = await credits.accountCredits(uid);
 
+// Make an "as" line based on what they're logged in as
+var asLine = "";
+if (email) {
+    asLine = " as " + email;
+} else if (loginName) {
+    asLine = " as " + loginName;
+}
+
 await include("head.jss");
 ?>
 
 <section class="wrapper special">
-    <p>You are logged into Ennuicastr using <?JS= loginProvider ?> as <?JS= email ?>.</p>
+    <p>You are logged into Ennuicastr using <?JS= loginProvider + asLine ?>.</p>
 
     <p><?JS= credits.creditsMessage(accountCredits) ?></p>
 

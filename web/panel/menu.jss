@@ -39,6 +39,6 @@ if (!config.nomain)
 b("/panel/rec/", "microphone", "Recordings");
 b("/panel/credits/", "dollar", "Credits");
 if (!config.nomain)
-    b("/test.jss", "home", "Home page");
+    b("/", "home", "Home page");
 b("/panel/logout/", "sign-out", "Log out");
 ?>

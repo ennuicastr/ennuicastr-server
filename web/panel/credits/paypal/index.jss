@@ -25,6 +25,7 @@ const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
 const credits = require("../credits.js");
+const login = await include("../../login/login.jss");
 
 const maxCredits = 3600 * 24;
 
@@ -61,6 +62,11 @@ try {
 } catch (ex) {
     return fail("Invalid order data");
 }
+
+// This is our only opportunity to remember email addresses for PayPal users
+try {
+    await login.setEmail(uid, order.payer.email_address);
+} catch (ex) {}
 
 value = Number(value);
 if (value !== Math.floor(value) || value < 2)

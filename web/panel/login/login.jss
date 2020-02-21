@@ -92,16 +92,48 @@ async function setEmail(uid, email) {
     }
 }
 
-async function login(login, email) {
+async function setName(uid, name) {
+    var newName = false;
+    while (true) {
+        try {
+            await db.runP("BEGIN TRANSACTION;");
+            var row = await db.getP("SELECT name FROM names WHERE uid=@UID;", {"@UID": uid});
+            if (row && row.name === name) {
+                await db.runP("COMMIT;");
+                break;
+            }
+
+            await db.runP("DELETE FROM names WHERE uid=@UID;", {"@UID": uid});
+            await db.runP("INSERT INTO names (uid, name) VALUES (@UID, @NAME);", {
+                "@UID": uid,
+                "@NAME": name
+            });
+            await db.runP("COMMIT;");
+            newName = true;
+            break;
+        } catch (ex) {
+            await db.runP("ROLLBACK;");
+        }
+    }
+
+    if (newName) {
+        // Log it
+        log("new-name", name, {uid});
+    }
+}
+
+async function login(login, ex) {
     var uid = await getUID(login);
     await session.set("uid", uid);
     await session.set("login", login);
 
-    if (email)
-        await setEmail(uid, email);
+    if (ex && ex.email)
+        await setEmail(uid, ex.email);
+    if (ex && ex.name)
+        await setName(uid, ex.name);
 
     return uid;
 }
 
-module.exports = {getUID, setEmail, login};
+module.exports = {getUID, setEmail, setName, login};
 ?>

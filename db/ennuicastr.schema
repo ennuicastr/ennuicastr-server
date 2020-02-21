@@ -15,6 +15,13 @@ CREATE TABLE IF NOT EXISTS emails (
 
 CREATE INDEX IF NOT EXISTS emails_uid ON emails (uid);
 
+CREATE TABLE IF NOT EXISTS names (
+    uid TEXT UNIQUE,
+    name TEXT
+);
+
+CREATE INDEX IF NOT EXISTS names_uid ON names (uid);
+
 CREATE TABLE IF NOT EXISTS credits (
     uid TEXT PRIMARY KEY,
     /* how many credits the user currently has remaining */

@@ -18,7 +18,14 @@
 await session.init();
 const uid = await session.get("uid");
 
-if (!uid) {
+const db = require("../db.js").db;
+
+// Check that the UID is valid
+var row;
+if (uid)
+    row = await db.getP("SELECT * FROM users WHERE uid=@UID;", {"@UID": uid});
+
+if (!uid || !row) {
     // Throw them to the login page
     writeHead(302, {"location": "/panel/login/"});
 }

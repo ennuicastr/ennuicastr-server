@@ -60,14 +60,8 @@ if (!("user_id" in id)) {
     return;
 }
 
-// Extract the email, maybe
-var email = void 0;
-try {
-    email = id.emails[0].value;
-} catch (ex) {}
-
 // Log in with this ID
-await login.login("paypal:" + id.user_id, email);
+await login.login("paypal:" + id.user_id, {name: id.name});
 
 // Redirect to the panel
 writeHead(302, {"location": "/panel/"});

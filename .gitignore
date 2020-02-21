@@ -2,6 +2,7 @@ node_modules
 package-lock.json
 config.json
 *.db*
+nohup.out
 rec/
 cook/oggduration
 cook/oggstender
