@@ -14,3 +14,9 @@ njsp:   The configuration for NodeJS-Server-Pages
 server: The server for Ennuicastr recordings itself.
 
 web:    The web page
+
+cook:   Tools used to process raw audio into usable formats.
+
+
+No documentation is provided on running your own Ennuicastr server. There are a
+lot of moving parts.
