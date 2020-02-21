@@ -62,8 +62,11 @@ function centsToCreditsClient(v) {
  * at regular quality that it buys.
  */
 function creditsToHM(credits) {
-    var hours = Math.floor(credits / 3600);
-    var minutes = Math.floor((credits % 3600) / 60) + "";
+    var baseCost = config.recCost.basic.upton;
+    if (baseCost === 0) return "unlimited";
+    var minutes = Math.floor(credits / baseCost);
+    var hours = Math.floor(minutes / 60);
+    minutes = (minutes % 60) + "";
     if (minutes.length < 2) minutes = "0" + minutes;
     return hours + ":" + minutes;
 }
