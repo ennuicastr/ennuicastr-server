@@ -355,6 +355,15 @@ wss.on("connection", (ws, wsreq) => {
                 master.send(ret);
         });
 
+        // And of their nonexistence when they disconnect
+        ws.on("close", () => {
+            ret.writeUInt32LE(0, p.status);
+            masters.forEach((master) => {
+                if (master)
+                    master.send(ret);
+            });
+        });
+
         // Inform masters for credit rate
         informMastersCredit();
 
@@ -448,7 +457,7 @@ wss.on("connection", (ws, wsreq) => {
         }
     }
 
-    // Master connection (currently unsupported)
+    // Master connection
     function connMaster() {
         // Give ourself a master "ID"
         for (mid = 1; mid < masters.length; mid++) {
@@ -462,6 +471,21 @@ wss.on("connection", (ws, wsreq) => {
         /* Inform them of the credit situation (FIXME: Needlessly informs all
          * masters) */
         informMastersCredit();
+
+        // Inform them of currently connected users
+        var p = prot.parts.user;
+        var ret;
+        for (var i = 1; i < tracks.length; i++) {
+            var track = tracks[i];
+            if (!track) continue;
+            var nickBuf = Buffer.from(track.nick, "utf8");
+            var ret = Buffer.alloc(p.length + nickBuf.length);
+            ret.writeUInt32LE(prot.ids.user, 0);
+            ret.writeUInt32LE(i, p.index);
+            ret.writeUInt32LE((connections[i])?1:0, p.status);
+            nickBuf.copy(ret, p.nick);
+            ws.send(ret);
+        }
 
         // And prepare for messages
         ws.on("message", masterMsg);
@@ -822,7 +846,7 @@ function speechStatus(id, speaking) {
     var p = prot.parts.speech;
     var ret = Buffer.alloc(p.length);
     ret.writeUInt32LE(prot.ids.speech, 0);
-    ret.writeUInt32LE(id<<1 + (speaking?1:0), p.indexStatus);
+    ret.writeUInt32LE((id<<1) + (speaking?1:0), p.indexStatus);
     masters.forEach((master) => {
         if (master)
             master.send(ret);
