@@ -19,7 +19,7 @@ const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("../config.json", "utf8"));
 
 // Handle ~'s in paths
-["db", "rec", "cert", "clientRepo"].forEach((path) => {
+["repo", "db", "rec", "cert", "clientRepo"].forEach((path) => {
     config[path] = config[path].replace(/~/g, process.env.HOME);
 });
 

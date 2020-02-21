@@ -3,6 +3,7 @@
     "panel": "https://ennuicastr.com/panel/",
     "client": "https://r.ennuicastr.com/",
     "clientRepo": "~/ennuicastr",
+    "repo": "~/ennuicastr-server",
     "db": "~/ennuicastr-server/db",
     "rec": "~/ennuicastr-server/rec",
     "cert": "~/cert",
@@ -13,6 +14,19 @@
         "credits": 3600
     },
     "maxCredits": 86400,
+
+    "recCost": {
+        "basic": {
+            "upton": 60,
+            "n": 4,
+            "plus": 12
+        },
+        "hq": {
+            "upton": 120,
+            "n": 4,
+            "plus": 24
+        }
+    },
 
     "paypal": {
         "clientId": "",

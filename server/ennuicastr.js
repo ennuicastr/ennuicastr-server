@@ -32,6 +32,12 @@ const log = edb.log;
 const ogg = require("./ogg.js");
 const prot = require(config.clientRepo + "/protocol.js");
 
+/* Header indicating continuous mode (i.e., data is continuous but has VAD
+ * info) */
+const vadHeader =
+    Buffer.from([0x45, 0x43, 0x56, 0x41, 0x44, 0x44, 0x03, 0x00, 0x00, 0x03,
+        0x01]);
+
 // A precompiled Opus header, modified from one made by opusenc
 const opusHeader = [
     Buffer.from([0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64, 0x01, 0x01,
@@ -94,8 +100,10 @@ var outHeader1 = null,
 var recInfo = null;
 var port = null, tryPort;
 var startTime = process.hrtime();
-var connections = [null];
+var connections = [null], masters = [null];
 var tracks = [null];
+var presence = [false];
+var speakingStatus = [null];
 var ipToNick = {};
 var anonCt = 1;
 
@@ -139,16 +147,24 @@ wss.on("connection", (ws, wsreq) => {
     }
 
     // ID and flags for this client. id is 0 until the user is logged in
-    var id = 0, flags = 0, nick = "", track = null;
+    // FIXME: Document these...
+    var id = 0, mid = 0, flags = 0, nick = "", track = null;
 
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
     function die() {
+        if (dead)
+            return;
         ws.close();
         dead = true;
         if (id)
             connections[id] = null;
+        if (mid)
+            masters[mid] = null;
     }
+
+    ws.on("error", die);
+    ws.on("close", die);
 
     // The first message must be login
     ws.once("message", (msg) => {
@@ -217,6 +233,10 @@ wss.on("connection", (ws, wsreq) => {
         }
         ipToNick[ip] = nick;
 
+        // Check for continuous mode
+        if (flags & prot.flags.features.continuous)
+            if (!recInfo.continuous) return die();
+
         // Now check for the type
         if ((flags & prot.flags.dataTypeMask) === prot.flags.dataType.flac) {
             if (recInfo.format !== "flac") return die();
@@ -242,7 +262,7 @@ wss.on("connection", (ws, wsreq) => {
         if (cmd !== prot.ids.info) return die();
 
         var key = msg.readUInt32LE(p.key);
-        if (cmd !== prot.info.sampleRate) return die();
+        if (key !== prot.info.sampleRate) return die();
 
         var value = msg.readUInt32LE(p.value);
 
@@ -252,12 +272,15 @@ wss.on("connection", (ws, wsreq) => {
 
     // Accept a data connection
     function acceptConnData(format, sampleRate) {
+        var continuous = !!(flags & prot.flags.features.continuous);
+
         // Look for an existing, matching track
         for (var i = 1; i < tracks.length; i++) {
             var maybe = tracks[i];
             if (maybe.nick === nick &&
                 maybe.format === format &&
                 maybe.sampleRate === sampleRate &&
+                maybe.continuous === continuous &&
                 !connections[i]) {
                 // Found one!
                 id = i;
@@ -270,10 +293,11 @@ wss.on("connection", (ws, wsreq) => {
         // Or make one if we need to
         if (!id) {
             id = tracks.length;
-            track = {nick, format, sampleRate, packetNo: 0};
+            track = {nick, format, sampleRate, continuous, packetNo: 0};
             tracks.push(track);
             connections.push(ws);
-            outUsers.write(JSON.stringify(track) + ",\n");
+            presence.push(true);
+            outUsers.write(",\"" + id + "\":" + JSON.stringify(track) + "\n");
 
             // Write out the headers for this user
             var headers;
@@ -283,11 +307,56 @@ wss.on("connection", (ws, wsreq) => {
                 else
                     headers = [flacHeader44k, flacTags];
             } else {
-                headers = opusHeader;
+                headers = opusHeader.slice(0);
             }
+            if (continuous)
+                headers[0] = Buffer.concat([vadHeader, headers[0]]);
             outHeader1.write(0, id, track.packetNo++, headers[0], ogg.BOS);
             outHeader2.write(0, id, track.packetNo++, headers[1]);
         }
+
+        presence[id] = true;
+
+        // Send them the current mode
+        var p = prot.parts.info;
+        var ret = Buffer.alloc(p.length);
+        ret.writeUInt32LE(prot.ids.info, 0);
+        ret.writeUInt32LE(prot.info.mode, p.key);
+        ret.writeUInt32LE(recInfo.mode, p.value);
+        ws.send(Buffer.from(ret));
+
+        // Send them a list of peers
+        ret.writeUInt32LE(prot.info.peerContinuing, p.key);
+        var ci;
+        for (ci = 1; ci < connections.length; ci++) {
+            if (ci === id || !connections[ci]) continue;
+            ret.writeUInt32LE(ci, p.value);
+            ws.send(Buffer.from(ret));
+        }
+
+        // And send them to every peer
+        ret.writeUInt32LE(prot.info.peerInitial, p.key);
+        ret.writeUInt32LE(id, p.value);
+        for (ci = 1; ci < connections.length; ci++) {
+            if (ci === id || !connections[ci]) continue;
+            connections[ci].send(Buffer.from(ret));
+        }
+
+        // Inform masters of their existence
+        p = prot.parts.user;
+        var nickBuf = Buffer.from(nick, "utf8");
+        ret = Buffer.alloc(p.length + nickBuf.length);
+        ret.writeUInt32LE(prot.ids.user, 0);
+        ret.writeUInt32LE(id, p.index);
+        ret.writeUInt32LE(1, p.status);
+        nickBuf.copy(ret, p.nick);
+        masters.forEach((master) => {
+            if (master)
+                master.send(ret);
+        });
+
+        // Inform masters for credit rate
+        informMastersCredit();
 
         // Now this connection is totally ready
         ws.on("message", dataMsg);
@@ -307,9 +376,25 @@ wss.on("connection", (ws, wsreq) => {
                 if (msg.length < p.length)
                     return die();
 
+                // Just ignore data in the wrong mode
+                if (recInfo.mode !== prot.mode.rec)
+                    break;
+
+                // Accept it
                 var granulePos = msg.readUIntLE(p.granulePos, 6);
+                // FIXME: Reject wonky granule positions
                 var chunk = msg.slice(p.length);
                 outData.write(granulePos, id, track.packetNo++, chunk);
+
+                // Are they actually speaking?
+                var speaking = true;
+                var continuous = !!(flags & prot.flags.features.continuous);
+                if (continuous)
+                    speaking = !!(chunk[0]);
+
+                // Update masters
+                speechStatus(id, speaking);
+
                 break;
 
             case prot.ids.rtc:
@@ -365,7 +450,73 @@ wss.on("connection", (ws, wsreq) => {
 
     // Master connection (currently unsupported)
     function connMaster() {
-        return die();
+        // Give ourself a master "ID"
+        for (mid = 1; mid < masters.length; mid++) {
+            if (!masters[mid])
+                break;
+        }
+        if (mid === masters.length)
+            masters.push(null);
+        masters[mid] = ws;
+
+        /* Inform them of the credit situation (FIXME: Needlessly informs all
+         * masters) */
+        informMastersCredit();
+
+        // And prepare for messages
+        ws.on("message", masterMsg);
+    }
+
+    // No actual master messages are supported
+    function masterMsg(msg) {
+        if (dead) return;
+        msg = Buffer.from(msg); // Just in case
+        if (msg.length < 4) return die();
+        var cmd = msg.readUInt32LE(0);
+        var ret;
+
+        switch (cmd) {
+            case prot.ids.mode:
+                var p = prot.parts.mode;
+                if (msg.length !== p.length)
+                    return die();
+                var toMode = msg.readUInt32LE(p.mode);
+
+                if (toMode === recInfo.mode) {
+                    // Nothing to do
+                } else if (toMode > recInfo.mode &&
+                           (toMode === prot.mode.rec ||
+                            toMode === prot.mode.finished)) {
+                    // Accept the mode change and make the info buffer
+                    recInfo.mode = toMode;
+                    var op = prot.parts.info;
+                    ret = Buffer.alloc(op.length);
+                    ret.writeUInt32LE(prot.ids.info, 0);
+                    ret.writeUInt32LE(prot.info.mode, op.key);
+                    ret.writeUInt32LE(toMode, op.value);
+
+                    // Send it to everyone
+                    ws.send(ret);
+                    connections.forEach((connection) => {
+                        if (connection)
+                            connection.send(ret);
+                    });
+
+                    // And delegate to specialized functions for starting or stopping
+                    if (toMode === prot.mode.rec)
+                        startRec();
+                    else if (toMode === prot.mode.finished)
+                        stopRec();
+
+                } else {
+                    // Invalid mode change!
+                    return die();
+                }
+                break;
+
+            default:
+                return die();
+        }
     }
 
     ws.on("close", () => {
@@ -387,6 +538,9 @@ async function recvRecInfo(r) {
         return; // wait until we have all our info
 
     r.port = port;
+
+    // Our mode (status) always starts as init
+    r.mode = prot.mode.init;
 
     // Make the recording key and master key
     r.key = ~~(Math.random()*2000000000);
@@ -432,10 +586,257 @@ async function recvRecInfo(r) {
     outUsers = s("users");
     outInfo = s("info");
 
-    // Write out the info we have, which may be extended later
-    outInfo.write(JSON.stringify(r) + ",\n");
+    // Write out the recording info
+    outInfo.write(JSON.stringify(r));
+    outUsers.write("\"0\":{}\n");
+
+    // And log it
+    log("recording-init", JSON.stringify(r), {uid: r.uid, rid});
 
     // Now we're ready!
     r.rid = rid;
     process.send({c: "ready", r});
+}
+
+// They have an hour to start recording
+setTimeout(function() {
+    if (!recInfo || recInfo.mode === prot.mode.init)
+        process.exit(1);
+}, 1000*60*60);
+
+// Start recording (everything secondary)
+async function startRec() {
+    // First update the status in the database
+    while (true) {
+        try {
+            await db.runP("UPDATE recordings SET status=@MODE, start=datetime('now') WHERE rid=@RID;", {
+                "@MODE": prot.mode.rec,
+                "@RID": recInfo.rid
+            });
+            break;
+        } catch (ex) {}
+    }
+
+    // Start crediting
+    setTimeout(chargeCredits, 1000*60);
+
+    // And log it
+    log("recording-start", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
+}
+
+// Stop recording (everything secondary)
+async function stopRec() {
+    if (recInfo.mode !== prot.mode.finished) {
+        /* We allow stopRec to be called *to* stop the recording, rather than
+         * just because the recording has been stopped */
+        recInfo.mode = prot.mode.finished;
+        var op = prot.parts.info;
+        var ret = Buffer.alloc(op.length);
+        ret.writeUInt32LE(prot.ids.info, 0);
+        ret.writeUInt32LE(prot.info.mode, op.key);
+        ret.writeUInt32LE(recInfo.mode, op.value);
+
+        // Send it to everyone
+        connections.forEach((connection) => {
+            if (connection)
+                connection.send(ret);
+        });
+    }
+
+    // First update the status in the database
+    while (true) {
+        try {
+            await db.runP("UPDATE recordings SET status=@MODE, end=datetime('now') WHERE rid=@RID;", {
+                    "@MODE": prot.mode.finished,
+                    "@RID": recInfo.rid
+                    });
+            break;
+        } catch (ex) {}
+    }
+
+    // Give them two minutes, then shut it all down
+    setTimeout(function() {
+        connections.forEach((connection) => {
+            if (connection)
+                connection.close();
+        });
+        wss.close();
+        hs.close();
+
+        outHeader1.end();
+        outHeader2.end();
+        outData.end();
+        outUsers.end();
+        outInfo.end();
+    }, 1000*60*2);
+
+    /* Force the actual process exit after 5 minutes (timeouts and such will
+     * keep it alive) */
+    setTimeout(function() {
+        process.exit(0);
+    }, 1000*60*5);
+
+    // And log it
+    log("recording-end", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
+}
+
+// Calculate the credit rate currently in use
+function calculateCredits(reset) {
+    // Count the number of HQ and RQ clients
+    var rq = 0, hq = 0, charge = 0;
+    for (var i = 1; i < connections.length; i++) {
+        if (!presence[i] && !connections[i]) continue;
+        if (reset && !connections[i]) presence[i] = false; // Don't count them next time
+        var track = tracks[i];
+        if (!track) continue;
+        if (track.format === "flac" || track.continuous)
+            hq++;
+        else
+            rq++;
+    }
+
+    // Calculate the base charge
+    if (hq) {
+        charge = config.recCost.hq.upton;
+
+        if (hq < config.recCost.hq.n) {
+            // Move in some of the rq too
+            var ex = config.recCost.hq.n - hq;
+            hq = 0;
+            rq = Math.max(rq - ex, 0);
+
+        } else {
+            hq -= config.recCost.hq.n;
+
+        }
+
+    } else if (rq) {
+        charge = config.recCost.basic.upton;
+        rq = Math.max(rq - config.recCost.basic.n, 0);
+
+    }
+
+    // Add the >n charge
+    charge += hq * config.recCost.hq.plus +
+              rq * config.recCost.basic.plus;
+
+    return charge;
+}
+
+// Inform masters of the credit rate
+async function informMastersCredit() {
+    // First determine how many credits the user has
+    var credits;
+    var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {
+        "@UID": recInfo.uid
+    });
+    if (row)
+        credits = row.credits;
+    else
+        credits = 0;
+
+    // Then determine the charge rate
+    var charge = calculateCredits();
+
+    // Make the informational command
+    var op = prot.parts.info;
+    var ret = Buffer.alloc(op.length + 4);
+    ret.writeUInt32LE(prot.ids.info, 0);
+    ret.writeUInt32LE(prot.info.creditRate, op.key);
+    ret.writeUInt32LE(charge, op.value);
+    ret.writeUInt32LE(credits, op.value + 4);
+    masters.forEach((master) => {
+        if (!master)
+            return;
+        master.send(ret);
+    });
+}
+
+// Apply credits for a minute
+async function chargeCredits() {
+    // Calculate the credit charge
+    var charge = calculateCredits(true);
+
+    // Now charge them
+    var credits;
+    while (true) {
+        try {
+            await db.runP("BEGIN TRANSACTION;");
+
+            await db.runP("UPDATE credits SET credits=max(credits-@CHARGE, 0) WHERE uid=@UID;", {
+                "@UID": recInfo.uid,
+                "@CHARGE": charge
+            });
+
+            await db.runP("UPDATE recordings SET cost=cost+@CHARGE WHERE rid=@RID;", {
+                "@RID": recInfo.rid,
+                "@CHARGE": charge
+            });
+
+            var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {
+                "@UID": recInfo.uid
+            });
+            if (row)
+                credits = row.credits;
+            else
+                credits = 0;
+
+            await db.runP("COMMIT;");
+            break;
+
+        } catch (ex) {
+            await db.runP("ROLLBACK;");
+
+        }
+    }
+
+    // Inform masters
+    informMastersCredit();
+
+    // If there are no credits left, end this recording
+    if (!credits)
+        stopRec();
+
+    // Do another round
+    if (recInfo.mode === prot.mode.rec)
+        setTimeout(chargeCredits, 1000*60);
+}
+
+// Update on a speaking status change
+function speechStatus(id, speaking) {
+    if (speaking && speakingStatus[id]) {
+        // Just bump it
+        clearTimeout(speakingStatus[id]);
+        speakingStatus[id] = setTimeout(() => {
+            speechStatus(id, false);
+        }, 1000);
+        return;
+
+    } else if (!speaking && !speakingStatus[id]) {
+        // No change
+        return;
+
+    }
+
+    // Change to status, so send the packet
+    var p = prot.parts.speech;
+    var ret = Buffer.alloc(p.length);
+    ret.writeUInt32LE(prot.ids.speech, 0);
+    ret.writeUInt32LE(id<<1 + (speaking?1:0), p.indexStatus);
+    masters.forEach((master) => {
+        if (master)
+            master.send(ret);
+    });
+
+    if (speaking) {
+        // Set a timeout to undo it
+        speakingStatus[id] = setTimeout(() => {
+            speechStatus(id, false);
+        }, 1000);
+
+    } else {
+        clearTimeout(speakingStatus[id]);
+        speakingStatus[id] = null;
+
+    }
 }

@@ -59,15 +59,16 @@
 
 /* Menu */
         #menu {
-            position: absolute;
+            position: fixed;
             left: 0;
             top: 0;
+            height: 100%;
             z-index: 200;
             max-width: 22em;
-            height: 100%;
             padding: 1em;
             text-align: center;
             background: #ddd;
+            overflow: auto;
         }
 
             #minimenu {

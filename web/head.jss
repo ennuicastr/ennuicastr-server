@@ -75,7 +75,6 @@ const title = (function() {
                 } else {
                     mn.style.marginLeft = "";
                 }
-                m.style.minHeight = Math.max(window.innerHeight, mn.clientHeight) + "px";
             }
             window.addEventListener("resize", windowResize);
         //--></script>

@@ -9,6 +9,7 @@ const fs = require("fs");
 const net = require("net");
 
 const config = require("../config.js");
+const db = require("../db.js").db;
 
 const server = net.createServer();
 const sockPath = config.sock || "/tmp/ennuicastr-server.sock";
@@ -70,3 +71,62 @@ function startRec(sock, msg) {
         } catch (ex) {}
     });
 }
+
+// Periodically delete expired recordings
+async function checkExpiry() {
+    try {
+        var expired = await db.allP("SELECT * FROM recordings WHERE expiry <= datetime('now');");
+        for (var ei = 0; ei < expired.length; ei++) {
+            var rec = expired[ei];
+
+            // Delete the files
+            ["header1", "header2", "data", "users", "info"].forEach((footer) => {
+                try {
+                    fs.unlinkSync(config.rec + "/" + rec.rid + ".ogg." + footer);
+                } catch (ex) {}
+            });
+
+            // Then move the row to old_recordings
+            while (true) {
+                try {
+                    await db.runP("BEGIN TRANSACTION;");
+
+                    // Insert the new row
+                    await db.runP("INSERT INTO old_recordings " +
+                                  "( uid,  rid,  name,  init,  start,  end," +
+                                  "  expiry,  tracks,  cost) VALUES " +
+                                  "(@UID, @RID, @NAME, @INIT, @START, @END," +
+                                  " @EXPIRY, @TRACKS, @COST);", {
+                        "@UID": rec.uid,
+                        "@RID": rec.rid,
+                        "@NAME": rec.name,
+                        "@INIT": rec.init,
+                        "@START": rec.start,
+                        "@END": rec.end,
+                        "@EXPIRY": rec.expiry,
+                        "@TRACKS": rec.tracks,
+                        "@COST": rec.cost
+                    });
+
+                    // And drop the old
+                    var wrid = {"@RID": rec.rid};
+                    await db.runP("DELETE FROM recordings WHERE rid=@RID;", wrid);
+                    await db.runP("DELETE FROM recording_share WHERE rid=@RID;", wrid);
+                    await db.runP("DELETE FROM recording_share_tokens WHERE rid=@RID;", wrid);
+
+                    await db.runP("COMMIT;");
+                    break;
+                } catch (ex) {
+                    await db.runP("ROLLBACK;");
+                }
+            }
+        }
+    } catch (ex) {
+        console.error(ex + "\n\n" + ex.stack);
+    }
+
+    // Check again in an hour
+    setTimeout(checkExpiry, 1000*60*60);
+}
+
+checkExpiry();
