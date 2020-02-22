@@ -32,7 +32,7 @@ if (!request.query.code) {
 }
 
 // Get an access token
-var token = await nrc.postPromise("https://api.sandbox.paypal.com/v1/oauth2/token", {
+var token = await nrc.postPromise("https://api.paypal.com/v1/oauth2/token", {
     headers: {
         "content-type": "application/x-www-form-urlencoded",
         authorization: "Basic " + Buffer.from(config.paypal.clientId + ":" + config.paypal.secret).toString("base64")
@@ -47,7 +47,7 @@ if (!("access_token" in token)) {
 }
 
 // Get the account ID
-var id = await nrc.getPromise("https://api.sandbox.paypal.com/v1/identity/oauth2/userinfo?schema=paypalv1.1", {
+var id = await nrc.getPromise("https://api.paypal.com/v1/identity/oauth2/userinfo?schema=paypalv1.1", {
     headers: {
         "content-type": "application/json",
         authorization: "Bearer " + token.access_token

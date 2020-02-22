@@ -44,7 +44,7 @@ function fail(reason) {
 const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + config.paypal.secret).toString("base64");
 
 // Get the order details
-var order = await nrc.getPromise("https://api.sandbox.paypal.com/v2/checkout/orders/" + request.body.id, {
+var order = await nrc.getPromise("https://api.paypal.com/v2/checkout/orders/" + request.body.id, {
     headers: {
         "content-type": "application/json",
         authorization
@@ -106,7 +106,7 @@ while (true) {
 }
 
 // Now capture the purchase
-var capture = await nrc.postPromise("https://api.sandbox.paypal.com/v2/checkout/orders/" + request.body.id + "/capture", {
+var capture = await nrc.postPromise("https://api.paypal.com/v2/checkout/orders/" + request.body.id + "/capture", {
     headers: {
         "content-type": "application/json",
         authorization

@@ -23,7 +23,6 @@ const config = require("../config.js");
 paypal.use( ['login'], function (login) {
   login.render ({
     "appid":"<?JS= config.paypal.clientId ?>",
-    "authend":"sandbox",
     "scopes":"openid profile",
     "containerid":"cwppButton",
     "responseType":"code",
