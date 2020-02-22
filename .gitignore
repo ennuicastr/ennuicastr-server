@@ -3,7 +3,7 @@ package-lock.json
 config.json
 *.db*
 nohup.out
-rec/
+*.ogg*
 cook/oggduration
 cook/oggstender
 cook/oggtracks

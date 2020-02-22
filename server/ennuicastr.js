@@ -313,6 +313,9 @@ wss.on("connection", (ws, wsreq) => {
                 headers[0] = Buffer.concat([vadHeader, headers[0]]);
             outHeader1.write(0, id, track.packetNo++, headers[0], ogg.BOS);
             outHeader2.write(0, id, track.packetNo++, headers[1]);
+
+            // Mark it in the database
+            setDBTrackCount(id);
         }
 
         presence[id] = true;
@@ -818,7 +821,7 @@ async function chargeCredits() {
     informMastersCredit();
 
     // If there are no credits left, end this recording
-    if (!credits)
+    if (charge && !credits)
         stopRec();
 
     // Do another round
@@ -862,5 +865,18 @@ function speechStatus(id, speaking) {
         clearTimeout(speakingStatus[id]);
         speakingStatus[id] = null;
 
+    }
+}
+
+// Update the track count in the database
+async function setDBTrackCount(to) {
+    while (true) {
+        try {
+            await db.runP("UPDATE recordings SET tracks=max(tracks, @TO) WHERE rid=@RID;", {
+                "@RID": recInfo.rid,
+                "@TO": to
+            });
+            break;
+        } catch (ex) {}
     }
 }

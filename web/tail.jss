@@ -4,6 +4,8 @@
                 <div class="copyright">
                     &copy; Wereweasel. Design: <a href="http://templated.co/">TEMPLATED</a>.
                 </div>
+
+                <p class="align-center"><a href="/privacy.jss">Privacy policy</a> — <a href="/terms.jss">Terms of service</a></p>
             </footer>
 
         </div>
