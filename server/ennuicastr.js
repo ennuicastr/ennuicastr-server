@@ -303,9 +303,9 @@ wss.on("connection", (ws, wsreq) => {
             var headers;
             if (format === "flac") {
                 if (sampleRate === 44100)
-                    headers = [flacHeader48k, flacTags];
-                else
                     headers = [flacHeader44k, flacTags];
+                else
+                    headers = [flacHeader48k, flacTags];
             } else {
                 headers = opusHeader.slice(0);
             }
