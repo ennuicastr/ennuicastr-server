@@ -55,7 +55,7 @@ ssize_t readAll(int fd, void *vbuf, size_t count)
 int main(int argc, char **argv)
 {
     int32_t streamNo = -1;
-    uint64_t lastGranulePos = 0;
+    uint64_t firstGranulePos = 0, lastGranulePos = 0;
     uint32_t packetSize;
     unsigned char segmentCount, segmentVal;
     unsigned char buf[1024];
@@ -100,11 +100,13 @@ int main(int argc, char **argv)
         if (streamNo >= 0 && oggHeader.streamNo != streamNo)
             continue;
 
+        if (!firstGranulePos && oggHeader.granulePos)
+            firstGranulePos = oggHeader.granulePos;
         if (oggHeader.granulePos > lastGranulePos)
             lastGranulePos = oggHeader.granulePos;
     }
 
-    printf("%f\n", ((double) lastGranulePos)/48000.0+2);
+    printf("%f\n", ((double) (lastGranulePos-firstGranulePos))/48000.0+2);
 
     return 0;
 }
