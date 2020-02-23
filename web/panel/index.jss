@@ -19,6 +19,8 @@ const uid = await include("uid.jss");
 if (!uid) return;
 
 const providerNames = {
+    beta: "a beta account",
+    google: "Google",
     paypal: "PayPal"
 };
 
@@ -61,7 +63,13 @@ await include("head.jss");
 ?>
 
 <section class="wrapper special">
-    <p>You are logged into Ennuicastr using <?JS= loginProvider + asLine ?>.</p>
+    <p onclick="showUID();">You are logged into Ennuicastr using <?JS= loginProvider + asLine ?>.</p>
+
+    <p style="display: none" id="uidbox">Your UID is <?JS= uid ?></p>
+
+    <script type="text/javascript"><!--
+    function showUID() { $("#uidbox")[0].style.display = ""; }
+    //--></script>
 
     <p><?JS= credits.creditsMessage(accountCredits) ?></p>
 

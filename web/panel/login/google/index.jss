@@ -1,4 +1,4 @@
-<?JS!
+<?JS
 /*
  * Copyright (c) 2020 Yahweasel
  *
@@ -15,23 +15,33 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+await session.init();
+
 const config = require("../config.js");
-?>
-<p id='cwppButton'></p>
-<script src='https://www.paypalobjects.com/js/external/connect/api.js'></script>
-<script>
-paypal.use( ['login'], function (login) {
-  login.render ({
-    "appid":"<?JS= config.paypal.clientId ?>",
-    "scopes":"openid profile",
-    "containerid":"cwppButton",
-    "responseType":"code",
-    "locale":"en-us",
-    "buttonType":"CWP",
-    "buttonShape":"pill",
-    "buttonSize":"lg",
-    "fullPage":"true",
-    "returnurl":"https://ennuicastr.com/panel/login/paypal/"
-  });
+const login = await include("../login.jss");
+
+const {OAuth2Client} = require('google-auth-library');
+const client = new OAuth2Client(config.google.clientId);
+
+// Make sure they gave us a token
+if (!request.body || !request.body.token)
+    return;
+
+// Verify it
+const ticket = await client.verifyIdToken({
+    idToken: request.body.token,
+    audience: config.google.clientId
 });
-</script>
+const payload = ticket.getPayload();
+
+if (!payload || !payload.sub)
+    return write('{"success": false}');
+
+// Log in with this ID
+await login.login("google:" + payload.sub, {
+    name: payload.name,
+    email: payload.email
+});
+
+write('{"success": true}');
+?>

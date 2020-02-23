@@ -28,6 +28,11 @@
         }
     },
 
+    "google": {
+        "clientId": "",
+        "secret": ""
+    },
+
     "paypal": {
         "clientId": "",
         "secret": ""
