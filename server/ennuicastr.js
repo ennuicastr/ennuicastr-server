@@ -365,6 +365,15 @@ wss.on("connection", (ws, wsreq) => {
                 if (master)
                     master.send(ret);
             });
+
+            // Consider ending the recording
+            if (recInfo.mode === prot.mode.rec) {
+                connections[id] = null;
+                id = 0;
+                var empty = connections.every((el)=>el===null);
+                if (empty)
+                    stopRec();
+            }
         });
 
         // Inform masters for credit rate
