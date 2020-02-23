@@ -68,12 +68,18 @@ try {
     await login.setEmail(uid, order.payer.email_address);
 } catch (ex) {}
 
-value = Number(value);
-if (value !== Math.floor(value) || value < 2)
+// Convert to cents
+if (!/^([0-9])+\.[0-9][0-9]$/.test(value)) {
+    // Not in the expected format???
+    return fail("Invalid purchase value");
+}
+
+value = Number.parseInt(value.replace(".", ""), 10);
+if (value < 200)
     return fail("Invalid purchase value");
 
 // Figure out how many credits they just bought
-var purchased = credits.centsToCredits(value*100);
+var purchased = credits.centsToCredits(value);
 
 // Add the credits to the user's account
 while (true) {
