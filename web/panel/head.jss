@@ -26,5 +26,7 @@ await include("../head.jss", config);
             write('<a href="/panel/">Ennuicastr</a> → ' + config.title);
         else
             write("Ennuicastr");
-    ?></p>
+    ?>
+    <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="fa fa-sun-o"></i></a>
+    </p>
 </section>

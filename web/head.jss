@@ -15,6 +15,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Configure the environment
 const config = (arguments[1] || {});
 if (!("menu" in config)) config.menu = "panel/menu.jss";
 if (!("minimenu" in config)) config.minimenu = false;
@@ -24,13 +25,24 @@ const title = (function() {
     else
         return "Ennuicastr";
 })();
+
+// Look for theme cookie
+var theme = "";
+if ("cookie" in request.headers) {
+    var cookies = require("cookie").parse(request.headers.cookie);
+    if ("ECTHEME" in cookies) {
+        if (cookies.ECTHEME === "dark")
+            theme = ' data-theme="dark"';
+    }
+}
+
 ?><!DOCTYPE HTML>
 <!--
     Design template: Typify by TEMPLATED
     templated.co @templatedco
     Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
 -->
-<html>
+<html<?JS= theme ?>>
     <head>
         <title><?JS= title ?></title>
         <meta charset="utf-8" />
