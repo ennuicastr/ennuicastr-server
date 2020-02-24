@@ -5,7 +5,11 @@
                     &copy; Wereweasel. Design: <a href="http://templated.co/">TEMPLATED</a>.
                 </div>
 
-                <p class="align-center"><a href="/privacy.jss">Privacy policy</a> — <a href="/terms.jss">Terms of service</a></p>
+                <p class="align-center">
+                    <a href="/privacy.jss">Privacy policy</a> —
+                    <a href="/terms.jss">Terms of service</a> —
+                    <a href="/contact.jss">Contact us</a>
+                </p>
             </footer>
 
         </div>

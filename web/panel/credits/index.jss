@@ -30,6 +30,7 @@ await include("../head.jss", {title: "Credits"});
 <section class="wrapper special">
     <p id="current-credits"><?JS= credits.creditsMessage(accountCredits) ?></p>
 
+<?JS /*
     <script type="text/javascript" src="https://www.paypal.com/sdk/js?client-id=<?JS= config.paypal.clientId ?>"></script>
 
     <p>Buy $<input type="text" id="amount" size=2 value="2" /> of credit:</p>
@@ -128,6 +129,9 @@ await include("../head.jss", {title: "Credits"});
         }).render("#paypal-button-container");
     })();
     </script>
+    */ ?>
+
+    <p>Recording is currently free.</p>
 </section>
 
 <?JS await include("../../tail.jss"); ?>

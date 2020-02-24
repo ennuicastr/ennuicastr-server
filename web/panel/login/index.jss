@@ -17,6 +17,12 @@
 
 await session.init();
 
+if (request.query.secret) {
+    // Beta account. Maybe give them access
+    await include("beta.jss");
+    return;
+}
+
 const util = require("util");
 const db = require("../db.js");
 
@@ -25,11 +31,22 @@ function up(obj, meth) {
 }
 
 await include("../../head.jss", {menu: false, title: "Log in"});
+/*
 ?>
 
 <section class="wrapper special">
-    To use Ennuicastr, you must have a PayPal account. Please log in with PayPal:<br/>
+    <p>To use Ennuicastr, you must have a PayPal account. Please log in with PayPal:</p>
     <?JS await include("paypal/button.jss"); ?>
+
+    <p><a href="/">Return to home page</a></p>
+</section>
+
+<?JS */ ?>
+
+<section class="wrapper special">
+    <p>Sorry, but Ennuicastr is currently in early beta. If you've been invited to participate, you should have received a specialized login link.</p>
+
+    <p><a href="/">Return to home page</a></p>
 </section>
 
 <?JS
