@@ -34,10 +34,15 @@ await include("../head.jss", {title: "Recordings"});
 </section>
 
 <section>
-    <header class="align-center"><h2>Current recordings</h2></header>
+    <header class="align-center"><h2>Available recordings</h2></header>
 
-    <table><tbody>
-        <tr><th>Name</th><th>Start date<br/>Expiry date</th><th>Status</th><th>Join</th><th>Download</th><th>Delete</th></tr>
+    <table id="available-recordings">
+        <thead>
+        <tr><th>Name</th><th>Start date<br/>Expiry date</th><th>Status</th>
+        <th data-sort-method="none" class="no-sort">Join</th>
+        <th data-sort-method="none" class="no-sort">Download</th>
+        <th data-sort-method="none" class="no-sort">Delete</th></tr>
+        </thead><tbody>
 <?JS
 
 // Read out current recordings
@@ -48,7 +53,7 @@ var rows = await db.allP("SELECT * FROM recordings WHERE uid=@UID ORDER BY init 
 rows.forEach((row) => {
 ?>
         <tr>
-            <th><?JS= row.name||"(Anonymous)" ?></th>
+            <td><?JS= row.name||"(Anonymous)" ?></td>
             <td><?JS= row.init ?><br/><?JS= row.expiry ?></td>
             <td><?JS
                 switch (row.status) {
@@ -103,11 +108,16 @@ rows.forEach((row) => {
 });
 
 if (rows.length === 0) {
-    ?><tr><td class="align-center" colspan=4>(none)</td></tr><?JS
+    ?><tr><td class="align-center" colspan=6>(none)</td></tr><?JS
 }
 ?>
     </tbody></table>
 </section>
+
+<script type="text/javascript" src="/assets/js/tablesort.min.js"></script>
+<script type="text/javascript"><!--
+new Tablesort(document.getElementById("available-recordings"));
+//--></script>
 
 <?JS
 await include("../../tail.jss");
