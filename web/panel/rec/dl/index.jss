@@ -67,6 +67,9 @@ if (request.query.f) {
         "content-disposition": "attachment; filename=\"" + dlName + "." + mext + ".zip\""
     });
 
+    // Give plenty of time
+    response.setTimeLimit(1000*60*60*3);
+
     // Jump through to the actual downloader
     await new Promise(function(resolve) {
         var p = cp.spawn(config.repo + "/cook/cook.sh", [config.rec, safeName, rid, format, container], {
