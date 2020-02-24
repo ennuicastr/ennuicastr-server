@@ -189,11 +189,11 @@ function launchRecording() {
 
         // Open up the recording interface
         clientWindow.location = <?JS= JSON.stringify(config.client) ?> +
-            "?i=" + res.rid.toString(36) +
-            "&k=" + res.key.toString(36) +
-            "&m=" + res.master.toString(36) +
-            "&p=" + res.port.toString(36) +
-            "&f=" + features.toString(36) +
+            "?" + res.rid.toString(36) +
+            "-" + res.key.toString(36) +
+            "-m" + res.master.toString(36) +
+            "-p" + res.port.toString(36) +
+            "-f" + features.toString(36) +
             "&nm=" + encodeURIComponent(q.dname||"Host");
         document.location = "/panel/rec/";
 

@@ -83,11 +83,11 @@ rows.forEach((row) => {
 
                     // Open up the recording interface (FIXME: name default)
                     var url = config.client +
-                        "?i=" + row.rid.toString(36) +
-                        "&k=" + row.key.toString(36) +
-                        "&m=" + row.master.toString(36) +
-                        "&p=" + row.port.toString(36) +
-                        "&f=" + features.toString(36) +
+                        "?" + row.rid.toString(36) +
+                        "-" + row.key.toString(36) +
+                        "-m" + row.master.toString(36) +
+                        "-p" + row.port.toString(36) +
+                        "-f" + features.toString(36) +
                         "&nm=" + "Host";
 
                     write("<script type=\"text/javascript\"><!--\n" +
