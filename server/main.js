@@ -8,6 +8,8 @@ const cp = require("child_process");
 const fs = require("fs");
 const net = require("net");
 
+const Turn = require("node-turn");
+
 const config = require("../config.js");
 const db = require("../db.js").db;
 
@@ -18,6 +20,12 @@ try {
     fs.unlinkSync(sockPath);
 } catch (ex) {}
 server.listen(sockPath);
+
+const turnServer = new Turn({
+    authMech: "long-term",
+    credentials: {}
+});
+turnServer.start();
 
 server.on("connection", (sock) => {
     var buf = Buffer.alloc(0);
@@ -66,6 +74,15 @@ function startRec(sock, msg) {
     p.send({c:"info",r:msg.r});
 
     p.on("message", (pmsg) => {
+        if (pmsg.c === "ready") {
+            // Enable this ID on the Turn server
+            turnServer.addUser(pmsg.r.rid.toString(36), pmsg.r.key.toString(36));
+            p.on("end", () => {
+                turnServer.removeUser(pmsg.r.rid.toString(36));
+            });
+        }
+
+        // Tell the web client
         try {
             sock.write(JSON.stringify(pmsg) + "\n");
         } catch (ex) {}
