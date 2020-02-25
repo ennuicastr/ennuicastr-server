@@ -29,6 +29,15 @@ function creditsToCents(credits) {
 }
 
 /**
+ * Returns a JavaScript string which converts an expression v in credits to
+ * cents. We use ceil here instead of round, because they'll ultimately need to
+ * pay a full cent purchase price.
+ */
+function creditsToCentsClient(v) {
+    return "(Math.ceil((" + v + ") * " + cost.currency + " / " + cost.credits + "))";
+}
+
+/**
  * Convert number of credits to their purchase price in US dollars, as a string
  */
 function creditsToDollars(credits) {

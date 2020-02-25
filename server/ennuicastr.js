@@ -480,13 +480,21 @@ wss.on("connection", (ws, wsreq) => {
             masters.push(null);
         masters[mid] = ws;
 
+        // Inform them of the credit cost
+        var p = prot.parts.info;
+        var ret = Buffer.alloc(p.length + 4);
+        ret.writeUInt32LE(prot.ids.info, 0);
+        ret.writeUInt32LE(prot.info.creditCost, p.key);
+        ret.writeUInt32LE(config.creditCost.currency, p.value);
+        ret.writeUInt32LE(config.creditCost.credits, p.value + 4);
+        ws.send(ret);
+
         /* Inform them of the credit situation (FIXME: Needlessly informs all
          * masters) */
         informMastersCredit();
 
         // Inform them of currently connected users
-        var p = prot.parts.user;
-        var ret;
+        p = prot.parts.user;
         for (var i = 1; i < tracks.length; i++) {
             var track = tracks[i];
             if (!track) continue;
@@ -590,10 +598,10 @@ async function recvRecInfo(r) {
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  format,  continuous," +
                           "  rtc,  key,  master," +
-                          "  status,  init,  expiry,  tracks,  cost) VALUES " +
+                          "  status,  init,  expiry,  tracks,  cost, purchased) VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @FORMAT, @CONTINUOUS," +
                           " @RTC, @KEY, @MASTER," +
-                          " 0, datetime('now'), datetime('now', '1 month'), 0, 0);", {
+                          " 0, datetime('now'), datetime('now', '1 month'), 0, 0, false);", {
                 "@UID": r.uid,
                 "@RID": rid,
                 "@PORT": port,
@@ -760,27 +768,22 @@ function calculateCredits(reset) {
 }
 
 // Inform masters of the credit rate
-async function informMastersCredit() {
-    // First determine how many credits the user has
-    var credits;
-    var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {
-        "@UID": recInfo.uid
-    });
-    if (row)
-        credits = row.credits;
-    else
-        credits = 0;
+async function informMastersCredit(charge) {
+    // Get the total for the recording so far
+    var row = await db.getP("SELECT cost FROM recordings WHERE rid=@RID;", {"@RID": recInfo.rid});
+    var cost = (row?row.cost:0);
 
-    // Then determine the charge rate
-    var charge = calculateCredits();
+    // Determine the charge rate
+    if (typeof charge === "undefined")
+        charge = calculateCredits();
 
     // Make the informational command
     var op = prot.parts.info;
     var ret = Buffer.alloc(op.length + 4);
     ret.writeUInt32LE(prot.ids.info, 0);
     ret.writeUInt32LE(prot.info.creditRate, op.key);
-    ret.writeUInt32LE(charge, op.value);
-    ret.writeUInt32LE(credits, op.value + 4);
+    ret.writeUInt32LE(cost, op.value);
+    ret.writeUInt32LE(charge, op.value + 4);
     masters.forEach((master) => {
         if (!master)
             return;
@@ -793,45 +796,19 @@ async function chargeCredits() {
     // Calculate the credit charge
     var charge = calculateCredits(true);
 
-    // Now charge them
-    var credits;
+    // Add to the cost
     while (true) {
         try {
-            await db.runP("BEGIN TRANSACTION;");
-
-            await db.runP("UPDATE credits SET credits=max(credits-@CHARGE, 0) WHERE uid=@UID;", {
-                "@UID": recInfo.uid,
-                "@CHARGE": charge
-            });
-
             await db.runP("UPDATE recordings SET cost=cost+@CHARGE WHERE rid=@RID;", {
                 "@RID": recInfo.rid,
                 "@CHARGE": charge
             });
-
-            var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {
-                "@UID": recInfo.uid
-            });
-            if (row)
-                credits = row.credits;
-            else
-                credits = 0;
-
-            await db.runP("COMMIT;");
             break;
-
-        } catch (ex) {
-            await db.runP("ROLLBACK;");
-
-        }
+        } catch (ex) {}
     }
 
     // Inform masters
-    informMastersCredit();
-
-    // If there are no credits left, end this recording
-    if (charge && !credits)
-        stopRec();
+    informMastersCredit(charge);
 
     // Do another round
     if (recInfo.mode === prot.mode.rec)

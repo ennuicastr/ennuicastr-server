@@ -62,8 +62,10 @@ CREATE TABLE IF NOT EXISTS recordings (
     expiry TEXT,
     /* The number of users recorded */
     tracks INTEGER,
-    /* The number of credits expended by this recording */
-    cost INTEGER
+    /* The number of credits that this recording will/did cost to purchase */
+    cost INTEGER,
+    /* Has it been purchased? */
+    purchased BOOLEAN
 );
 
 CREATE INDEX IF NOT EXISTS recordings_uid ON recordings (uid);
