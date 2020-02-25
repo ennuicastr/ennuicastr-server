@@ -68,7 +68,7 @@
         --bg-7: #008183;
         --bg-8: #009a9c;
         --bg-9: #00b4b5;
-        --bg-10: #00cdcf;
+        --bg-10: #006e70;
         --bg-11: #00e6e9;
         --bg-12: #e3e3e3;
         --bg-13: #404040;
@@ -82,7 +82,7 @@
         --fg-4: #bbb;
         --fg-5: #e3e3e3;
         --fg-6: #fff;
-        --fg-7: #99ebeb;
+        --fg-7: #005252;
         --fg-8: #009a9c;
         --fg-9: #f7f7f7;
         --fg-10: #ddd;
@@ -3186,6 +3186,7 @@
         }
 
             .wrapper.style2 input, .wrapper.style2 select, .wrapper.style2 textarea {
+                background-color: var(--bg-1);
                 color: var(--fg-2);
             }
 
