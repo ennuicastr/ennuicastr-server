@@ -398,7 +398,8 @@ wss.on("connection", (ws, wsreq) => {
                     return die();
 
                 // Just ignore data in the wrong mode
-                if (recInfo.mode !== prot.mode.rec)
+                if (recInfo.mode !== prot.mode.rec &&
+                    recInfo.mode !== prot.mode.buffering)
                     break;
 
                 // Accept it
@@ -415,6 +416,10 @@ wss.on("connection", (ws, wsreq) => {
 
                 // Update masters
                 speechStatus(id, speaking);
+
+                // If we're buffering, keep waiting
+                if (recInfo.mode === prot.mode.buffering)
+                    awaitBuffering();
 
                 break;
 
@@ -531,26 +536,11 @@ wss.on("connection", (ws, wsreq) => {
                 } else if (toMode > recInfo.mode &&
                            (toMode === prot.mode.rec ||
                             toMode === prot.mode.finished)) {
-                    // Accept the mode change and make the info buffer
-                    recInfo.mode = toMode;
-                    var op = prot.parts.info;
-                    ret = Buffer.alloc(op.length);
-                    ret.writeUInt32LE(prot.ids.info, 0);
-                    ret.writeUInt32LE(prot.info.mode, op.key);
-                    ret.writeUInt32LE(toMode, op.value);
-
-                    // Send it to everyone
-                    ws.send(ret);
-                    connections.forEach((connection) => {
-                        if (connection)
-                            connection.send(ret);
-                    });
-
-                    // And delegate to specialized functions for starting or stopping
+                    // Delegate to specialized functions for starting or stopping
                     if (toMode === prot.mode.rec)
                         startRec();
                     else if (toMode === prot.mode.finished)
-                        stopRec();
+                        endRec();
 
                 } else {
                     // Invalid mode change!
@@ -648,8 +638,28 @@ setTimeout(function() {
         process.exit(1);
 }, 1000*60*60);
 
-// Start recording (everything secondary)
+// General mode-update. Updates recInfo.mode and informs clients
+function modeUpdate(toMode) {
+    if (recInfo.mode === toMode)
+        return;
+
+    recInfo.mode = toMode
+    var op = prot.parts.info;
+    var ret = Buffer.alloc(op.length);
+    ret.writeUInt32LE(prot.ids.info, 0);
+    ret.writeUInt32LE(prot.info.mode, op.key);
+    ret.writeUInt32LE(toMode, op.value);
+
+    connections.forEach((connection) => {
+        if (connection)
+            connection.send(ret);
+    });
+}
+
+// Start recording
 async function startRec() {
+    modeUpdate(prot.mode.rec);
+
     // First update the status in the database
     while (true) {
         try {
@@ -668,24 +678,31 @@ async function startRec() {
     log("recording-start", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
 }
 
-// Stop recording (everything secondary)
-async function stopRec() {
-    if (recInfo.mode !== prot.mode.finished) {
-        /* We allow stopRec to be called *to* stop the recording, rather than
-         * just because the recording has been stopped */
-        recInfo.mode = prot.mode.finished;
-        var op = prot.parts.info;
-        var ret = Buffer.alloc(op.length);
-        ret.writeUInt32LE(prot.ids.info, 0);
-        ret.writeUInt32LE(prot.info.mode, op.key);
-        ret.writeUInt32LE(recInfo.mode, op.value);
+/* End the recording. This is distinct from stopRec, because it still has to
+ * wait for buffers. */
+function endRec() {
+    modeUpdate(prot.mode.buffering);
 
-        // Send it to everyone
-        connections.forEach((connection) => {
-            if (connection)
-                connection.send(ret);
-        });
-    }
+    // No update to the database, as we're still recording
+
+    // Start our buffering timer
+    awaitBuffering();
+}
+
+// Await buffer clearout
+var awaitBufferingTimeout = null;
+function awaitBuffering() {
+    if (awaitBufferingTimeout)
+        clearTimeout(awaitBufferingTimeout);
+    awaitBufferingTimeout = setTimeout(() => {
+        awaitBufferingTimeout = null;
+        stopRec();
+    }, 10000);
+}
+
+// Stop recording
+async function stopRec() {
+    modeUpdate(prot.mode.finished);
 
     // First update the status in the database
     while (true) {
