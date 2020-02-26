@@ -44,6 +44,10 @@ const safeName = dlName.replace(/[^A-Za-z0-9]/g, "_");
 function formatToName(format) {
     if (format === "aup")
         return "Audacity project";
+    else if (format === "heaac")
+        return "HE-AAC";
+    else if (format === "opus")
+        return "Opus";
     else
         return format.toUpperCase();
 }
@@ -59,6 +63,12 @@ if (request.query.f) {
             break;
         case "aac":
             format = mext = "aac";
+            break;
+        case "heaac":
+            format = mext = "heaac";
+            break;
+        case "opus":
+            format = mext = "opus";
             break;
     }
 
@@ -102,7 +112,7 @@ await include("../../head.jss", {title: "Download"});
     //--></script>
 
     <?JS
-    ["aup", "flac", "aac"].forEach((format) => {
+    ["aup", "flac", "aac", /*"heaac",*/ "opus"].forEach((format) => {
         write("<a class=\"button dl\" href=\"?i=" + recInfo.rid.toString(36) + "&f=" + format + "\" onclick=\"javascript:disableDownloads();\">" +
               formatToName(format) +
               "</a> ");
