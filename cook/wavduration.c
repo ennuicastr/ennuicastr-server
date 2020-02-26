@@ -74,6 +74,7 @@ int main(int argc, char **argv)
     struct WavFmtHeader fmtHeader;
     struct WavDS64Header ds64Header;
     int needDS64Header = 0;
+    uint64_t bytes;
     unsigned int extra;
 
     // Read the header
@@ -120,12 +121,11 @@ int main(int argc, char **argv)
 
         // Update its duration
         double duration = 6.0*60*60;
-        uint64_t bytes;
         uint32_t dataSize;
         if (argc > 1)
             duration = atof(argv[1]);
-        bytes = duration * fmtHeader.sampleRate * fmtHeader.channels *
-            (fmtHeader.bitsPerSample/8);
+        bytes = duration * fmtHeader.sampleRate;
+        bytes *= fmtHeader.channels * (fmtHeader.bitsPerSample/8);
         if (bytes >= (((uint64_t) 1)<<32) - 36) {
             needDS64Header = 1;
             memcpy(wavHeader.magic, "RF64", 4);
@@ -167,17 +167,30 @@ int main(int argc, char **argv)
     } else {
         // Wasn't even a RIFF file, just copy it
         write(1, &wavHeader, sizeof(struct WavHeader));
+        bytes = 0;
 
     }
 
     // Then write out the rest
-    while ((bufUsed = read(0, buf, bufSz)) > 0)
+    while ((bufUsed = read(0, buf, bufSz)) > 0) {
+        if (bytes > bufUsed)
+            bytes -= bufUsed;
+        else
+            bytes = 0;
         write(1, buf, bufUsed);
+    }
 
-    // Along with a fair bit of nothing
+    // And 0s for leftover bytes
     memset(buf, 0, bufSz);
-    for (extra = 0; extra < 256; extra++)
-        write(1, buf, bufSz);
+    while (bytes) {
+        if (bytes > bufSz) {
+            write(1, buf, bufSz);
+            bytes -= bufSz;
+        } else {
+            write(1, buf, bytes);
+            bytes = 0;
+        }
+    }
 
     return (bufUsed<0);
 }
