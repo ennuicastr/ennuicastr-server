@@ -18,6 +18,8 @@
 const uid = await include("../uid.jss");
 if (!uid) return;
 
+const net = require("net");
+
 const config = require("../config.js");
 const credits = require("../credits.js");
 const db = require("../db.js").db;
@@ -49,6 +51,35 @@ await include("../head.jss", {title: "Recordings"});
 var rows = await db.allP("SELECT * FROM recordings WHERE uid=@UID ORDER BY init DESC;", {
     "@UID": uid
 });
+
+// Fix up any that are live but actually not live
+for (var ri = 0; ri < rows.length; ri++) {
+    var row = rows[ri];
+    if (row.status >= 0x30) continue;
+
+    // It's not finished, so should be running
+    var running = await new Promise(function (resolve) {
+        var sock = net.createConnection(row.port);
+
+        sock.on("connect", () => {
+            sock.end();
+            resolve(true);
+        });
+
+        sock.on("error", () => {
+            resolve(false);
+        });
+    });
+
+    if (!running) {
+        // Fix the state in the database
+        row.status = 0x30;
+        await db.runP("UPDATE recordings SET status=@STATUS WHERE rid=@RID;", {
+            "@RID": row.rid,
+            "@STATUS": row.status
+        });
+    }
+}
 
 rows.forEach((row) => {
 ?>
