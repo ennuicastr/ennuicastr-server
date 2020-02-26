@@ -1,5 +1,5 @@
 @import url(font-awesome.min.css);
-@import url("http://fonts.googleapis.com/css?family=Raleway:300,700");
+@import url("https://fonts.googleapis.com/css?family=Oxygen&display=swap");
 
 /*
     Typify by TEMPLATED
@@ -1742,7 +1742,7 @@
     }
 
     body, input, select, textarea {
-        font-family: "Raleway", Arial, Helvetica, sans-serif;
+        font-family: "Oxygen", Arial, Helvetica, sans-serif;
         font-size: 14pt;
         font-weight: 300;
         letter-spacing: 0.09em;
@@ -2885,7 +2885,7 @@
         width: 33.33333%;
     }
 
-        .feature .fa {
+        .feature .fa, .feature .fas, .feature .far {
             font-size: 2.8em;
             margin-bottom: 0.7em;
         }
@@ -2920,7 +2920,7 @@
         border-color: var(--bg-12);
     }
 
-        .feature .fa {
+        .feature .fa, .feature .fas, .feature .far {
             color: var(--fg-3);
         }
 
@@ -3176,7 +3176,7 @@
                 border-color: rgba(255, 255, 255, 0.25);
             }
 
-                .wrapper.style1 .feature .fa {
+                .wrapper.style1 .feature .fa, .wrapper.style1 .feature .fas, .wrapper.style1 .feature .far {
                     color: var(--fg-8);
                 }
 
@@ -3414,7 +3414,7 @@
                 border-color: var(--bg-2);
             }
 
-                .wrapper.style2 .feature .fa {
+                .wrapper.style2 .feature .fa, .wrapper.style2 .feature .fas, .wrapper.style2 .feature .far {
                     color: var(--fg-3);
                 }
 
@@ -3650,7 +3650,7 @@
                 border-color: var(--bg-2);
             }
 
-                .wrapper.style3 .feature .fa {
+                .wrapper.style3 .feature .fa, .wrapper.style3 .feature .fas, .wrapper.style3 .feature .far {
                     color: var(--fg-3);
                 }
 

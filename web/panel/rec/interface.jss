@@ -36,7 +36,7 @@ const defaults = await (async function() {
 ?>
 
 <a id="create-recording-b" class="button" href="javascript:createRecording();">
-<i class="fa fa-play-circle"></i> Create a new recording
+<i class="fas fa-play-circle"></i> Create a new recording
 </a>
 
 <div id="create-recording" class="wrapper style2 small" style="display: none">
@@ -90,7 +90,7 @@ const defaults = await (async function() {
 
         <div style="text-align: center">
         <a id="advanced-b" class="button" href="javascript:showAdvanced();">
-        <i class="fa fa-sliders"></i> Advanced options
+        <i class="fas fa-sliders-h"></i> Advanced options
         </a></div>
 
         <div id="advanced" style="display: none">
@@ -116,7 +116,7 @@ const defaults = await (async function() {
         </div><br/>
 
         <a id="launch-b" class="button" href="javascript:launchRecording();" style="width: 100%">
-        <i class="fa fa-play-circle"></i> Create recording
+        <i class="fas fa-play-circle"></i> Create recording
         </a>
     </span>
 

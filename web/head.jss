@@ -62,7 +62,7 @@ if ("cookie" in request.headers) {
 
 <?JS if (config.menu) { ?>
         <div id="menushow">
-            <button onclick="toggleMenu();"><i class="fa fa-bars"></i></button>
+            <button onclick="toggleMenu();"><i class="fas fa-bars"></i></button>
         </div>
         <script type="text/javascript"><!--
             function toggleMenu() {

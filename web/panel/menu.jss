@@ -19,7 +19,7 @@ const config = (arguments[1] || {});
 if (!config.nomain) {
 ?>
 <div id="menuhide">
-    <button onclick="toggleMenu();"><i class="fa fa-bars"></i></button>
+    <button onclick="toggleMenu();"><i class="fas fa-bars"></i></button>
 </div>
 
 <?JS
@@ -30,15 +30,15 @@ function b(target, icon, text) {
     if (target === params.REQUEST_URI)
         cl += " recurrent";
     if (icon)
-        text = '<i class="fa fa-' + icon + '"></i> ' + text;
+        text = '<i class="fas fa-' + icon + '"></i> ' + text;
     write('<a class="button ' + cl + '" href="' + target + '">' + text + '</a>\n');
 }
 
 if (!config.nomain)
     b("/panel/", "user", "Main panel");
 b("/panel/rec/", "microphone", "Recordings");
-b("/panel/credits/", "dollar", "Credits");
+b("/panel/credits/", "dollar-sign", "Credits");
 if (!config.nomain)
     b("/", "home", "Home page");
-b("/panel/logout/", "sign-out", "Log out");
+b("/panel/logout/", "sign-out-alt", "Log out");
 ?>

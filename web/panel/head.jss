@@ -27,6 +27,6 @@ await include("../head.jss", config);
         else
             write("Ennuicastr");
     ?>
-    <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="fa fa-sun-o"></i></a>
+    <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="fas fa-sun"></i></a>
     </p>
 </section>
