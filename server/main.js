@@ -16,6 +16,11 @@ const db = require("../db.js").db;
 const server = net.createServer();
 const sockPath = config.sock || "/tmp/ennuicastr-server.sock";
 
+// Handle uncaught exceptions from the TURN server
+process.on("uncaughtException", (ex) => {
+    console.error(ex);
+});
+
 try {
     fs.unlinkSync(sockPath);
 } catch (ex) {}
