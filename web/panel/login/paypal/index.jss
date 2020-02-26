@@ -15,6 +15,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+return;
 await session.init();
 
 const fs = require("fs");
