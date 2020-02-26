@@ -100,6 +100,7 @@ var outHeader1 = null,
 var recInfo = null;
 var port = null, tryPort;
 var startTime = process.hrtime();
+var recGranule = null; // When actual recording started, as a granule position
 var connections = [null], masters = [null];
 var tracks = [null];
 var presence = [false];
@@ -149,6 +150,7 @@ wss.on("connection", (ws, wsreq) => {
     // ID and flags for this client. id is 0 until the user is logged in
     // FIXME: Document these...
     var id = 0, mid = 0, flags = 0, nick = "", track = null;
+    var lastGranule = 0;
 
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
@@ -402,9 +404,18 @@ wss.on("connection", (ws, wsreq) => {
                     recInfo.mode !== prot.mode.buffering)
                     break;
 
-                // Accept it
+                // Get the granule position
                 var granulePos = msg.readUIntLE(p.granulePos, 6);
-                // FIXME: Reject wonky granule positions
+
+                // Fix any weirdness
+                var latestAcceptable = curGranule() + 30*48000;
+                if (granulePos < lastGranule)
+                    granulePos = lastGranule;
+                else if (granulePos > latestAcceptable)
+                    granulePos = latestAcceptable;
+                lastGranule = granulePos;
+
+                // Then write it out (FIXME: check for wonky/too much data)
                 var chunk = msg.slice(p.length);
                 outData.write(granulePos, id, track.packetNo++, chunk);
 
@@ -464,8 +475,7 @@ wss.on("connection", (ws, wsreq) => {
                 ret = Buffer.alloc(op.length);
                 ret.writeUInt32LE(prot.ids.pong, 0);
                 msg.copy(ret, op.clientTime, p.clientTime);
-                var tm = process.hrtime(startTime);
-                ret.writeDoubleLE(tm[0]*1000 + (tm[1]/1000000), op.serverTime);
+                ret.writeDoubleLE(curTime(), op.serverTime);
                 ws.send(ret);
                 break;
 
@@ -638,6 +648,17 @@ setTimeout(function() {
         process.exit(1);
 }, 1000*60*60);
 
+// Current time in ms from start time
+function curTime() {
+    var tm = process.hrtime(startTime);
+    return tm[0]*1000 + (tm[1]/1000000);
+}
+
+// Current time in granule pos
+function curGranule() {
+    return Math.round(curTime() * 48);
+}
+
 // General mode-update. Updates recInfo.mode and informs clients
 function modeUpdate(toMode) {
     if (recInfo.mode === toMode)
@@ -658,6 +679,8 @@ function modeUpdate(toMode) {
 
 // Start recording
 async function startRec() {
+    // Update the mode
+    recGranule = curGranule();
     modeUpdate(prot.mode.rec);
 
     // First update the status in the database
