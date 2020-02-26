@@ -133,7 +133,13 @@ rows.forEach((row) => {
                 }
             ?></td>
             <td><a href="dl/?i=<?JS= row.rid.toString(36) ?>">Download</a></td>
-            <td><a href="delete/?i=<?JS= row.rid.toString(36) ?>">Delete</a></td>
+            <td><?JS
+                if (row.status < 0x30 /* finished */) {
+                    write("-");
+                } else {
+                    ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>">Delete</a><?JS
+                }
+            ?></td>
         </tr>
 <?JS
 });

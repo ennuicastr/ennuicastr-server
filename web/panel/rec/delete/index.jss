@@ -31,7 +31,7 @@ if (!request.query.i) {
 // Get the recording to be deleted
 const rid = Number.parseInt(request.query.i, 36);
 const rec = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
-if (!rec || rec.uid !== uid) {
+if (!rec || rec.uid !== uid || rec.status < 0x30) {
     // Not allowed or not valid
     return writeHead(302, {"location": "/panel/rec/"});
 }
