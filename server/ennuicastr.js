@@ -601,7 +601,7 @@ async function recvRecInfo(r) {
                           "  status,  init,  expiry,  tracks,  cost, purchased) VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @FORMAT, @CONTINUOUS," +
                           " @RTC, @KEY, @MASTER," +
-                          " 0, datetime('now'), datetime('now', '1 month'), 0, 0, false);", {
+                          " 0, datetime('now'), datetime('now', '1 month'), 0, 0, '');", {
                 "@UID": r.uid,
                 "@RID": rid,
                 "@PORT": port,

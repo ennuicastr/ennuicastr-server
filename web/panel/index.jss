@@ -73,7 +73,7 @@ await include("head.jss");
 
     <p><?JS= credits.creditsMessage(accountCredits) ?></p>
 
-    <?JS if (accountCredits) { await include("rec/interface.jss"); } ?>
+    <?JS await include("rec/interface.jss"); ?>
 
     <p>
     <?JS await include("menu.jss", {nomain: true}); ?>

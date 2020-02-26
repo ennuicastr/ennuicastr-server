@@ -95,7 +95,8 @@ while (true) {
                 return fail("You may not have more than 24 hours worth of credit");
             }
         } else {
-            await db.runP("INSERT INTO credits (uid, credits, purchased) VALUES (@UID, 0, 0);", {"@UID": uid});
+            await db.runP("INSERT INTO credits (uid, credits, purchased, subscription, subscription_expiry) VALUES " +
+                          "(@UID, 0, 0, 0, '');", {"@UID": uid});
         }
 
         // Then update it

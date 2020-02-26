@@ -24,10 +24,15 @@ CREATE INDEX IF NOT EXISTS names_uid ON names (uid);
 
 CREATE TABLE IF NOT EXISTS credits (
     uid TEXT PRIMARY KEY,
-    /* how many credits the user currently has remaining */
+    /* How many credits the user currently has remaining */
     credits BIGINT,
-    /* how many credits the user has ever purchased */
-    purchased BIGINT
+    /* How many credits the user has ever purchased */
+    purchased BIGINT,
+    /* Subscription level */
+    subscription INTEGER,
+    /* When does the subscription expire? Note that you must check *both*, as
+     * expired subscriptions are left in the DB! */
+    subscription_expiry TEXT
 );
 
 /* Recordings that are either active or at least not expired */
@@ -64,8 +69,8 @@ CREATE TABLE IF NOT EXISTS recordings (
     tracks INTEGER,
     /* The number of credits that this recording will/did cost to purchase */
     cost INTEGER,
-    /* Has it been purchased? */
-    purchased BOOLEAN
+    /* When it was purchased, if it's been purchased, or an empty string otherwise */
+    purchased TEXT
 );
 
 CREATE INDEX IF NOT EXISTS recordings_uid ON recordings (uid);

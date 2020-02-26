@@ -22,7 +22,9 @@ const net = require("net");
 
 const config = require("../config.js");
 const credits = require("../credits.js");
-const db = require("../db.js").db;
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
 
 const accountCredits = await credits.accountCredits(uid);
 
@@ -52,9 +54,23 @@ var rows = await db.allP("SELECT * FROM recordings WHERE uid=@UID ORDER BY init 
     "@UID": uid
 });
 
-// Fix up any that are live but actually not live
+// Fix any weird states in the database
 for (var ri = 0; ri < rows.length; ri++) {
     var row = rows[ri];
+
+    if (!row.purchased && accountCredits.subscription) {
+        if ((row.format !== "flac" && !row.continuous) ||
+            accountCredits.subscription >= 2) {
+            // Auto-purchase
+            row.purchased = "1";
+            await db.runP("UPDATE recordings SET purchased='1' WHERE uid=@UID AND rid=@RID;", {
+                "@UID": uid,
+                "@RID": row.rid
+            });
+            log("subscription-auto-purchase", row, {uid, rid: row.rid});
+        }
+    }
+
     if (row.status >= 0x30) continue;
 
     // It's not finished, so should be running
@@ -74,7 +90,8 @@ for (var ri = 0; ri < rows.length; ri++) {
     if (!running) {
         // Fix the state in the database
         row.status = 0x30;
-        await db.runP("UPDATE recordings SET status=@STATUS WHERE rid=@RID;", {
+        await db.runP("UPDATE recordings SET status=@STATUS WHERE uid=@UID AND rid=@RID;", {
+            "@UID": uid,
             "@RID": row.rid,
             "@STATUS": row.status
         });
@@ -132,7 +149,11 @@ rows.forEach((row) => {
                     write("-");
                 }
             ?></td>
-            <td><a href="dl/?i=<?JS= row.rid.toString(36) ?>">Download</a></td>
+            <td><?JS
+                if (!row.purchased && row.status >= 0x30 /* finished */)
+                    write("$" + credits.creditsToDollars(row.cost) + "<br/>");
+                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>">Download</a><?JS
+            ?></td>
             <td><?JS
                 if (row.status < 0x30 /* finished */) {
                     write("-");

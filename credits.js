@@ -81,20 +81,29 @@ function creditsToHM(credits) {
 }
 
 /**
- * How many credits does this account have?
+ * Credits info for this user
  */
 async function accountCredits(uid) {
-    var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {"@UID": uid});
-    if (row)
-        return row.credits;
-    return 0;
+    var row = await db.getP("SELECT *, (datetime('now')>subscription_expiry) AS subscription_expired FROM credits WHERE uid=@UID;", {
+        "@UID": uid
+    });
+    if (row) {
+        if (row.subscription_expired)
+            row.subscription = 0;
+        return row;
+    }
+    return {
+        credits: 0,
+        purchased: 0,
+        subscription: 0
+    };
 }
 
 /**
  * Standard "you have n credits" message for clients
  */
 function creditsMessage(credits) {
-    return "You have $" + creditsToDollars(credits) + " in credit (" + creditsToHM(credits) + " recording time).";
+    return "You have $" + creditsToDollars(credits.credits) + " in credit (" + creditsToHM(credits.credits) + " recording time).";
 }
 
 module.exports = {
