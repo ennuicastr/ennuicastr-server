@@ -88,14 +88,19 @@ async function accountCredits(uid) {
         "@UID": uid
     });
     if (row) {
-        if (row.subscription_expired)
-            row.subscription = 0;
+        if (row.subscription_expired) {
+            if (row.subscription !== 0)
+                row.subscription = 0;
+            else
+                row.subscription_expired = false;
+        }
         return row;
     }
     return {
         credits: 0,
         purchased: 0,
-        subscription: 0
+        subscription: 0,
+        subscription_expired: false
     };
 }
 

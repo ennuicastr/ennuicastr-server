@@ -16,6 +16,7 @@
  */
 
 const config = (arguments[1] || {});
+
 if (!config.nomain) {
 ?>
 <div id="menuhide">
@@ -37,7 +38,9 @@ function b(target, icon, text) {
 if (!config.nomain)
     b("/panel/", "user", "Main panel");
 b("/panel/rec/", "microphone", "Recordings");
-b("/panel/credits/", "dollar-sign", "Credits");
+b("/panel/subscription/", "calendar-alt", "Subscription");
+if (!config.nocredits)
+    b("/panel/credits/", "dollar-sign", "Credits");
 if (!config.nomain)
     b("/", "home", "Home page");
 b("/panel/logout/", "sign-out-alt", "Log out");

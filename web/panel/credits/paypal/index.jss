@@ -142,6 +142,5 @@ if (capture.status !== "COMPLETED") {
 
 log("purchased-credits", JSON.stringify(order), {uid});
 
-// FIXME: Validation!
 write("{\"success\":true}");
 ?>

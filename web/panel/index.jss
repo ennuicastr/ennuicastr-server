@@ -27,6 +27,7 @@ const providerNames = {
 const edb = require("../db.js");
 const db = edb.db;
 const credits = require("../credits.js");
+const creditsj = await include("./credits.jss");
 
 // Get other info associated with this account
 const login = await session.get("login");
@@ -49,7 +50,8 @@ const email = await (async function() {
         return row.email;
     return null;
 })();
-const accountCredits = await credits.accountCredits(uid);
+
+const accountCredits = await creditsj.accountCredits(uid);
 
 // Make an "as" line based on what they're logged in as
 var asLine = "";

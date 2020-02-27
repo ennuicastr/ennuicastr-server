@@ -28,6 +28,11 @@
         }
     },
 
+    "subscription": {
+        "basic": 1000,
+        "hq": 1500
+    },
+
     "google": {
         "clientId": "",
         "secret": ""
@@ -36,6 +41,7 @@
     "paypal": {
         "api": "api.paypal.com",
         "clientId": "",
-        "secret": ""
+        "secret": "",
+        "subscription": "... replace this string with the output from create.js ..."
     }
 }

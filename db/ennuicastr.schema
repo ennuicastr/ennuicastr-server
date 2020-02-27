@@ -32,7 +32,10 @@ CREATE TABLE IF NOT EXISTS credits (
     subscription INTEGER,
     /* When does the subscription expire? Note that you must check *both*, as
      * expired subscriptions are left in the DB! */
-    subscription_expiry TEXT
+    subscription_expiry TEXT,
+    /* What is the ID for the subscription, prefixed with the service, e.g.
+     * paypal:I-... */
+    subscription_id TEXT
 );
 
 /* Recordings that are either active or at least not expired */

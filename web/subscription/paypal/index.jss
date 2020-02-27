@@ -1,4 +1,4 @@
-<?JS!
+<?JS
 /*
  * Copyright (c) 2020 Yahweasel
  *
@@ -15,22 +15,26 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-await session.init();
-const uid = await session.get("uid");
+const uid = await include("../../uid.jss");
+if (!uid) return;
 
-const db = require("../db.js").db;
+const s = await include("./s.jss");
 
-// Check that the UID is valid
-var row;
-if (uid)
-    row = await db.getP("SELECT * FROM users WHERE uid=@UID;", {"@UID": uid});
-
-if (!uid || !row) {
-    // Throw them to the login page
-    writeHead(302, {"location": "/panel/login/"});
+if (!request.body || !request.body.id) {
+    writeHead(500);
+    write("{\"success\":false}");
+    return;
 }
 
-await session.set("uid", uid);
+var ret;
+try {
+    ret = await s.updateSubscription(uid, "paypal:" + request.body.id, {activateOnly: true});
+} catch (ex) {
+    writeHead(500, {"content-type": "application/json"});
+    write(JSON.stringify({success: false, reason: ex+""}));
+    return;
+}
 
-module.exports = uid;
+writeHead(ret.success?200:500, {"content-type": "application/json"});
+write(JSON.stringify(ret));
 ?>

@@ -22,11 +22,12 @@ const net = require("net");
 
 const config = require("../config.js");
 const credits = require("../credits.js");
+const creditsj = await include("../credits.jss");
 const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
 
-const accountCredits = await credits.accountCredits(uid);
+const accountCredits = await creditsj.accountCredits(uid);
 
 await include("../head.jss", {title: "Recordings"});
 ?>
