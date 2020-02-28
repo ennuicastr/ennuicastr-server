@@ -15,32 +15,21 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const config = (arguments[1] || {});
+const credits = require("../credits.js");
+const s = await include("subscription/paypal/s.jss");
 
-if (!config.nomain) {
-?>
-<div id="menuhide">
-    <button onclick="toggleMenu();"><i class="fas fa-bars"></i></button>
-</div>
-
-<?JS
+async function accountCredits(uid) {
+    var c = await credits.accountCredits(uid);
+    console.log(c);
+    if (c.subscription_expired) {
+        // Check if it's been updated
+        var ret = await s.updateSubscription(uid, c.subscription_id);
+        console.log(ret);
+        c = await credits.accountCredits(uid);
+        console.log(c);
+    }
+    return c;
 }
 
-function b(target, icon, text) {
-    var cl = "button";
-    if (target === params.REQUEST_URI)
-        cl += " recurrent";
-    if (icon)
-        text = '<i class="fas fa-' + icon + '"></i> ' + text;
-    write('<a class="button ' + cl + '" href="' + target + '">' + text + '</a>\n');
-}
-
-if (!config.nomain)
-    b("/panel/", "user", "Main panel");
-b("/panel/rec/", "microphone", "Recordings");
-b("/panel/subscription/", "calendar-alt", "Subscription");
-b("/panel/credits/", "dollar-sign", "Credits");
-if (!config.nomain)
-    b("/", "home", "Home page");
-b("/panel/logout/", "sign-out-alt", "Log out");
+module.exports = {accountCredits};
 ?>

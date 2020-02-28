@@ -73,37 +73,45 @@ async function genSub(level) {
     <?JS
 }
 
-// We do something different if they already have a subscription
+?>
+    <section class="wrapper special" id="sub-box">
+        <script type="text/javascript" src="https://www.paypal.com/sdk/js?client-id=<?JS= config.paypal.clientId ?>&vault=true"></script>
+<?JS
 
+// We do something different if they already have a subscription
 if (accountCredits.subscription) {
 ?>
-
-    <section class="wrapper special">
         <h2>Subscription</h2>
 
-        <p>You have a<?JS= [" "," basic","n HQ"][accountCredits.subscription] ?> subscription until <?JS= accountCredits.subscription_expiry ?> UTC. Thanks!</p>
+        <p>You have a<?JS= [""," basic","n ultra-high quality"][accountCredits.subscription] ?> subscription until <?JS= accountCredits.subscription_expiry ?> UTC. Thanks!</p>
+
+<?JS
+    if (accountCredits.subscription < 2) {
+?>
+        <p>You may upgrade your subscription to ultra-high quality for $<?JS= config.subscription.hq/100 ?>/month, with the first month at only $<?JS= (config.subscription.hq-config.subscription.basic)/100 ?>:</p>
+        <?JS await genSub("hqBasicUpgrade"); ?>
+<?JS
+    }
+?>
 
         <p>(If you have canceled your subscription, you still get to keep the remainder of your subscription time, and so are still subscribed until the expiry date above.)</p>
-    </section>
 
 <?JS } else { ?>
 
-    <section class="wrapper special" id="sub-box">
-        <script type="text/javascript" src="https://www.paypal.com/sdk/js?client-id=<?JS= config.paypal.clientId ?>&vault=true"></script>
 
         <h2>Basic subscription</h2>
-        <p>$<?JS= config.subscription.basic/100 ?>/month, unlimited recordings in 128kbit Opus</p>
+        <p>$<?JS= config.subscription.basic/100 ?>/month, unlimited recordings in high quality (128kbit Opus)</p>
         <?JS await genSub("basic"); ?>
 
         <hr/>
 
-        <h2>HQ subscription</h2>
-        <p>$<?JS= config.subscription.hq/100 ?>/month, unlimited recordings in lossless FLAC and/or continuous mode</p>
+        <h2>UHQ subscription</h2>
+        <p>$<?JS= config.subscription.hq/100 ?>/month, unlimited recordings in ultra-high quality (lossless FLAC and/or continuous mode)</p>
         <?JS await genSub("hq"); ?>
-    </section>
 
 <?JS
 }
-
-await include("../../tail.jss");
 ?>
+    </section>
+
+<?JS await include("../../tail.jss"); ?>

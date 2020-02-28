@@ -22,6 +22,7 @@ const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
 const login = await include("../../login/login.jss");
+const credits = require("../credits.js");
 
 const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + config.paypal.secret).toString("base64");
 
@@ -37,6 +38,15 @@ async function updateSubscription(uid, sid, sconfig) {
     if (!parts) return fail("Unsupported subscription service");
     sid = parts[1];
 
+    // Check for a previous subscription
+    var accountCredits = await credits.accountCredits(uid);
+    var prevSubscription = null;
+    if (accountCredits.subscription) {
+        parts = /^paypal:(.*)$/.exec(accountCredits.subscription_id);
+        if (!parts) return fail("Unsupported subscription service");
+        prevSubscription = parts[1];
+    }
+
     // Get the subscription details
     var subscription = await nrc.getPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid, {
         headers: {
@@ -51,6 +61,8 @@ async function updateSubscription(uid, sid, sconfig) {
     if (subscription.plan_id === config.paypal.subscription.basic.id)
         level = 1;
     else if (subscription.plan_id === config.paypal.subscription.hq.id)
+        level = 2;
+    else if (prevSubscription && subscription.plan_id === config.paypal.subscription.hqBasicUpgrade.id)
         level = 2;
 
     // Ignore it if it's not active
@@ -112,6 +124,19 @@ async function updateSubscription(uid, sid, sconfig) {
         log("purchased-subscription", JSON.stringify({subscription, level}), {uid});
     else
         log("expired-subscription", JSON.stringify({level}), {uid});
+
+    // And cancel any old subscription
+    if (prevSubscription) {
+        var res = await nrc.getPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + prevSubscription + "/cancel", {
+            headers: {
+                "content-type": "application/json",
+                authorization
+            },
+            data: JSON.stringify({reason: level?"Upgrade":"Cancelation"})
+        });
+        res = res.data;
+        log("canceled-subscription", JSON.stringify(res), {uid});
+    }
 
     return {success: true, level};
 }

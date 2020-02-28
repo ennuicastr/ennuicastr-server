@@ -20,6 +20,9 @@ if (!uid) return;
 
 const config = require("../config.js");
 const db = require("../db.js").db;
+const creditsj = await include("../credits.jss");
+
+const accountCredits = await creditsj.accountCredits(uid);
 
 const defaults = await (async function() {
     var row = await db.getP("SELECT * FROM defaults WHERE uid=@UID;", {"@UID": uid});
@@ -83,7 +86,10 @@ const defaults = await (async function() {
         l("dname", "Your display name");
         txt("dname", "m");
 
-        var showAdvanced = (defaults.format === "flac" || defaults.continuous || !defaults.rtc);
+        var showAdvanced = (accountCredits.subscription >= 2 ||
+                            defaults.format === "flac" ||
+                            defaults.continuous ||
+                            !defaults.rtc);
 
         if (!showAdvanced) {
         ?>
@@ -103,10 +109,14 @@ const defaults = await (async function() {
         <?JS
         }
 
-        l("format", "Recording format");
-        sel("format", "f", [["opus", "Opus"], ["flac", "FLAC ($2/hr)"]]);
+        var priceAdvice = " ($2/hr)";
+        if (accountCredits.subscription >= 2)
+            priceAdvice = "";
 
-        l("continuous", "Continuous ($2/hr)");
+        l("format", "Recording format");
+        sel("format", "f", [["opus", "High quality (Opus)"], ["flac", "Ultra quality" + priceAdvice + " (FLAC)"]]);
+
+        l("continuous", "Continuous" + priceAdvice);
         chk("continuous", "c");
 
         l("rtc", "Live voice chat");

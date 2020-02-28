@@ -33,8 +33,6 @@ await include("../head.jss", {title: "Recordings"});
 ?>
 
 <section class="wrapper special">
-    <p><?JS= credits.creditsMessage(accountCredits) ?></p>
-
     <?JS await include("interface.jss"); ?>
 </section>
 

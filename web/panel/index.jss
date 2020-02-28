@@ -51,8 +51,6 @@ const email = await (async function() {
     return null;
 })();
 
-const accountCredits = await creditsj.accountCredits(uid);
-
 // Make an "as" line based on what they're logged in as
 var asLine = "";
 if (email) {
@@ -72,8 +70,6 @@ await include("head.jss");
     <script type="text/javascript"><!--
     function showUID() { $("#uidbox")[0].style.display = ""; }
     //--></script>
-
-    <p><?JS= credits.creditsMessage(accountCredits) ?></p>
 
     <?JS await include("rec/interface.jss"); ?>
 
