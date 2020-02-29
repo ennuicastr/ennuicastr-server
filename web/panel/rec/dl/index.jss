@@ -96,6 +96,15 @@ if (request.query.f) {
     return;
 }
 
+// Determine their platform
+var mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
+var recommend = (mac?"aac":"flac");
+
+// Function to show a download button
+function showDL(format) {
+    ?><a class="button dl" href="?i=<?JS= recInfo.rid.toString(36) ?>&f=<?JS= format ?>" onclick="disableDownloads();"><?JS= formatToName(format) ?></a> <?JS
+}
+
 // Show the downloader
 await include("../../head.jss", {title: "Download"});
 ?>
@@ -111,13 +120,17 @@ await include("../../head.jss", {title: "Download"});
     }
     //--></script>
 
-    <?JS
-    ["aup", "flac", "aac", /*"heaac",*/ "opus"].forEach((format) => {
-        write("<a class=\"button dl\" href=\"?i=" + recInfo.rid.toString(36) + "&f=" + format + "\" onclick=\"javascript:disableDownloads();\">" +
-              formatToName(format) +
-              "</a> ");
-    });
-    ?>
+    <header><h3>Suggested formats</h3></header>
+
+    <p><?JS
+    ["aup", recommend].forEach(showDL);
+    ?></p>
+
+    <header><h3>Other formats</h3></header>
+
+    <p><?JS
+    [(mac?"flac":"aac"), "opus"].forEach(showDL);
+    ?></p>
 </section>
 
 <?JS
