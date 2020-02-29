@@ -97,11 +97,12 @@ int main(int argc, char **argv)
         if (readAll(0, buf, packetSize) != packetSize)
             break;
 
+        if (!firstGranulePos && oggHeader.granulePos)
+            firstGranulePos = oggHeader.granulePos;
+
         if (streamNo >= 0 && oggHeader.streamNo != streamNo)
             continue;
 
-        if (!firstGranulePos && oggHeader.granulePos)
-            firstGranulePos = oggHeader.granulePos;
         if (oggHeader.granulePos > lastGranulePos)
             lastGranulePos = oggHeader.granulePos;
     }
