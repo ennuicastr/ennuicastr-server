@@ -27,6 +27,7 @@ const rid = Number.parseInt(request.query.i, 36);
 const cp = require("child_process");
 const config = require("../config.js");
 const db = require("../db.js").db;
+const reclib = await include("../lib.jss");
 
 const recInfo = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
 if (recInfo.uid !== uid)
@@ -111,6 +112,8 @@ await include("../../head.jss", {title: "Download"});
 
 <section class="wrapper special">
     <header><h2>Download <?JS= recInfo.name.replace(/[<>]/g, "") || "(Anonymous)" ?></h2></header>
+
+    <p>Please choose a format to download <?JS= reclib.recordingName(recInfo) ?></p>
 
     <script type="text/javascript"><!--
     function disableDownloads() {

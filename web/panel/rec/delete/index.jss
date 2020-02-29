@@ -22,6 +22,7 @@ const fs = require("fs");
 
 const config = require("../config.js");
 const db = require("../db.js").db;
+const reclib = await include("../lib.jss");
 
 if (!request.query.i) {
     // Delete nothing?
@@ -100,7 +101,7 @@ if (request.query.sure) {
 
     <p>This will <em>permanently</em>, <em>irreversibly</em> delete the following recording:</p>
 
-    <p><?JS= rec.name || "(Anonymous)" ?>, recorded at <?JS= rec.init ?>.</p>
+    <p><?JS= reclib.recordingName(rec) ?></p>
 
     <p>Are you sure?</p>
 
