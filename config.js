@@ -16,7 +16,7 @@
 
 /* Configuration */
 const fs = require("fs");
-const config = JSON.parse(fs.readFileSync("../config.json", "utf8"));
+const config = require("./config.json");
 
 // Handle ~'s in paths
 ["repo", "db", "rec", "cert", "clientRepo"].forEach((path) => {
