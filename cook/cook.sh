@@ -102,7 +102,7 @@ case "$FORMAT" in
         ;;
     heaac)
         ext=aac
-        ENCODE="fdkaac -p 29 -f 2 -m 4 -o - -"
+        ENCODE="fdkaac -p 5 -f 2 -m 4 -o - -"
         ;;
     opus)
         ext=opus
