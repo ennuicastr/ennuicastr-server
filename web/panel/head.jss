@@ -1,5 +1,6 @@
 <?JS!
 const config = (arguments[1] || {});
+const econfig = require("../config.js");
 
 await include("../head.jss", config);
 ?>
@@ -19,6 +20,35 @@ await include("../head.jss", config);
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
+
+<?JS if (config.paypal) { ?>
+<script type="text/javascript">
+PayPalLoader = (function() {
+    var l = {};
+    var scr = document.createElement("script");
+    scr.async = true;
+    scr.defer = true;
+    scr.src = "https://www.paypal.com/sdk/js?client-id=<?JS= econfig.paypal.clientId + (config.paypalArgs || "") ?>";
+    l.loaded = false;
+    scr.addEventListener("load", function() {
+        l.loaded = true;
+    });
+
+    l.load = function() {
+        return new Promise(function(resolve) {
+            if (l.loaded) {
+                resolve();
+            } else {
+                scr.addEventListener("load", resolve);
+            }
+        });
+    };
+
+    document.body.appendChild(scr);
+    return l;
+})();
+</script>
+<?JS } ?>
 
 <section id="banner" class="small">
     <p><?JS

@@ -39,7 +39,7 @@ if (!config.nomain)
     b("/panel/", "user", "Main panel");
 b("/panel/rec/", "microphone", "Recordings");
 b("/panel/subscription/", "calendar-alt", "Subscription");
-b("/panel/credits/", "dollar-sign", "Credits");
+b("/panel/credits/", "dollar-sign", "Credit");
 if (!config.nomain)
     b("/", "home", "Home page");
 b("/panel/logout/", "sign-out-alt", "Log out");

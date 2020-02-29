@@ -25,12 +25,12 @@ const creditsj = await include("../credits.jss");
 
 const accountCredits = await creditsj.accountCredits(uid);
 
-await include("../head.jss", {title: "Credits"});
+await include("../head.jss", {title: "Credits", paypal: true});
 
 if (accountCredits.subscription) {
 ?>
     <section class="wrapper special">
-        <p>You have a subscription, so you don't need credit for covered recordings. Any credit you had before recording will still be available if you cancel.</p>
+        <p>You have a subscription, so you don't need credit for covered recordings. Any credit you had before subscribing will still be available if you cancel.</p>
     </section>
 <?JS
 }
@@ -42,8 +42,6 @@ if (accountCredits.subscription < 2) {
 
         <p id="current-credits"><?JS= credits.creditsMessage(accountCredits) ?></p>
 
-        <script type="text/javascript" src="https://www.paypal.com/sdk/js?client-id=<?JS= config.paypal.clientId ?>"></script>
-
         <p>Buy $<input type="text" id="amount" size=2 value="2" /> of credit:</p>
         <div id="paypal-button-container"></div>
         <p id="invalid1" class="warning">The minimum transaction is $2.</p>
@@ -53,6 +51,7 @@ if (accountCredits.subscription < 2) {
         (function() {
             var enabled = true;
             var invalid = "invalid1";
+            PayPalLoader.load().then(function() {
             paypal.Buttons({
                 onInit: function(data, actions) {
                     var amt = $("#amount")[0];
@@ -138,6 +137,7 @@ if (accountCredits.subscription < 2) {
                     });
                 }
             }).render("#paypal-button-container");
+            });
         })();
         </script>
     </section>

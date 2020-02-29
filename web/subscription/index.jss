@@ -24,7 +24,7 @@ const creditsj = await include("../credits.jss");
 
 const accountCredits = await creditsj.accountCredits(uid);
 
-await include("../head.jss", {title: "Subscription"});
+await include("../head.jss", {title: "Subscription", paypal: true, paypalArgs: "&vault=true"});
 
 // General function for generating subscription buttons
 async function genSub(level) {
@@ -39,6 +39,7 @@ async function genSub(level) {
     <div id="paypal-button-container-<?JS= level ?>"></div>
 
     <script type="text/javascript">
+    PayPalLoader.load().then(function() {
         paypal.Buttons({
             createSubscription: function(data, actions) {
                 return actions.subscription.create(<?JS= JSON.stringify(sub) ?>);
@@ -69,13 +70,13 @@ async function genSub(level) {
             }
 
         }).render('#paypal-button-container-<?JS= level ?>');
+    });
     </script>
     <?JS
 }
 
 ?>
     <section class="wrapper special" id="sub-box">
-        <script type="text/javascript" src="https://www.paypal.com/sdk/js?client-id=<?JS= config.paypal.clientId ?>&vault=true"></script>
 <?JS
 
 // We do something different if they already have a subscription
