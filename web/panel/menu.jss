@@ -16,6 +16,7 @@
  */
 
 const config = (arguments[1] || {});
+const econfig = require("../config.js");
 
 if (!config.nomain) {
 ?>
@@ -41,6 +42,6 @@ b("/panel/rec/", "microphone", "Recordings");
 b("/panel/subscription/", "calendar-alt", "Subscription");
 b("/panel/credits/", "dollar-sign", "Credit");
 if (!config.nomain)
-    b("/", "home", "Home page");
+    b(econfig.site, "home", "Home page");
 b("/panel/logout/", "sign-out-alt", "Log out");
 ?>
