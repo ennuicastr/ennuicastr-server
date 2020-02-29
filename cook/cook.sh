@@ -83,6 +83,10 @@ case "$FORMAT" in
     copy)
         ext=ogg
         ;;
+    wavpack)
+        ext=wv
+        ENCODE="ffmpeg -f wav -i - -c:a wavpack -f wv -"
+        ;;
     oggflac)
         ext=oga
         ENCODE="flac --ogg --serial-number=1 - -c"
