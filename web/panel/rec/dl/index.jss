@@ -98,7 +98,7 @@ if (request.query.f) {
 
 // Determine their platform
 var mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
-var recommend = (mac?"aac":"flac");
+var recommend = (mac?"heaac":"flac");
 
 // Function to show a download button
 function showDL(format) {
@@ -129,7 +129,7 @@ await include("../../head.jss", {title: "Download"});
     <header><h3>Other formats</h3></header>
 
     <p><?JS
-    [(mac?"flac":"aac"), "opus"].forEach(showDL);
+    [(mac?"flac":"heaac"), "aac", "opus"].forEach(showDL);
     ?></p>
 </section>
 
