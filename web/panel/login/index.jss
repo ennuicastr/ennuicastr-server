@@ -26,17 +26,16 @@ if (request.query.secret) {
 const util = require("util");
 const db = require("../db.js");
 
-function up(obj, meth) {
-    return util.promisify(obj[meth].bind(obj));
-}
-
 await include("../../head.jss", {menu: false, title: "Log in"});
 /*
 ?>
 
 <section class="wrapper special">
-    <p>To use Ennuicastr, you must have a PayPal account. Please log in with PayPal:</p>
-    <?JS await include("paypal/button.jss"); ?>
+    <p>You may log in to Ennuicastr using an account on any of these online services:</p>
+    <?JS
+    await include("paypal/button.jss");
+    await include("google/button.jss");
+    ?>
 
     <p><a href="/">Return to home page</a></p>
 </section>
