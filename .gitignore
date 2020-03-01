@@ -5,6 +5,7 @@ config.json
 nohup.out
 *.ogg*
 cook/oggduration
+cook/oggmeta
 cook/oggstender
 cook/oggtracks
 cook/userinfo.js

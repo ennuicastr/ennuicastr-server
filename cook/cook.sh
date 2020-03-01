@@ -311,18 +311,14 @@ then
 fi
 
 
-# Also provide raw.dat and info.txt
-#if [ "$CONTAINER" = "zip" -o "$CONTAINER" = "aupzip" -o "$CONTAINER" = "exe" ]
-#then
-#    mkfifo $OUTDIR/raw.dat
-#    timeout 10 "$SCRIPTBASE/cook/recinfo.js" "$ID" |
-#        timeout $DEF_TIMEOUT cat - $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data > $OUTDIR/raw.dat &
-#    (
-#        timeout 10 "$SCRIPTBASE/cook/recinfo.js" "$ID" text;
-#        timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-#            timeout $DEF_TIMEOUT "$SCRIPTBASE/cook/extnotes"
-#    ) > $OUTDIR/info.txt
-#fi
+# Also provide info.txt
+if [ "$CONTAINER" = "zip" -o "$CONTAINER" = "aupzip" -o "$CONTAINER" = "exe" ]
+then
+    mkfifo $OUTDIR/info.txt
+    timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
+        timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" |
+        timeout $DEF_TIMEOUT "$SCRIPTBASE/info.js" "$ID" > $OUTDIR/info.txt &
+fi
 
 
 # Put them into their container
@@ -385,16 +381,16 @@ case "$CONTAINER" in
     exe)
         SFX="$SCRIPTBASE/cook/sfx.exe"
         [ "$FORMAT" != "powersfx" ] || SFX="$SCRIPTBASE/cook/powersfx.exe"
-        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext $EXTRAFILES info.txt raw.dat |
+        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext $EXTRAFILES info.txt |
         cat "$SFX" -
         ;;
 
     aupzip)
-        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -r -FI - "$FNAME.aup" "${FNAME}_data"/*.$ext
+        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -r -FI - "$FNAME.aup" "${FNAME}_data"/*.$ext "${FNAME}_data"/info.txt
         ;;
 
     *)
-        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext $EXTRAFILES
+        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext $EXTRAFILES info.txt
         ;;
 esac | (cat || cat > /dev/null)
 

@@ -69,6 +69,12 @@ const flacTags =
     Buffer.from([0x04, 0x00, 0x00, 0x41, 0x0A, 0x00, 0x00, 0x00, 0x65, 0x6E,
         0x6E, 0x75, 0x69, 0x63, 0x61, 0x73, 0x74, 0x72]);
 
+// Header indicating a meta track
+const metaHeader = [
+    Buffer.from([0x45, 0x43, 0x4d, 0x45, 0x54, 0x41, 0x00, 0x00]),
+    Buffer.from([0x00, 0x00])
+];
+
 // Set up the EnnuiCastr server
 var hss;
 try {
@@ -96,16 +102,34 @@ var outHeader1 = null,
     outUsers = null,
     outInfo = null;
 
-// Metadata
+// Recording info for this recording
 var recInfo = null;
+
+// The port we're using
 var port = null, tryPort;
+
+// When the recording started (now)
 var startTime = process.hrtime();
-var recGranule = null; // When actual recording started, as a granule position
+
+// When the recording really started (mode=rec), as a granule position
+var recGranule = null;
+
+// Current active connections, by ID
 var connections = [null], masters = [null];
+
+// All tracks, whether connected or not
 var tracks = [null];
+
+// Whether any given track was present since the last credit check
 var presence = [false];
+
+// Whether each track is speaking
 var speakingStatus = [null];
+
+// Mapping of IP addresses to nicknames
 var ipToNick = {};
+
+// Counter so we can give new "Anonymous (x)" names to anonymous users
 var anonCt = 1;
 
 // We need to try ports until we find one that works
@@ -434,6 +458,38 @@ wss.on("connection", (ws, wsreq) => {
 
                 break;
 
+            case prot.ids.text:
+                var p = prot.parts.text;
+                if (msg.length < p.length)
+                    return die();
+
+                // Get out the message
+                var text = "";
+                try {
+                    text = msg.toString("utf8", p.text);
+                } catch (ex) {
+                    return die();
+                }
+
+                // Sanitize it
+                text = (nick + ": " + text.replace(/[\x00-\x1f\x7f]/g, "")).slice(0, 2048);
+
+                // Record it
+                recMeta({c:"text",text});
+
+                // Relay it
+                var textBuf = Buffer.from(text);
+                ret = Buffer.alloc(p.length + textBuf.length);
+                ret.writeUInt32LE(prot.ids.text, 0);
+                ret.writeUInt32LE(0, p.reserved);
+                textBuf.copy(ret, p.text);
+                connections.forEach((connection) => {
+                    if (!connection || connection === ws)
+                        return;
+                    connection.send(ret);
+                });
+                break;
+
             case prot.ids.rtc:
                 var p = prot.parts.rtc;
                 if (msg.length < p.length)
@@ -574,6 +630,26 @@ process.on("message", (msg) => {
     if (msg.c === "info")
         recvRecInfo(msg.r);
 });
+
+// Record to the metadata track
+function recMeta(data) {
+    try {
+        data = Buffer.from(JSON.stringify(data));
+    } catch (ex) {
+        return; // !!!
+    }
+
+    var track = tracks[0];
+    if (!track) {
+        // We haven't started a metadata track yet
+        track = tracks[0] = {packetNo: 0};
+        outHeader1.write(0, 0, track.packetNo++, metaHeader[0], ogg.BOS);
+        outHeader2.write(0, 0, track.packetNo++, metaHeader[1]);
+    }
+
+    // Write this data
+    outData.write(curGranule(), 0, track.packetNo++, data);
+}
 
 // Once we get the recording info, we can start
 async function recvRecInfo(r) {

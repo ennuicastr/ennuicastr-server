@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Yahweasel
+ * Copyright (c) 2017-2020 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,11 +14,13 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 /* NOTE: We don't use libogg here because the behavior of this program is so
@@ -26,8 +28,6 @@
 
 /* NOTE: This program assumes little-endian for speed, it WILL NOT WORK on a
  * big-endian system */
-
-static unsigned char outTrackNum = 0;
 
 struct OggPreHeader {
     unsigned char capturePattern[4];
@@ -42,7 +42,7 @@ struct OggHeader {
     uint32_t crc;
 } __attribute__((packed));
 
-static ssize_t readAll(int fd, void *vbuf, size_t count)
+ssize_t readAll(int fd, void *vbuf, size_t count)
 {
     unsigned char *buf = (unsigned char *) vbuf;
     ssize_t rd = 0, ret;
@@ -54,25 +54,66 @@ static ssize_t readAll(int fd, void *vbuf, size_t count)
     return rd;
 }
 
-static void out(struct OggHeader *header, const char *type)
+ssize_t writeAll(int fd, const void *vbuf, size_t count)
 {
-    if (outTrackNum)
-        printf("%d\n", header->streamNo);
-    else
-        printf("%s\n", type);
+    const unsigned char *buf = (const unsigned char *) vbuf;
+    ssize_t wt = 0, ret;
+    while (wt < count) {
+        ret = write(fd, buf + wt, count - wt);
+
+        if (ret <= 0) {
+            if (ret < 0 && errno == EAGAIN) {
+                // Wait 'til we can write again
+                fd_set wfds;
+                FD_ZERO(&wfds);
+                FD_SET(fd, &wfds);
+                select(fd + 1, NULL, &wfds, NULL, NULL);
+                continue;
+            }
+
+            perror("write");
+            return ret;
+        }
+        wt += ret;
+    }
+    return wt;
+}
+
+void writeOgg(struct OggHeader *header, const unsigned char *data, uint32_t size)
+{
+    unsigned char sequencePart;
+    uint32_t sizeMod;
+
+    if (writeAll(1, "OggS\0", 5) != 5 ||
+        writeAll(1, header, sizeof(*header)) != sizeof(*header))
+        exit(1);
+
+    // Write out the sequence info
+    sequencePart = (size+254)/255;
+    if (writeAll(1, &sequencePart, 1) != 1) exit(1);
+    sequencePart = 255;
+    sizeMod = size;
+    while (sizeMod > 255) {
+        if (writeAll(1, &sequencePart, 1) != 1) exit(1);
+        sizeMod -= 255;
+    }
+    sequencePart = sizeMod;
+    if (writeAll(1, &sequencePart, 1) != 1) exit(1);
+
+    // Then write the data
+    if (writeAll(1, data, size) != size) exit(1);
 }
 
 int main(int argc, char **argv)
 {
+    int foundMeta = 0;
+    uint32_t keepStreamNo;
+    uint64_t granuleOffset = 0;
     uint32_t packetSize;
-    uint32_t skip;
     unsigned char segmentCount, segmentVal;
     unsigned char *buf = NULL;
     uint32_t bufSz = 0;
     struct OggPreHeader preHeader;
-
-    if (argc > 1 && !strcmp(argv[1], "-n"))
-        outTrackNum = 1;
 
     while (readAll(0, &preHeader, sizeof(preHeader)) == sizeof(preHeader)) {
         struct OggHeader oggHeader;
@@ -103,22 +144,31 @@ int main(int argc, char **argv)
         if (readAll(0, buf, packetSize) != packetSize)
             break;
 
-        // Is it metadata?
-        if (packetSize >= 8 && !memcmp(buf, "ECMETA", 6))
+        // Handle headers
+        if (oggHeader.granulePos == 0) {
+            if (packetSize >= 8 && !memcmp(buf, "ECMETA", 6)) {
+                // Found our meta track
+                foundMeta = 1;
+                keepStreamNo = oggHeader.streamNo;
+            }
+            continue;
+        }
+
+        // Get the offset if applicable
+        if (!granuleOffset && oggHeader.granulePos)
+            granuleOffset = oggHeader.granulePos;
+
+        // Is this on our meta track?
+        if (foundMeta && oggHeader.streamNo != keepStreamNo)
             continue;
 
-        // Is it VAD data?
-        skip = 0;
-        if (packetSize > 8 && !memcmp(buf, "ECVADD", 6))
-            skip = 8 + *((unsigned short *) (buf+6));
-        if (packetSize < skip + 5)
+        // Adjust the granule pos
+        if (oggHeader.granulePos < granuleOffset)
             continue;
+        oggHeader.granulePos -= granuleOffset;
 
-        // Is it a header?
-        if (!memcmp(buf + skip, "Opus", 4))
-            out(&oggHeader, "opus");
-        else if (!memcmp(buf + skip, "\x7f""FLAC", 5))
-            out(&oggHeader, "flac");
+        // Now write it out
+        printf("{\"t\":%lu,\"d\":%.*s}\n", oggHeader.granulePos, packetSize, buf);
     }
 
     return 0;
