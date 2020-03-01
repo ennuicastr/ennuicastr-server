@@ -463,6 +463,11 @@ wss.on("connection", (ws, wsreq) => {
                 if (msg.length < p.length)
                     return die();
 
+                // Just ignore data in the wrong mode
+                if (recInfo.mode !== prot.mode.rec &&
+                    recInfo.mode !== prot.mode.buffering)
+                    break;
+
                 // Get out the message
                 var text = "";
                 try {
