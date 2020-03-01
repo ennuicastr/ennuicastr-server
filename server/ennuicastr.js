@@ -176,6 +176,10 @@ wss.on("connection", (ws, wsreq) => {
     var id = 0, mid = 0, flags = 0, nick = "", track = null;
     var lastGranule = 0;
 
+    // Log of recent messages to prevent floods
+    var log = [];
+    var logSz = 0;
+
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
     function die() {
@@ -439,8 +443,13 @@ wss.on("connection", (ws, wsreq) => {
                     granulePos = latestAcceptable;
                 lastGranule = granulePos;
 
-                // Then write it out (FIXME: check for wonky/too much data)
                 var chunk = msg.slice(p.length);
+
+                // Check for abuse
+                if (floodDetect({p: granulePos, l: chunk.length}))
+                    return die();
+
+                // Then write it out (FIXME: check for wonky/too much data)
                 outData.write(granulePos, id, track.packetNo++, chunk);
 
                 // Are they actually speaking?
@@ -479,6 +488,10 @@ wss.on("connection", (ws, wsreq) => {
                 // Sanitize it
                 text = (nick + ": " + text.replace(/[\x00-\x1f\x7f]/g, "")).slice(0, 2048);
 
+                // Check for abuse
+                if (floodDetect({p: lastGranule, l: text.length}))
+                    return die();
+
                 // Record it
                 recMeta({c:"text",text});
 
@@ -512,6 +525,24 @@ wss.on("connection", (ws, wsreq) => {
             default:
                 return die();
         }
+    }
+
+    // Log data and check for flooding
+    function floodDetect(d) {
+        log.push(d);
+        logSz += d.l;
+
+        // Remove everything older than 1 second
+        var early = d.p - 48000;
+        while (log[0].p < early) {
+            logSz -= log[0].l;
+            log.shift();
+        }
+
+        // And make sure we're not being flooded
+        if (logSz > 48000*3)
+            return true;
+        return false;
     }
 
     // Ping connection
