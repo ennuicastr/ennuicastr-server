@@ -89,7 +89,8 @@ CREATE TABLE IF NOT EXISTS old_recordings (
     end TEXT,
     expiry TEXT,
     tracks INTEGER,
-    cost INTEGER
+    cost INTEGER,
+    purchased TEXT
 );
 
 CREATE INDEX IF NOT EXISTS old_recordings_uid_rid_expiry ON old_recordings (uid, rid, expiry);
