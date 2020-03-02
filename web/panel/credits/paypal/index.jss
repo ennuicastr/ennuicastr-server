@@ -27,8 +27,6 @@ const log = edb.log;
 const credits = require("../credits.js");
 const login = await include("../../login/login.jss");
 
-const maxCredits = 3600 * 24;
-
 if (!request.body || !request.body.id) {
     writeHead(500);
     write("{\"success\":false}");
@@ -88,13 +86,7 @@ while (true) {
 
         // Make sure the user has defined credits
         var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {"@UID": uid});
-        if (row) {
-            // Make sure they don't have too many credits
-            if (row.credits + purchased > maxCredits) {
-                await db.runP("COMMIT;");
-                return fail("You may not have more than 24 hours worth of credit");
-            }
-        } else {
+        if (!row) {
             await db.runP("INSERT INTO credits (uid, credits, purchased, subscription, subscription_expiry) VALUES " +
                           "(@UID, 0, 0, 0, '');", {"@UID": uid});
         }
