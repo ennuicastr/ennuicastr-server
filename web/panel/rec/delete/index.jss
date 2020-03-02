@@ -58,9 +58,9 @@ if (request.query.sure) {
             // Insert the new row
             await db.runP("INSERT INTO old_recordings " +
                           "( uid,  rid,  name,  init,  start,  end," +
-                          "  expiry,  tracks,  cost) VALUES " +
+                          "  expiry,  tracks,  cost,  purchased) VALUES " +
                           "(@UID, @RID, @NAME, @INIT, @START, @END," +
-                          " @EXPIRY, @TRACKS, @COST);", {
+                          " @EXPIRY, @TRACKS, @COST, @PURCHASED);", {
                 "@UID": rec.uid,
                 "@RID": rec.rid,
                 "@NAME": rec.name,
@@ -69,7 +69,8 @@ if (request.query.sure) {
                 "@END": rec.end,
                 "@EXPIRY": rec.expiry,
                 "@TRACKS": rec.tracks,
-                "@COST": rec.cost
+                "@COST": rec.cost,
+                "@PURCHASED": rec.purchased
             });
 
             // And drop the old

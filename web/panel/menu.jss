@@ -40,7 +40,7 @@ if (!config.nomain)
     b("/panel/", "user", "Main panel");
 b("/panel/rec/", "microphone", "Recordings");
 b("/panel/subscription/", "calendar-alt", "Subscription");
-b("/panel/credits/", "dollar-sign", "Credit");
+//b("/panel/credits/", "dollar-sign", "Credit");
 if (!config.nomain)
     b(econfig.site, "home", "Home page");
 b("/panel/logout/", "sign-out-alt", "Log out");

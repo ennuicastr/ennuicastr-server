@@ -22,19 +22,31 @@ const cost = config.creditCost;
 const db = require("./db.js").db;
 
 /**
- * Convert number of credits to their purchase price in US cents
+ * Convert number of credits to their purchase price in US cents, rounding up
  */
 function creditsToCents(credits) {
-    return Math.round(credits * cost.currency / cost.credits);
+    return Math.ceil(credits * cost.currency / cost.credits);
 }
 
 /**
- * Returns a JavaScript string which converts an expression v in credits to
- * cents. We use ceil here instead of round, because they'll ultimately need to
- * pay a full cent purchase price.
+ * Convert number of credits to a fractional number of cents, as [whole, numerator, denominator]
  */
-function creditsToCentsClient(v) {
-    return "(Math.ceil((" + v + ") * " + cost.currency + " / " + cost.credits + "))";
+function creditsToCentsFractional(credits) {
+    var whole = Math.floor(credits * cost.currency / cost.credits);
+    var num = credits - (whole * cost.credits / cost.currency);
+    var den = cost.credits / cost.currency;
+
+    var x = num;
+    var y = den;
+    while (x) {
+        var tmp = x;
+        x = y % x;
+        y = tmp;
+    }
+    num /= y;
+    den /= y;
+
+    return [whole, num, den];
 }
 
 /**
@@ -47,6 +59,38 @@ function creditsToDollars(credits) {
     if (cents.length <= 2)
         return "0." + cents;
     return cents.slice(0, cents.length-2) + "." + cents.slice(cents.length-2);
+}
+
+/**
+ * Convert a number of credits to their purchase price in US dollars precisely, as a string
+ */
+function creditsToDollarsFractional(credits) {
+    var parts = creditsToCentsFractional(credits);
+
+    // Get the whole part
+    var cents = parts[0] + "";
+    while (cents.length < 3)
+        cents = "0" + cents;
+    cents = cents.slice(0, cents.length-2) + "." + cents.slice(cents.length-2);
+
+    // Then the fractional part
+    var n = parts[1];
+    var d = parts[2];
+    if (n === 0)
+        {} // Nothing
+    else if (n === 1 && d === 4)
+        cents += "¼";
+    else if (n === 1 && d === 2)
+        cents += "½";
+    else if (n === 3 && d === 4)
+        cents += "¼";
+    else if (n === 1 && d === 3)
+        cents += "⅓";
+    else if (n === 2 && d === 3)
+        cents += "⅔";
+    else
+        cents += " " + n + "/" + d;
+    return cents;
 }
 
 /**
@@ -107,8 +151,13 @@ async function accountCredits(uid) {
 /**
  * Standard "you have n credits" message for clients
  */
-function creditsMessage(credits) {
-    return "You have $" + creditsToDollars(credits.credits) + " in credit (" + creditsToHM(credits.credits) + " recording time).";
+function creditsMessage(credits, fractional) {
+    var d;
+    if (fractional)
+        d = creditsToDollarsFractional(credits.credits);
+    else
+        d = creditsToDollars(credits.credits);
+    return "You have $" + d + " in credit (" + creditsToHM(credits.credits) + " recording time).";
 }
 
 module.exports = {

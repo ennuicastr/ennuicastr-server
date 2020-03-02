@@ -807,7 +807,7 @@ async function startRec() {
     }
 
     // Start crediting
-    setTimeout(chargeCredits, 1000*60);
+    chargeCreditsTimeout = setTimeout(chargeCreditsLoop, 1000*60);
 
     // And log it
     log("recording-start", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
@@ -839,7 +839,14 @@ function awaitBuffering() {
 async function stopRec() {
     modeUpdate(prot.mode.finished);
 
-    // First update the status in the database
+    // Finish charging credits
+    if (chargeCreditsTimeout) {
+        clearTimeout(chargeCreditsTimeout);
+        chargeCreditsTimeout = null;
+        await chargeCredits();
+    }
+
+    // Update the status in the database
     while (true) {
         try {
             await db.runP("UPDATE recordings SET status=@MODE, end=datetime('now') WHERE rid=@RID;", {
@@ -961,10 +968,20 @@ async function chargeCredits() {
 
     // Inform masters
     informMastersCredit(charge);
+}
+
+// Apply credits automatically every minute
+async function chargeCreditsLoop() {
+    if (chargeCreditsTimeout) {
+        clearTimeout(chargeCreditsTimeout);
+        chargeCreditsTimeout = null;
+    }
+
+    await chargeCredits();
 
     // Do another round
     if (recInfo.mode === prot.mode.rec)
-        setTimeout(chargeCredits, 1000*60);
+        chargeCreditsTimeout = setTimeout(chargeCreditsLoop, 1000*60);
 }
 
 // Update on a speaking status change

@@ -29,7 +29,7 @@ await include("../head.jss", {title: "Credits", paypal: true});
 
 if (accountCredits.subscription) {
 ?>
-    <section class="wrapper special">
+    <section class="wrapper special style1">
         <p>You have a subscription, so you don't need credit for covered recordings. Any credit you had before subscribing will still be available if you cancel.</p>
     </section>
 <?JS
@@ -37,11 +37,12 @@ if (accountCredits.subscription) {
 
 if (accountCredits.subscription < 2) {
 ?>
-    <section class="wrapper special<?JS= accountCredits.subscription?" style1":""?>">
+    <section class="wrapper special">
         <p>Recording is currently free. The whole credit system is just here for testing purposes. It shouldn't be able to charge real money, but if you try it and it does, you're just giving me free money for no reason. Thanks!</p>
 
-        <p id="current-credits"><?JS= credits.creditsMessage(accountCredits) ?></p>
+        <p id="current-credits"><?JS= credits.creditsMessage(accountCredits, true) ?></p>
 
+        <?JS /* ?>
         <p>Buy $<input type="text" id="amount" size=2 value="2" /> of credit:</p>
         <div id="paypal-button-container"></div>
         <p id="invalid1" class="warning">The minimum transaction is $2.</p>
@@ -140,6 +141,7 @@ if (accountCredits.subscription < 2) {
             });
         })();
         </script>
+        <?JS */ ?>
     </section>
 
 <?JS
