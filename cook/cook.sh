@@ -69,6 +69,10 @@ do
             FILTER="$FILTER,dynaudnorm"
             ;;
 
+        sample)
+            FILTER="$FILTER[aud]; amovie=$SCRIPTBASE/sample.flac,adelay=@DELAY@,aloop=loop=-1:size=2880000[samp]; [aud][samp]amix=2:duration=shortest"
+            ;;
+
         *)
             printf 'Unrecognized argument "%s"\n' "$arg" >&2
             exit 1
@@ -291,10 +295,14 @@ do
     else
         CODEC=`echo "$CODECS" | sed -n "$c"p`
         [ "$CODEC" = "opus" ] && CODEC=libopus
+
+        LFILTER="$(echo "$FILTER" | sed 's/@DELAY@/'"$(node -p '18500+Math.random()*2000')"'/g')"
+
         timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
             timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggstender" $sno |
             timeout $DEF_TIMEOUT $NICE ffmpeg -codec $CODEC -copyts -i - \
-            -af "$FILTER" \
+            -filter_complex '[0:a]'"$LFILTER"'[aud]' \
+            -map '[aud]' \
             -flags bitexact -f wav - |
             timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/wavduration" "$T_DURATION" |
             (

@@ -159,7 +159,7 @@ int main(int argc, char **argv)
             granuleOffset = oggHeader.granulePos;
 
         // Is this on our meta track?
-        if (foundMeta && oggHeader.streamNo != keepStreamNo)
+        if (!foundMeta || oggHeader.streamNo != keepStreamNo)
             continue;
 
         // Adjust the granule pos
