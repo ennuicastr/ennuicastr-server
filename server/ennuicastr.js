@@ -592,7 +592,11 @@ wss.on("connection", (ws, wsreq) => {
         var ret = Buffer.alloc(p.length + 4);
         ret.writeUInt32LE(prot.ids.info, 0);
         ret.writeUInt32LE(prot.info.creditCost, p.key);
-        ret.writeUInt32LE(config.creditCost.currency, p.value);
+        var neededSubscription = ((recInfo.format==="flac"||recInfo.continuous)?2:1);
+        if (recInfo.subscription >= neededSubscription)
+            ret.writeUInt32LE(0, p.value);
+        else
+            ret.writeUInt32LE(config.creditCost.currency, p.value);
         ret.writeUInt32LE(config.creditCost.credits, p.value + 4);
         ws.send(ret);
 
@@ -728,6 +732,13 @@ async function recvRecInfo(r) {
 
         } catch (ex) {}
     }
+
+    // Check the user's subscription status for pricing
+    var row = await db.getP("SELECT subscription FROM credits WHERE uid=@UID;", {"@UID": r.uid});
+    if (row)
+        r.subscription = row.subscription;
+    else
+        r.subscription = 0;
 
     // Open all the output files
     function s(footer) {
