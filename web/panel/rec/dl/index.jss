@@ -41,11 +41,11 @@ const accountCredits = await creditsj.accountCredits(uid);
 
 /* Account for the weird case of free recordings (shouldn't happen, but bug in
  * their favor) */
-if (recInfo.cost === 0 && !recInfo.purchased)
+if (recInfo.cost === 0 && !recInfo.purchased && recInfo.status >= 0x30)
     recInfo.purchased = "1";
 
 // Possibly purchase it now
-if (request.query.p && !recInfo.purchased) {
+if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
     while (true) {
         try {
             await db.runP("BEGIN TRANSACTION;");
@@ -210,7 +210,10 @@ if (!recInfo.purchased) {
         <p>This recording will cost $<?JS= credits.creditsToDollars(recInfo.cost) ?>.</p>
 
         <?JS
-        if (recInfo.cost <= accountCredits.credits || true /* BETA */) {
+        if (recInfo.status < 0x30) {
+            ?><p>Purchase options will be available when the recording is finished. You may download a sample even while recording.</p><?JS
+
+        } else if (recInfo.cost <= accountCredits.credits || true /* BETA */) {
             // They have enough to buy on credits
             ?>
             <p><?JS= credits.creditsMessage(accountCredits) ?></p>
