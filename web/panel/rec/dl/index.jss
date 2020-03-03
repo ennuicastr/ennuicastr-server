@@ -84,6 +84,10 @@ if (request.query.p && !recInfo.purchased) {
             await db.runP("ROLLBACK;");
         }
     }
+
+    // Redirect to the normal download site
+    writeHead(302, {"location": "?i=" + recInfo.rid.toString(36)});
+    return;
 }
 
 const dlName = (function() {
@@ -108,6 +112,13 @@ function formatToName(format) {
 
 // Maybe do an actual download
 if (request.query.f) {
+    if (!request.query.s && !recInfo.purchased) {
+        // Trying to do a full download of an un-purchased recording
+        writeHead(402);
+        write("You must purchase this recording before downloading a non-sample version.");
+        return;
+    }
+
     var format = "flac", container = "zip", mext = "flac",
         mime = "application/zip";
     switch (request.query.f) {
@@ -128,7 +139,7 @@ if (request.query.f) {
 
     writeHead(200, {
         "content-type": mime,
-        "content-disposition": "attachment; filename=\"" + dlName + "." + mext + ".zip\""
+        "content-disposition": "attachment; filename=\"" + dlName + (request.query.s?"-sample":"") + "." + mext + ".zip\""
     });
 
     // Give plenty of time
@@ -136,7 +147,11 @@ if (request.query.f) {
 
     // Jump through to the actual downloader
     await new Promise(function(resolve) {
-        var p = cp.spawn(config.repo + "/cook/cook.sh", [config.rec, safeName, rid, format, container], {
+        var args = [config.rec, safeName, rid, format, container];
+        if (request.query.s)
+            args.push("sample");
+
+        var p = cp.spawn(config.repo + "/cook/cook.sh", args, {
             stdio: ["ignore", "pipe", "ignore"]
         });
 
@@ -154,9 +169,11 @@ if (request.query.f) {
 var mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
 var recommend = (mac?"heaac":"flac");
 
+var samplePost = "";
+
 // Function to show a download button
 function showDL(format) {
-    ?><a class="button dl" href="?i=<?JS= recInfo.rid.toString(36) ?>&f=<?JS= format ?>" onclick="disableDownloads();"><?JS= formatToName(format) ?></a> <?JS
+    ?><a class="button dl" href="?i=<?JS= recInfo.rid.toString(36) ?>&f=<?JS= format + samplePost ?>" onclick="disableDownloads();"><?JS= formatToName(format) ?></a> <?JS
 }
 
 // Since we show the download header at different points, a function to generate it
@@ -180,18 +197,20 @@ function maybeSample() {
 await include("../../head.jss", {title: "Download", paypal: true});
 
 if (!recInfo.purchased) {
+    samplePost = "&s=1";
 ?>
     <section class="wrapper special style1" id="purchase-dialog">
         <?JS dlHeader(); ?>
 
-        <p>(<strong>NOTE:</strong> During closed beta, you may ignore this message and download complete audio below.)</p>
+        <?JS /* BETA */ ?>
+        <p>(<strong>NOTE:</strong> During closed beta, you essentially have infinite credit. Choose to use your credit below to download the non-sample version.)</p>
 
         <p>You have not purchased this recording and do not have a subscription<?JS= accountCredits.subscription?" at the required level":"" ?>. You may <a href="#sample">download a sample</a> of this recording below, purchase the recording here and then download it, or <a href="/panel/subscription/">subscribe</a> at an appropriate level and then download it.</p>
 
         <p>This recording will cost $<?JS= credits.creditsToDollars(recInfo.cost) ?>.</p>
 
         <?JS
-        if (recInfo.cost <= accountCredits.credits) {
+        if (recInfo.cost <= accountCredits.credits || true /* BETA */) {
             // They have enough to buy on credits
             ?>
             <p><?JS= credits.creditsMessage(accountCredits) ?></p>
