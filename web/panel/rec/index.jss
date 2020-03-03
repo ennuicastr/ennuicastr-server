@@ -39,6 +39,7 @@ await include("../head.jss", {title: "Recordings"});
 <section>
     <header class="align-center"><h2>Available recordings</h2></header>
 
+    <div style="overflow: auto">
     <table id="available-recordings">
         <thead>
         <tr><th>Name</th><th>Start date<br/>Expiry date</th><th>Status</th>
@@ -169,6 +170,7 @@ if (rows.length === 0) {
 }
 ?>
     </tbody></table>
+    </div>
 </section>
 
 <script type="text/javascript" src="/assets/js/tablesort.min.js"></script>
