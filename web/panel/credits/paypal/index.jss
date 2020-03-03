@@ -27,11 +27,25 @@ const log = edb.log;
 const credits = require("../credits.js");
 const login = await include("../../login/login.jss");
 
-if (!request.body || !request.body.id) {
+if (!request.body || !request.body.id || typeof(request.body.id) !== "string") {
     writeHead(500);
     write("{\"success\":false}");
     return;
 }
+
+// Sanitize the order ID
+const oid = request.body.id.replace(/[^A-Za-z0-9_-]/g, "_");
+
+// If they asked for a specific recording ID, that affects the max credits
+const creditsBuffer = await (async function() {
+    if (!request.body.rid || typeof(request.body.rid) !== "number") return 0;
+    var row = await db.getP("SELECT cost FROM recordings WHERE uid=@UID AND rid=@RID;", {
+        "@UID": uid,
+        "@RID": request.body.rid
+    });
+    if (!row) return 0;
+    return row.cost;
+})();
 
 writeHead(200, {"content-type": "application/json"});
 
@@ -42,7 +56,7 @@ function fail(reason) {
 const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + config.paypal.secret).toString("base64");
 
 // Get the order details
-var order = await nrc.getPromise("https://" + config.paypal.api + "/v2/checkout/orders/" + request.body.id, {
+var order = await nrc.getPromise("https://" + config.paypal.api + "/v2/checkout/orders/" + oid, {
     headers: {
         "content-type": "application/json",
         authorization
@@ -89,6 +103,13 @@ while (true) {
         if (!row) {
             await db.runP("INSERT INTO credits (uid, credits, purchased, subscription, subscription_expiry) VALUES " +
                           "(@UID, 0, 0, 0, '');", {"@UID": uid});
+            row = {credits: 0};
+        }
+
+        // Check that this won't go past max credits
+        if (row.credits + purchased > config.maxCredits + creditsBuffer) {
+            await db.runP("ROLLBACK;");
+            return fail("You may not have more than 24 hours worth of credit");
         }
 
         // Then update it
@@ -105,7 +126,7 @@ while (true) {
 }
 
 // Now capture the purchase
-var capture = await nrc.postPromise("https://" + config.paypal.api + "/v2/checkout/orders/" + request.body.id + "/capture", {
+var capture = await nrc.postPromise("https://" + config.paypal.api + "/v2/checkout/orders/" + oid + "/capture", {
     headers: {
         "content-type": "application/json",
         authorization
