@@ -50,6 +50,7 @@ if (request.query.p && !recInfo.purchased) {
         try {
             await db.runP("BEGIN TRANSACTION;");
 
+            /* BETA
             // Decrease credits
             await db.runP("UPDATE credits SET credits=credits-@COST WHERE uid=@UID;", {
                 "@UID": uid,
@@ -63,9 +64,10 @@ if (request.query.p && !recInfo.purchased) {
                 await db.runP("ROLLBACK;");
                 break;
             }
+            */
 
             // Mark as purchased
-            await db.runP("UPDATE recordings SET purchased=datetime('now') WHERE uid=@UID and rid=@RID;", {
+            await db.runP("UPDATE recordings SET purchased=datetime('now') WHERE uid=@UID AND rid=@RID;", {
                 "@UID": uid,
                 "@RID": rid
             });

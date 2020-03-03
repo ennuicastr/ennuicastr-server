@@ -27,7 +27,7 @@ const util = require("util");
 const db = require("../db.js");
 
 await include("../../head.jss", {menu: false, title: "Log in"});
-/*
+/* BETA
 ?>
 
 <section class="wrapper special">
@@ -43,6 +43,7 @@ await include("../../head.jss", {menu: false, title: "Log in"});
 <?JS */ ?>
 
 <section class="wrapper special">
+    <?JS /* BETA */ ?>
     <p>Sorry, but Ennuicastr is currently in early beta. If you've been invited to participate, you should have received a specialized login link.</p>
 
     <p><a href="/">Return to home page</a></p>
