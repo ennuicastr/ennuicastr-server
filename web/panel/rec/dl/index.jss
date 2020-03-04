@@ -25,6 +25,8 @@ if (!request.query.i)
 const rid = Number.parseInt(request.query.i, 36);
 
 const cp = require("child_process");
+const fs = require("fs");
+
 const config = require("../config.js");
 const edb = require("../db.js");
 const db = edb.db;
@@ -119,7 +121,7 @@ if (request.query.f) {
         return;
     }
 
-    var format = "flac", container = "zip", mext = "flac",
+    var format = "flac", container = "zip", mext = "flac", ext = "zip",
         mime = "application/zip";
     switch (request.query.f) {
         case "aup":
@@ -135,32 +137,58 @@ if (request.query.f) {
         case "opus":
             format = mext = "opus";
             break;
+        case "raw":
+            format = "raw";
+            container = "ogg";
+            mext = null;
+            ext = "ogg";
+            mime = "audio/ogg";
+            if (request.query.s) {
+                writeHead(402);
+                write("Raw audio is only available with purchase.");
+                return;
+            }
+            break;
     }
 
     writeHead(200, {
         "content-type": mime,
-        "content-disposition": "attachment; filename=\"" + dlName + (request.query.s?"-sample":"") + "." + mext + ".zip\""
+        "content-disposition": "attachment; filename=\"" + dlName + (request.query.s?"-sample":"") + (mext?"."+mext:"") + "." + ext + "\""
     });
 
     // Give plenty of time
     response.setTimeLimit(1000*60*60*3);
 
-    // Jump through to the actual downloader
-    await new Promise(function(resolve) {
-        var args = [config.rec, safeName, rid, format, container];
-        if (request.query.s)
-            args.push("sample");
+    if (format === "raw") {
+        // Do the raw download
+        async function sendPart(part) {
+            await new Promise(function(res, rej) {
+                var st = fs.createReadStream(config.rec + "/" + rid + ".ogg." + part);
+                st.on("data", write);
+                st.on("end", res);
+            });
+        }
 
-        var p = cp.spawn(config.repo + "/cook/cook.sh", args, {
-            stdio: ["ignore", "pipe", "ignore"]
+        await sendPart("header1");
+        await sendPart("header2");
+        await sendPart("data");
+
+    } else {
+        // Jump through to the actual downloader
+        await new Promise(function(resolve) {
+            var args = [config.rec, safeName, rid, format, container];
+            if (request.query.s)
+                args.push("sample");
+
+            var p = cp.spawn(config.repo + "/cook/cook.sh", args, {
+                stdio: ["ignore", "pipe", "ignore"]
+            });
+
+            p.stdout.on("data", write);
+            p.stdout.on("end", resolve);
         });
 
-        p.stdout.on("data", (chunk) => {
-            write(chunk);
-        });
-
-        p.stdout.on("end", resolve);
-    });
+    }
 
     return;
 }
@@ -336,6 +364,12 @@ if (!recInfo.purchased) {
     <p><?JS
     [(mac?"flac":"heaac"), "aac", "opus"].forEach(showDL);
     ?></p>
+
+    <?JS
+    if (recInfo.purchased) {
+        ?><p>Raw audio (NOTE: No audio editor will correctly read this file!): <a href="?i=<?JS= recInfo.rid.toString(36) ?>&f=raw">Raw</a></p><?JS
+    }
+    ?>
 </section>
 
 <?JS
