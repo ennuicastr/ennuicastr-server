@@ -21,7 +21,7 @@
             dark = !dark;
             setTheme();
             setButton();
-            document.cookie = "ECTHEME=" + theme + ";path=/";
+            document.cookie = "ECTHEME=" + theme + ";path=/;max-age=15768000";
 
             ev.preventDefault();
             return false;
