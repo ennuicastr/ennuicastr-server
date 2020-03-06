@@ -25,6 +25,8 @@ const http = require("http");
 const https = require("https");
 const ws = require("ws");
 
+const pauseable = require("pauseable");
+
 const config = require("../config.js");
 const edb = require("../db.js");
 const db = edb.db;
@@ -111,8 +113,11 @@ var port = null, tryPort;
 // When the recording started (now)
 var startTime = process.hrtime();
 
-// When the recording really started (mode=rec), as a granule position
-var recGranule = null;
+// When we last paused as a granule position
+var lastPaused = 0;
+
+// When we last resumed as a granule position
+var lastResumed = 0;
 
 // Current active connections, by ID
 var connections = [null], masters = [null];
@@ -428,8 +433,8 @@ wss.on("connection", (ws, wsreq) => {
                     return die();
 
                 // Just ignore data in the wrong mode
-                if (recInfo.mode !== prot.mode.rec &&
-                    recInfo.mode !== prot.mode.buffering)
+                if (recInfo.mode < prot.mode.rec ||
+                    recInfo.mode >= prot.mode.finished)
                     break;
 
                 // Get the granule position
@@ -448,6 +453,11 @@ wss.on("connection", (ws, wsreq) => {
                 // Check for abuse
                 if (floodDetect({p: granulePos, l: chunk.length}))
                     return die();
+
+                // Account for pauses
+                if (granulePos >= lastPaused &&
+                    (granulePos < lastResumed || recInfo.mode === prot.mode.paused))
+                    break;
 
                 // Then write it out (FIXME: check for wonky/too much data)
                 outData.write(granulePos, id, track.packetNo++, chunk);
@@ -639,14 +649,20 @@ wss.on("connection", (ws, wsreq) => {
 
                 if (toMode === recInfo.mode) {
                     // Nothing to do
-                } else if (toMode > recInfo.mode &&
-                           (toMode === prot.mode.rec ||
-                            toMode === prot.mode.finished)) {
+                } else if (toMode > recInfo.mode) {
                     // Delegate to specialized functions for starting or stopping
                     if (toMode === prot.mode.rec)
                         startRec();
+                    else if (toMode === prot.mode.paused)
+                        pauseRec();
                     else if (toMode === prot.mode.finished)
                         endRec();
+                    else
+                        return die();
+
+                } else if (toMode === prot.mode.rec &&
+                           recInfo.mode === prot.mode.paused) {
+                    resumeRec();
 
                 } else {
                     // Invalid mode change!
@@ -803,7 +819,7 @@ function modeUpdate(toMode) {
 // Start recording
 async function startRec() {
     // Update the mode
-    recGranule = curGranule();
+    lastResumed = curGranule();
     modeUpdate(prot.mode.rec);
 
     // First update the status in the database
@@ -818,10 +834,40 @@ async function startRec() {
     }
 
     // Start crediting
-    chargeCreditsTimeout = setTimeout(chargeCreditsLoop, 1000*60);
+    chargeCreditsTimeout = pauseable.setTimeout(chargeCreditsLoop, 1000*60);
 
     // And log it
     log("recording-start", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
+}
+
+// Pause recording
+async function pauseRec() {
+    // Update the mode
+    lastPaused = curGranule();
+    modeUpdate(prot.mode.paused);
+
+    // Record it in the metadata
+    recMeta({c: "pause"});
+
+    // Pause crediting
+    if (chargeCreditsTimeout)
+        chargeCreditsTimeout.pause();
+
+    // FIXME: Limit how long you can sit around paused
+}
+
+// Resume a paused recording
+async function resumeRec() {
+    // Update the mode
+    lastResumed = curGranule();
+    modeUpdate(prot.mode.rec);
+
+    // Record it in the metadata
+    recMeta({c: "resume"});
+
+    // Resume crediting
+    if (chargeCreditsTimeout)
+        chargeCreditsTimeout.resume();
 }
 
 /* End the recording. This is distinct from stopRec, because it still has to
@@ -852,7 +898,7 @@ async function stopRec() {
 
     // Finish charging credits
     if (chargeCreditsTimeout) {
-        clearTimeout(chargeCreditsTimeout);
+        chargeCreditsTimeout.clear();
         chargeCreditsTimeout = null;
         await chargeCredits();
     }
@@ -982,17 +1028,22 @@ async function chargeCredits() {
 }
 
 // Apply credits automatically every minute
+var chargeCreditsTimeout = null;
 async function chargeCreditsLoop() {
     if (chargeCreditsTimeout) {
-        clearTimeout(chargeCreditsTimeout);
+        chargeCreditsTimeout.clear();
         chargeCreditsTimeout = null;
     }
 
     await chargeCredits();
 
     // Do another round
-    if (recInfo.mode === prot.mode.rec)
-        chargeCreditsTimeout = setTimeout(chargeCreditsLoop, 1000*60);
+    if (recInfo.mode === prot.mode.rec ||
+        recInfo.mode === prot.mode.paused) {
+        chargeCreditsTimeout = pauseable.setTimeout(chargeCreditsLoop, 1000*60);
+        if (recInfo.mode === prot.mode.paused)
+            chargeCreditsTimeout.pause();
+    }
 }
 
 // Update on a speaking status change
