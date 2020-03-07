@@ -36,7 +36,7 @@ const credits = require("../credits.js");
 const creditsj = await include("../../credits.jss");
 
 const recInfo = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
-if (recInfo.uid !== uid)
+if (!recInfo || recInfo.uid !== uid)
     return writeHead(302, {"location": "/panel/rec/"});
 
 const accountCredits = await creditsj.accountCredits(uid);
