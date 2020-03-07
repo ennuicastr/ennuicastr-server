@@ -285,7 +285,8 @@ do
     [ "$O_USER" ] || unset O_USER
     O_FN="$c${O_USER+-}$O_USER.$ext"
     O_FFN="$OUTDIR/$O_FN"
-    T_DURATION=`timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $c < $ID.ogg.data`
+    T_DURATION=`timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
+        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $c`
     sno=`echo "$STREAM_NOS" | sed -n "$c"p`
     if [ "$FORMAT" = "copy" -o "$CONTAINER" = "mix" ]
     then

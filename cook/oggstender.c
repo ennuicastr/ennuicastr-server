@@ -118,16 +118,41 @@ void writeOgg(struct OggHeader *header, const unsigned char *data, uint32_t size
 
 int main(int argc, char **argv)
 {
+    // Which stream are we keeping?
     uint32_t keepStreamNo;
-    uint64_t trueGranulePos = 0, granuleOffset = 0;
+
+    // Have we seen a meta track? (Used for pauses)
+    int foundMeta = 0;
+    uint32_t metaStreamNo = 0;
+
+    // What's the true granule position (i.e., our output)
+    uint64_t trueGranulePos = 0;
+
+    // What's the highest granule position we've seen at all?
+    uint64_t greatestGranulePos = 0;
+
+    // What should we be subtracting from our granule position?
+    uint64_t granuleOffset = 0;
+
+    // What was the sequence number of the last packet we saw?
     uint32_t lastSequenceNo = 0;
+
+    // Size of our packet and how many bytes to skip
     uint32_t packetSize, skip;
+
+    // Buffer info
     unsigned char segmentCount, segmentVal;
     unsigned char *buf = NULL;
     uint32_t bufSz = 0;
+
+    // Header
     struct OggPreHeader preHeader;
+
+    // VAD and correction
     unsigned char vadLevel = 0, correctTimestampsUp = 0,
         correctTimestampsDown = 0, lastWasSilence = 1;
+
+    // Sample rate if we're doing FLAC
     uint32_t flacRate = 0;
 
     if (argc != 2) {
@@ -168,6 +193,23 @@ int main(int argc, char **argv)
         // Get the offset if applicable
         if (!granuleOffset && oggHeader.granulePos)
             granuleOffset = oggHeader.granulePos;
+
+        // Look for a meta track
+        if (!foundMeta && oggHeader.granulePos == 0) {
+            if (packetSize >= 8 && !memcmp(buf, "ECMETA", 6)) {
+                foundMeta = 1;
+                metaStreamNo = oggHeader.streamNo;
+            }
+        }
+
+        // Check for unpausing and adjust
+        if (oggHeader.granulePos > greatestGranulePos) {
+            if (foundMeta && oggHeader.streamNo == metaStreamNo &&
+                !strncmp((char *) buf, "{\"c\":\"resume\"}", packetSize)) {
+                granuleOffset += oggHeader.granulePos - greatestGranulePos;
+            }
+            greatestGranulePos = oggHeader.granulePos;
+        }
 
         // Do we care?
         if (oggHeader.streamNo != keepStreamNo)

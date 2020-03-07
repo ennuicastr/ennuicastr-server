@@ -55,7 +55,10 @@ ssize_t readAll(int fd, void *vbuf, size_t count)
 int main(int argc, char **argv)
 {
     int32_t streamNo = -1;
+    int foundMeta = 0;
+    uint32_t metaStreamNo = 0;
     uint64_t firstGranulePos = 0, lastGranulePos = 0;
+    uint64_t greatestGranulePos = 0, granuleOffset = 0;
     uint32_t packetSize;
     unsigned char segmentCount, segmentVal;
     unsigned char buf[1024];
@@ -100,6 +103,23 @@ int main(int argc, char **argv)
         if (!firstGranulePos && oggHeader.granulePos)
             firstGranulePos = oggHeader.granulePos;
 
+        // Look for a meta track
+        if (!foundMeta && oggHeader.granulePos == 0) {
+            if (packetSize >= 8 && !memcmp(buf, "ECMETA", 6)) {
+                foundMeta = 1;
+                metaStreamNo = oggHeader.streamNo;
+            }
+        }
+
+        // Check for unpausing and adjust
+        if (oggHeader.granulePos > greatestGranulePos) {
+            if (foundMeta && oggHeader.streamNo == metaStreamNo &&
+                !strncmp((char *) buf, "{\"c\":\"resume\"}", packetSize)) {
+                granuleOffset += oggHeader.granulePos - greatestGranulePos;
+            }
+            greatestGranulePos = oggHeader.granulePos;
+        }
+
         if (streamNo >= 0 && oggHeader.streamNo != streamNo)
             continue;
 
@@ -107,7 +127,7 @@ int main(int argc, char **argv)
             lastGranulePos = oggHeader.granulePos;
     }
 
-    printf("%f\n", ((double) (lastGranulePos-firstGranulePos))/48000.0+2);
+    printf("%f\n", ((double) (lastGranulePos-firstGranulePos-granuleOffset))/48000.0+2);
 
     return 0;
 }
