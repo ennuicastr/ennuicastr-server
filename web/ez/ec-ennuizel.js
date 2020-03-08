@@ -679,7 +679,7 @@ var Ennuizel = (function(ez) {
         // Now do the actual export
         p = p.then(function() {
             var format = getExportFormat(formats[opts.format]);
-            return ez.exportProject(""+id, format);
+            return ez.exportProject("ec-" + id.toString(36), format);
 
         });
 
