@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS recordings (
     key INTEGER,
     /* Key required to join as master */
     master INTEGER,
+    /* Key to download with Ennuizel (websocket) */
+    wskey INTEGER,
     /* Current recording status */
     status INTEGER,
     /* When the recording was initialized */

@@ -33,6 +33,8 @@ var Ennuizel = (function(ez) {
     var params = new URLSearchParams(url.search);
     var idS = params.get("i");
     var id = Number.parseInt(idS, 36);
+    var keyS = params.get("k");
+    var key = Number.parseInt(keyS, 36);
     var wizardOptsS = params.get("w");
     var wizardOpts = Number.parseInt(wizardOptsS, 36);
     var lang = params.get("lang");
@@ -43,6 +45,10 @@ var Ennuizel = (function(ez) {
 
     // Our supported formats, as a subset of the export formats, named by codec
     var formats = ["flac", "aac", "libvorbis", "libopus", "wavpack", "pcm_s16le", "alac"];
+
+    // We don't want the ID and key to actually be in the URL
+    url.search = "";
+    window.history.pushState({}, "Ennuizel", url.toString());
 
     // Once we have the JSON, the info
     var info = null;
@@ -249,12 +255,11 @@ var Ennuizel = (function(ez) {
             return res.text();
 
         }).then(function(res) {
-            res = JSON.parse(res);
-            info = {tracks: res};
+            info = JSON.parse(res);
 
             // Count the tracks
             var length = 1;
-            while (res[length]) {
+            while (info.tracks[length]) {
                 tracks.push(length);
                 length++;
             }
@@ -328,32 +333,134 @@ var Ennuizel = (function(ez) {
     function doDownload(thread, trackNo) {
         trackNo = tracks[trackNo];
 
-        // The name for this track
+        var sock = new WebSocket("wss://" + url.host + "/panel/rec/ws");
+        sock.binaryType = "arraybuffer";
+
+        // First we need to send our login and get an ack
+        return new Promise(function(res, rej) {
+            sock.onopen = res;
+            sock.onerror = function(err) {
+                rej(new Error(err));
+            };
+
+        }).then(function() {
+            // Send our login and anticipate acknowledgement
+            var loginbuf = new DataView(new ArrayBuffer(16));
+            loginbuf.setUint32(0, 0x11, true);
+            loginbuf.setUint32(4, id, true);
+            loginbuf.setUint32(8, key, true);
+            loginbuf.setInt32(12, trackNo, true);
+            sock.send(loginbuf.buffer);
+
+            return new Promise(function(res, rej) {
+                sock.onmessage = res;
+                sock.onclose = sock.onerror = function(err) {
+                    rej(new Error(err));
+                };
+            });
+
+        }).then(function(msg) {
+            msg = new DataView(msg.data);
+            if (msg.getUint32(0, true) !== 0 ||
+                msg.getUint32(4, true) !== 0x11) {
+                sock.close();
+                throw new Error(l("invalid"));
+            }
+
+            // Now we're into normal message mode
+            return connection(sock, thread, trackNo);
+
+        }).catch(reportError);
+    }
+
+    // The main loop for a single download
+    function connection(sock, thread, trackNo) {
+        var la = libav.targets[thread];
+
+        // And we have a message buffer for handling
+        var msgbuf = [];
+
+        // Are we currently handling messages?
+        var handling = false;
+
+        // Is the stream over?
+        var eos = false;
+
+        // Handler to send a packet (or null for EOF) to Ennuizel
+        var packet = null;
+
+        /* This whole function returns a promise which will resolve after it's
+         * done, so get the resolution here */
+        var res, rej;
+        var promise = new Promise(function(pres, prej) {
+            res = pres;
+            rej = prej;
+        });
+
+        /* Our message receiver fills up the message buffer and starts the
+         * handler */
+        sock.onmessage = function(msg) {
+            if (error) return;
+            msg = new Uint8Array(msg.data);
+            msgbuf.push(msg);
+
+            if (!handling)
+                handle();
+        };
+
+        // When we're closed, we're done
+        sock.onclose = function() {
+            eos = true;
+            if (!handling)
+                handle();
+        };
+
+        // If there's an error, die
+        sock.onerror = function(err) {
+            reportError(new Error(err));
+            rej(err);
+        };
+
+        // Start our new track and we're done for now
         var name;
         if (trackNo in info.tracks) {
             name = trackNo + "-" + info.tracks[trackNo].nick;
         } else {
             name = trackNo + "";
         }
+        newTrack();
+        return promise;
 
-        // Packet handler
-        var packet = null;
+        // Data handler
+        function handle() {
+            handling = true;
 
-        var la = libav.targets[thread];
-        var rdr, buf;
+            // Get a message from the queue and acknowledge it
+            var msg = null;
+            if (msgbuf.length > 0)
+                msg = ack(sock, msgbuf.shift());
 
-        // Begin downloading this track
-        return fetch("/panel/rec/dl/?i=" + id.toString(36) + "&f=raw&t=" + trackNo.toString(36)).then(function(res) {
-            // Now we're into normal message mode
-            rdr = res.body.getReader();
+            // Perhaps we're done?
+            if (msg === null) {
+                if (eos) {
+                    // We're done!
+                    return packet(null).then(function() {
+                        res(thread);
+                        /* If we're not rendering, it's safe to show the tracks
+                         * in multithreaded mode */
+                         if (ez.skipRendering)
+                             ez.updateTrackViews();
+                    }).catch(rej);
+                } else {
+                    // Need more data
+                    handling = false;
+                    return;
+                }
+            }
 
-            // Create a track
-            newTrack();
-
-            // And start our downloading
-            return rdr.read().then(readHandler);
-
-        }).catch(reportError);
+            // Send this packet through
+            return packet(msg).then(handle).catch(reportError);
+        }
 
         // Create a new track
         function newTrack() {
@@ -466,7 +573,6 @@ var Ennuizel = (function(ez) {
                 }
 
                 // Send the data we have
-                console.log(name + " sending.");
                 var p = la.ff_reader_dev_send("dev.ogg", data).then(function() {
                     data = new Uint8Array(0);
                     if (chunk === null)
@@ -474,7 +580,6 @@ var Ennuizel = (function(ez) {
 
                 }).then(function() {
                     // Tell them we have more
-                    console.log(name + " sent.");
                     var waiter = new Promise(function(res, rej) {
                         downRes = res;
                     });
@@ -497,26 +602,6 @@ var Ennuizel = (function(ez) {
             } else {
                 return downPromise;
             }
-        }
-
-        // Handler for all data reading
-        function readHandler(res) {
-            if (res.done) {
-                // We're done!
-                return packet(null).then(function() {
-                    /* If we're not rendering, it's safe to show the tracks
-                     * in multithreaded mode */
-                    if (ez.skipRendering)
-                        ez.updateTrackViews();
-
-                    return thread;
-                });
-            }
-
-            // Not done, so must have data
-            return packet(res.value).then(function() {
-                return rdr.read();
-            }).then(readHandler);
         }
     }
 

@@ -8,6 +8,7 @@
     "rec": "~/ennuicastr-server/rec",
     "cert": "~/cert",
     "sock": "/tmp/ennuicastr-server.sock",
+    "ezsock": "/tmp/ennuicastr-ennuizel-server.sock",
 
     "creditCost": {
         "currency": 100,

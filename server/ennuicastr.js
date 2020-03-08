@@ -721,6 +721,7 @@ async function recvRecInfo(r) {
     // Make the recording key and master key
     r.key = ~~(Math.random()*2000000000);
     r.master = ~~(Math.random()*2000000000);
+    r.wskey = ~~(Math.random()*2000000000);
 
     // Make a recording ID
     var rid;
@@ -729,10 +730,10 @@ async function recvRecInfo(r) {
             rid = ~~(Math.random()*2000000000);
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  format,  continuous," +
-                          "  rtc,  key,  master," +
+                          "  rtc,  key,  master,  wskey," +
                           "  status,  init,  expiry,  tracks,  cost, purchased) VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @FORMAT, @CONTINUOUS," +
-                          " @RTC, @KEY, @MASTER," +
+                          " @RTC, @KEY, @MASTER, @WSKEY," +
                           " 0, datetime('now'), datetime('now', '1 month'), 0, 0, '');", {
                 "@UID": r.uid,
                 "@RID": rid,
@@ -742,7 +743,8 @@ async function recvRecInfo(r) {
                 "@CONTINUOUS": r.continuous,
                 "@RTC": r.rtc,
                 "@KEY": r.key,
-                "@MASTER": r.master
+                "@MASTER": r.master,
+                "@WSKEY": r.wskey
             });
             break;
 
