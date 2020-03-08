@@ -122,7 +122,7 @@ if (request.query.f) {
     }
 
     var format = "flac", container = "zip", mext = "flac", ext = "zip",
-        mime = "application/zip";
+        mime = "application/zip", thru = null;
     switch (request.query.f) {
         case "aup":
             container = "aupzip";
@@ -149,7 +149,18 @@ if (request.query.f) {
                 return;
             }
             break;
+        case "info":
+            format = "info";
+            container = "json";
+            mext = null;
+            ext = "json";
+            mime = "application/json";
+            break;
     }
+
+    // If we're doing raw audio, possibly run it thru oggstension
+    if (request.query.t)
+        thru = [config.repo + "/cook/oggstender", Number.parseInt(request.query.t, 36)];
 
     writeHead(200, {
         "content-type": mime,
@@ -159,19 +170,44 @@ if (request.query.f) {
     // Give plenty of time
     response.setTimeLimit(1000*60*60*3);
 
+    // Handler for raw parts
+    async function sendPart(part, writer) {
+        await new Promise(function(res, rej) {
+            var st = fs.createReadStream(config.rec + "/" + rid + ".ogg." + part);
+            st.on("data", writer);
+            st.on("end", res);
+        });
+    }
+
+
     if (format === "raw") {
+        // Set up thru if applicable
+        var writer = write, p = null;
+        if (thru) {
+            p = cp.spawn(thru[0], thru.slice(1), {
+                stdio: ["pipe", "pipe", "ignore"]
+            });
+            p.stdout.on("data", write);
+            writer = p.stdin.write.bind(p.stdin);
+        }
+
         // Do the raw download
-        async function sendPart(part) {
+        await sendPart("header1", writer);
+        await sendPart("header2", writer);
+        await sendPart("data", writer);
+
+        // Possibly wait for the thru program
+        if (p) {
             await new Promise(function(res, rej) {
-                var st = fs.createReadStream(config.rec + "/" + rid + ".ogg." + part);
-                st.on("data", write);
-                st.on("end", res);
+                p.stdin.end();
+                p.stdout.on("end", res);
             });
         }
 
-        await sendPart("header1");
-        await sendPart("header2");
-        await sendPart("data");
+    } else if (format === "info") {
+        write("{\n");
+        await sendPart("users", write);
+        write("}\n");
 
     } else {
         // Jump through to the actual downloader
@@ -358,6 +394,18 @@ if (!recInfo.purchased) {
     <p><?JS
     ["aup", recommend].forEach(showDL);
     ?></p>
+
+    <?JS
+    if (recInfo.purchased) {
+        ?>
+        <header><h3>Advanced processing</h3></header>
+
+        <p>If you need your audio mixed or leveled, or need other formats such as Apple's ALAC, you can use this tool to do processing in your browser:</p>
+
+        <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>">Advanced processing</a></p>
+        <?JS
+    }
+    ?>
 
     <header><h3>Other formats</h3></header>
 
