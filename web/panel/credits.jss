@@ -20,13 +20,10 @@ const s = await include("subscription/paypal/s.jss");
 
 async function accountCredits(uid) {
     var c = await credits.accountCredits(uid);
-    console.log(c);
     if (c.subscription_expired) {
         // Check if it's been updated
         var ret = await s.updateSubscription(uid, c.subscription_id);
-        console.log(ret);
         c = await credits.accountCredits(uid);
-        console.log(c);
     }
     return c;
 }
