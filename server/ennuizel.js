@@ -87,6 +87,10 @@ function connection(ws) {
         if (key !== info.wskey)
             return ws.close();
 
+        // Make sure they're actually allowed
+        if (!info.purchased)
+            return ws.close();
+
         // Get the requested track
         var track = null;
         if (cmd === p.onelogin) {
