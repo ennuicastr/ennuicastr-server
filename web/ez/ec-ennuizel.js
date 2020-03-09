@@ -35,6 +35,8 @@ var Ennuizel = (function(ez) {
     var id = Number.parseInt(idS, 36);
     var keyS = params.get("k");
     var key = Number.parseInt(keyS, 36);
+    var projName = params.get("nm");
+    if (!projName) projName = idS;
     var wizardOptsS = params.get("w");
     var wizardOpts = Number.parseInt(wizardOptsS, 36);
     var lang = params.get("lang");
@@ -764,7 +766,7 @@ var Ennuizel = (function(ez) {
         // Now do the actual export
         p = p.then(function() {
             var format = getExportFormat(formats[opts.format]);
-            return ez.exportProject("ec-" + id.toString(36), format);
+            return ez.exportProject(projName, format);
 
         });
 
