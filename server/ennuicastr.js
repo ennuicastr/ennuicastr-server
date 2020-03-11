@@ -482,11 +482,6 @@ wss.on("connection", (ws, wsreq) => {
                 if (msg.length < p.length)
                     return die();
 
-                // Just ignore data in the wrong mode
-                if (recInfo.mode !== prot.mode.rec &&
-                    recInfo.mode !== prot.mode.buffering)
-                    break;
-
                 // Get out the message
                 var text = "";
                 try {
@@ -502,9 +497,6 @@ wss.on("connection", (ws, wsreq) => {
                 if (floodDetect({p: lastGranule, l: text.length}))
                     return die();
 
-                // Record it
-                recMeta({c:"text",text});
-
                 // Relay it
                 var textBuf = Buffer.from(text);
                 ret = Buffer.alloc(p.length + textBuf.length);
@@ -516,6 +508,15 @@ wss.on("connection", (ws, wsreq) => {
                         return;
                     connection.send(ret);
                 });
+
+                // Don't record it if we're not in the right mode
+                if (recInfo.mode !== prot.mode.rec &&
+                    recInfo.mode !== prot.mode.buffering)
+                    break;
+
+                // Record it
+                recMeta({c:"text",text});
+
                 break;
 
             case prot.ids.rtc:
