@@ -123,11 +123,17 @@ int main(int argc, char **argv)
         if (streamNo >= 0 && oggHeader.streamNo != streamNo)
             continue;
 
+        if (oggHeader.granulePos >= granuleOffset)
+            oggHeader.granulePos -= granuleOffset;
+
         if (oggHeader.granulePos > lastGranulePos)
             lastGranulePos = oggHeader.granulePos;
     }
 
-    printf("%f\n", ((double) (lastGranulePos-firstGranulePos-granuleOffset))/48000.0+2);
+    if (lastGranulePos >= firstGranulePos)
+        lastGranulePos -= firstGranulePos;
+
+    printf("%f\n", ((double) lastGranulePos)/48000.0+2);
 
     return 0;
 }
