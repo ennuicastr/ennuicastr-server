@@ -15,6 +15,6 @@
     <body>
         Loading...
         <script type="text/javascript" src="ec-ennuizel.js?v=9"></script>
-        <script type="text/javascript" src="ennuizel.js?v=8"></script>
+        <script type="text/javascript" src="ennuizel.js?v=b"></script>
     </body>
 </html>
