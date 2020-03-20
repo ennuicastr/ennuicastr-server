@@ -1,6 +1,6 @@
 #!/bin/sh
 while true
 do
-    ./main.js &
+    ./main.js
     sleep 10
 done
