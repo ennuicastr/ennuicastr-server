@@ -8,29 +8,53 @@ const cp = require("child_process");
 const fs = require("fs");
 const net = require("net");
 
-const Turn = require("node-turn");
-
 const config = require("../config.js");
 const db = require("../db.js").db;
 
 const server = net.createServer();
 const sockPath = config.sock || "/tmp/ennuicastr-server.sock";
 
-// Handle uncaught exceptions from the TURN server
-process.on("uncaughtException", (ex) => {
-    console.error(ex);
-});
-
 try {
     fs.unlinkSync(sockPath);
 } catch (ex) {}
 server.listen(sockPath);
 
-const turnServer = new Turn({
-    authMech: "long-term",
-    credentials: {}
-});
-turnServer.start();
+// Add a user to all our turn servers
+function turnAddUser(rec) {
+    var ps = [];
+    config.turn.forEach((turn) => {
+        ps.push(new Promise(function(res, rej) {
+            var p = cp.spawn("ssh",
+                [turn.user + "@" + turn.server,
+                 "turnadmin",
+                 "-r", turn.server,
+                 "-u", rec.rid.toString(36),
+                 "-p", rec.key.toString(36),
+                 "-a"],
+                {stdio: "inherit"});
+            p.on("exit", res);
+        }));
+    });
+    return Promise.all(ps);
+}
+
+// Delete a user from all our turn servers
+function turnDelUser(rec) {
+    var ps = [];
+    config.turn.forEach((turn) => {
+        ps.push(new Promise(function(res, rej) {
+            var p = cp.spawn("ssh",
+                [turn.user + "@" + turn.server,
+                 "turnadmin",
+                 "-r", turn.server,
+                 "-u", rec.rid.toString(36),
+                 "-d"],
+                {stdio: "inherit"});
+            p.on("exit", res);
+        }));
+    });
+    return Promise.all(ps);
+}
 
 server.on("connection", (sock) => {
     var buf = Buffer.alloc(0);
@@ -78,12 +102,14 @@ function startRec(sock, msg) {
 
     p.send({c:"info",r:msg.r});
 
-    p.on("message", (pmsg) => {
+    p.on("message", async function(pmsg) {
         if (pmsg.c === "ready") {
             // Enable this ID on the Turn server
-            turnServer.addUser(pmsg.r.rid.toString(36), pmsg.r.key.toString(36));
+            await turnAddUser(pmsg.r);
+
+            // And disable it when the child exits
             p.on("end", () => {
-                turnServer.removeUser(pmsg.r.rid.toString(36));
+                turnDelUser(pmsg.r);
             });
         }
 
@@ -107,6 +133,9 @@ async function checkExpiry() {
                     fs.unlinkSync(config.rec + "/" + rec.rid + ".ogg." + footer);
                 } catch (ex) {}
             });
+
+            // Just in case, remove them from TURN
+            await turnDelUser(rec);
 
             // Then move the row to old_recordings
             while (true) {

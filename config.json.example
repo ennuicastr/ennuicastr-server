@@ -10,6 +10,13 @@
     "sock": "/tmp/ennuicastr-server.sock",
     "ezsock": "/tmp/ennuicastr-ennuizel-server.sock",
 
+    "turn": [
+        {
+            "server": "r.ecastr.com",
+            "user": "turn"
+        }
+    ],
+
     "creditCost": {
         "currency": 100,
         "credits": 3600

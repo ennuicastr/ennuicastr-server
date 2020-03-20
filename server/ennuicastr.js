@@ -308,6 +308,7 @@ wss.on("connection", (ws, wsreq) => {
     // Accept a data connection
     function acceptConnData(format, sampleRate) {
         var continuous = !!(flags & prot.flags.features.continuous);
+        var rtc = !!(flags & prot.flags.features.rtc);
 
         // Look for an existing, matching track
         for (var i = 1; i < tracks.length; i++) {
@@ -362,6 +363,20 @@ wss.on("connection", (ws, wsreq) => {
         ret.writeUInt32LE(prot.info.mode, p.key);
         ret.writeUInt32LE(recInfo.mode, p.value);
         ws.send(Buffer.from(ret));
+
+        // Send them the ICE servers
+        config.turn.forEach((turn) => {
+            var iceServer = Buffer.from(JSON.stringify({
+                urls: ["turns:" + turn.server],
+                username: recInfo.rid.toString(36),
+                credential: recInfo.key.toString(36)
+            }), "utf8");
+            var ret = Buffer.alloc(p.value + iceServer.length);
+            ret.writeUInt32LE(prot.ids.info, 0);
+            ret.writeUInt32LE(prot.info.ice, p.key);
+            iceServer.copy(ret, p.value);
+            ws.send(ret);
+        });
 
         // Send them a list of peers
         ret.writeUInt32LE(prot.info.peerContinuing, p.key);
