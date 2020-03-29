@@ -548,6 +548,19 @@ wss.on("connection", (ws, wsreq) => {
                 connections[target].send(msg);
                 break;
 
+            case prot.ids.error:
+                // Error message
+                var text = "";
+                try {
+                    text = msg.toString("utf8", 4);
+                } catch (ex) {
+                    return die();
+                }
+
+                // Log it
+                log("client-error", text, {uid: recInfo.uid, rid: recInfo.rid});
+                break;
+
             default:
                 return die();
         }
