@@ -266,9 +266,6 @@ if (!recInfo.purchased) {
     <section class="wrapper special style1" id="purchase-dialog">
         <?JS dlHeader(); ?>
 
-        <?JS /* BETA */ ?>
-        <p>(<strong>NOTE:</strong> During closed beta, you essentially have infinite credit. Choose to use your credit below to download the non-sample version.)</p>
-
         <p>You have not purchased this recording and do not have a subscription<?JS= accountCredits.subscription?" at the required level":"" ?>. You may <a href="#sample">download a sample</a> of this recording below, purchase the recording here and then download it, or <a href="/panel/subscription/">subscribe</a> at an appropriate level and then download it.</p>
 
         <p>This recording will cost $<?JS= credits.creditsToDollars(recInfo.cost) ?>.</p>

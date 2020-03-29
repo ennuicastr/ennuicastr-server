@@ -27,24 +27,17 @@ const util = require("util");
 const db = require("../db.js");
 
 await include("../../head.jss", {menu: false, title: "Log in"});
-/* BETA
 ?>
 
 <section class="wrapper special">
+    <!-- BETA -->
+    <p>NOTE: During the beta, if you have <a href="https://discordapp.com/">Discord</a>, <em>please</em> <a href="https://discord.gg/ZKgWgyq">join the Discord server</a>.</p>
+
     <p>You may log in to Ennuicastr using an account on any of these online services:</p>
     <?JS
     await include("paypal/button.jss");
     await include("google/button.jss");
     ?>
-
-    <p><a href="/">Return to home page</a></p>
-</section>
-
-<?JS */ ?>
-
-<section class="wrapper special">
-    <?JS /* BETA */ ?>
-    <p>Sorry, but Ennuicastr is currently in early beta. If you've been invited to participate, you should have received a specialized login link.</p>
 
     <p><a href="/">Return to home page</a></p>
 </section>

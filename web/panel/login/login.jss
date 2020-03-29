@@ -46,6 +46,12 @@ async function getUID(login) {
             await db.runP("INSERT INTO users (uid, login) VALUES (@UID, @LOGIN);", {"@UID": uid, "@LOGIN": login});
             await db.runP("COMMIT;");
             newUID = true;
+
+            // BETA
+            await db.runP("INSERT INTO credits " +
+                          "( uid,  credits,  purchased,  subscription,  subscription_expiry,  subscription_id) VALUES " +
+                          "(@UID,        0,          0,             2, datetime('2022-01-01'), 'beta:');",
+                          {"@UID": uid});
             break;
         } catch (ex) {
             await db.runP("ROLLBACK;");

@@ -15,7 +15,6 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-return; // BETA
 await session.init();
 
 const config = require("../config.js");

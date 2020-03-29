@@ -86,7 +86,7 @@ const defaults = await (async function() {
         l("dname", "Your display name");
         txt("dname", "m");
 
-        var showAdvanced = (accountCredits.subscription >= 2 ||
+        var showAdvanced = (/* BETA accountCredits.subscription >= 2 || */
                             defaults.format === "flac" ||
                             defaults.continuous ||
                             !defaults.rtc);
