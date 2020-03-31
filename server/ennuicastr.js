@@ -534,6 +534,16 @@ wss.on("connection", (ws, wsreq) => {
 
                 break;
 
+            case prot.ids.info:
+                // If a user changes their input device, they can send sample rate again
+                // FIXME: But this is not the right way to handle it!
+                var p = prot.parts.info;
+                if (msg.length < p.length) return die();
+
+                var key = msg.readUInt32LE(p.key);
+                if (key !== prot.info.sampleRate) return die();
+                break;
+
             case prot.ids.rtc:
                 var p = prot.parts.rtc;
                 if (msg.length < p.length)
