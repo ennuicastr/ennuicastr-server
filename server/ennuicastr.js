@@ -395,6 +395,32 @@ wss.on("connection", (ws, wsreq) => {
             connections[ci].send(Buffer.from(ret));
         }
 
+        if (recInfo.universalMonitor) {
+            // Inform them of currently connected users
+            p = prot.parts.user;
+            for (var i = 1; i < tracks.length; i++) {
+                var otrack = tracks[i];
+                if (id === i || !otrack || !connections[i]) continue;
+                var nickBuf = Buffer.from(otrack.nick, "utf8");
+                ret = Buffer.alloc(p.length + nickBuf.length);
+                ret.writeUInt32LE(prot.ids.user, 0);
+                ret.writeUInt32LE(i, p.index);
+                ret.writeUInt32LE(1, p.status);
+                nickBuf.copy(ret, p.nick);
+                ws.send(ret);
+            }
+
+            // And speaking status
+            p = prot.parts.speech;
+            for (var i = 1; i < connections.length; i++) {
+                if (!speakingStatus[i]) continue;
+                ret = Buffer.alloc(p.length);
+                ret.writeUInt32LE(prot.ids.speech, 0);
+                ret.writeUInt32LE((i<<1)|1, p.indexStatus);
+                ws.send(ret);
+            }
+        }
+
         // Inform masters of their existence
         p = prot.parts.user;
         var nickBuf = Buffer.from(nick, "utf8");
@@ -407,6 +433,12 @@ wss.on("connection", (ws, wsreq) => {
             if (master)
                 master.send(ret);
         });
+        if (recInfo.universalMonitor) {
+            connections.forEach((connection) => {
+                if (connection)
+                    connection.send(ret);
+            });
+        }
 
         // And of their nonexistence when they disconnect
         ws.on("close", () => {
@@ -1112,6 +1144,14 @@ function speechStatus(id, speaking) {
         if (master)
             master.send(ret);
     });
+
+    // Update regular users if we ought
+    if (recInfo.universalMonitor) {
+        connections.forEach((connection) => {
+            if (connection)
+                connection.send(ret);
+        });
+    }
 
     if (speaking) {
         // Set a timeout to undo it

@@ -32,8 +32,10 @@ const defaults = await (async function() {
             dname: "",
             format: "opus",
             continuous: false,
-            rtc: true
+            rtc: true,
+            universal_monitor: true
         };
+    row.universal_monitor = !!row.universal_monitor;
     return row;
 })();
 ?>
@@ -89,7 +91,8 @@ const defaults = await (async function() {
         var showAdvanced = (/* BETA accountCredits.subscription >= 2 || */
                             defaults.format === "flac" ||
                             defaults.continuous ||
-                            !defaults.rtc);
+                            !defaults.rtc ||
+                            !defaults.universal_monitor);
 
         if (!showAdvanced) {
         ?>
@@ -121,6 +124,9 @@ const defaults = await (async function() {
 
         l("rtc", "Live voice chat");
         chk("rtc", "r");
+
+        l("universal_monitor", "Show user list to all users");
+        chk("universal_monitor", "um");
         ?>
 
         </div><br/>

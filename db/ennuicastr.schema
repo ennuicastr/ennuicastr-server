@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS defaults (
     dname TEXT,
     format TEXT,
     continuous BOOLEAN,
-    rtc BOOLEAN
+    rtc BOOLEAN,
+    universal_monitor BOOLEAN
 );
 
 CREATE INDEX IF NOT EXISTS defaults_uid ON defaults (uid);
