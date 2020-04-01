@@ -621,7 +621,7 @@ wss.on("connection", (ws, wsreq) => {
         }
 
         // And make sure we're not being flooded
-        if (floodLogSz > 48000*3)
+        if (floodLogSz > 48000*16)
             return true;
         return false;
     }
