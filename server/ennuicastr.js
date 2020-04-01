@@ -190,6 +190,7 @@ wss.on("connection", (ws, wsreq) => {
     function die() {
         if (dead)
             return;
+        console.error(new Error().stack);
         ws.close();
         dead = true;
         if (id)
