@@ -399,7 +399,7 @@ if (!recInfo.purchased) {
 
         <p><div style="display: inline-block; max-width: 30em">If you need your audio mixed or leveled, or need other formats such as Apple's ALAC, you can use this tool to do processing in your browser:</div></p>
 
-        <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= encodeURIComponent(dlName) ?>">Advanced processing</a></p>
+        <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= encodeURIComponent(dlName) ?>" target="_blank">Advanced processing</a></p>
         <?JS
     }
     ?>
