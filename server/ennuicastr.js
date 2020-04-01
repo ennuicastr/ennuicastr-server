@@ -182,8 +182,8 @@ wss.on("connection", (ws, wsreq) => {
     var lastGranule = 0;
 
     // Log of recent messages to prevent floods
-    var log = [];
-    var logSz = 0;
+    var floodLog = [];
+    var floodLogSz = 0;
 
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
@@ -578,18 +578,18 @@ wss.on("connection", (ws, wsreq) => {
 
     // Log data and check for flooding
     function floodDetect(d) {
-        log.push(d);
-        logSz += d.l;
+        floodLog.push(d);
+        floodLogSz += d.l;
 
         // Remove everything older than 1 second
         var early = d.p - 48000;
-        while (log[0].p < early) {
-            logSz -= log[0].l;
-            log.shift();
+        while (floodLog[0].p < early) {
+            floodLogSz -= floodLog[0].l;
+            floodLog.shift();
         }
 
         // And make sure we're not being flooded
-        if (logSz > 48000*3)
+        if (floodLogSz > 48000*3)
             return true;
         return false;
     }
