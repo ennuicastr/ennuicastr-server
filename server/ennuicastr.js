@@ -197,6 +197,19 @@ wss.on("connection", (ws, wsreq) => {
             connections[id] = null;
         if (mid)
             masters[mid] = null;
+
+        // If this was a data connection, inform others of their disconnection
+        if (id) {
+            var p = prot.parts.info;
+            var ret = Buffer.alloc(p.length);
+            ret.writeUInt32LE(prot.ids.info, 0);
+            ret.writeUInt32LE(prot.info.peerLost, p.key);
+            ret.writeUInt32LE(id, p.value);
+            for (var ci = 1; ci < connections.length; ci++) {
+                if (ci === id || !connections[ci]) continue;
+                connections[ci].send(Buffer.from(ret));
+            }
+        }
     }
 
     ws.on("error", die);
