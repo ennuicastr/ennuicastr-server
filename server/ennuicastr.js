@@ -370,10 +370,15 @@ wss.on("connection", (ws, wsreq) => {
 
         presence[id] = true;
 
-        // Send them the current mode
+        // Send them their own ID
         var p = prot.parts.info;
         var ret = Buffer.alloc(p.length);
         ret.writeUInt32LE(prot.ids.info, 0);
+        ret.writeUInt32LE(prot.info.id, p.key);
+        ret.writeUInt32LE(id, p.value);
+        ws.send(Buffer.from(ret));
+
+        // Send them the current mode
         ret.writeUInt32LE(prot.info.mode, p.key);
         ret.writeUInt32LE(recInfo.mode, p.value);
         ws.send(Buffer.from(ret));
