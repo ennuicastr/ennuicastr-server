@@ -648,6 +648,7 @@ var Ennuizel = (function(ez) {
             format: inOpts & 0xF,
             mix: !!(inOpts & 0x10),
             level: !!(inOpts & 0x20),
+            noiser: !!(inOpts & 0x40),
             keep: !!(inOpts & 0x100),
             ask: !!(inOpts & 0x200)
         };
@@ -696,6 +697,12 @@ var Ennuizel = (function(ez) {
             ez.mke(form, "label", {text: " " + l("dolevel"), "for": "level"});
             ez.mke(form, "br");
 
+            var noiser = ez.mke(form, "input", {id: "noiser"});
+            noiser.type = "checkbox";
+            noiser.checked = wizardOpts.noiser;
+            ez.mke(form, "label", {text: " Noise reduction", "for": "noiser"});
+            ez.mke(form, "br");
+
             var keep = ez.mke(form, "input", {id: "keep"});
             keep.type = "checkbox";
             keep.checked = wizardOpts.keep;
@@ -722,6 +729,7 @@ var Ennuizel = (function(ez) {
                         format: fmtSelect.value,
                         mix: mix.checked,
                         level: level.checked,
+                        noiser: noiser.checked,
                         keep: keep.checked
                     });
                 };
@@ -743,8 +751,15 @@ var Ennuizel = (function(ez) {
             return ez.deleteProject();
         }
 
+        if (opts.noiser) {
+            // Noise reduction
+            p = p.then(function() {
+                return ez.applyNoiseRepellentFilter({WHITENING: 25, adaptive: false});
+            });
+        }
+
         if (opts.mix) {
-            // Start by mixing
+            // Mix
             p = p.then(function() {
                 if (opts.level)
                     return ez.mix({fin: "dynaudnorm", fout: "dynaudnorm", keep: true});

@@ -14,7 +14,7 @@
     </head>
     <body>
         Loading...
-        <script type="text/javascript" src="ec-ennuizel.js?v=a"></script>
-        <script type="text/javascript" src="ennuizel.js?v=c"></script>
+        <script type="text/javascript" src="ec-ennuizel.js?v=b"></script>
+        <script type="text/javascript" src="ennuizel.js?v=d"></script>
     </body>
 </html>
