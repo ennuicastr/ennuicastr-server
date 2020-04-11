@@ -38,6 +38,7 @@ const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + conf
                 },
                 tenure_type: "REGULAR",
                 sequence: 1,
+                total_cycles: 0,
                 pricing_scheme: {
                     fixed_price: {
                         value: (config.subscription.basic/100).toString(),

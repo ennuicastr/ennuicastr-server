@@ -103,7 +103,8 @@ async function updateSubscription(uid, sid, sconfig) {
             // Then update it
             await db.runP("UPDATE credits SET " +
                 "subscription=@LEVEL, " +
-                "subscription_expiry=max(datetime(@START, '1 month', '1 day'), datetime(@EXPIRY, '1 day')), " +
+                //"subscription_expiry=max(datetime(@START, '1 month', '1 day'), datetime(@EXPIRY, '1 day')), " +
+                "subscription_expiry=datetime(@EXPIRY, '1 day'), " +
                 "subscription_id=@SID WHERE uid=@UID;", {
                 "@UID": uid,
                 "@LEVEL": level,
