@@ -142,5 +142,63 @@ async function updateSubscription(uid, sid, sconfig) {
     return {success: true, level};
 }
 
-module.exports = {updateSubscription};
+async function cancelSubscription(uid, sconfig) {
+    sconfig = sconfig || {};
+
+    function fail(reason) {
+        return {success: false, reason};
+    }
+
+    // Check for the current subscription
+    var accountCredits = await credits.accountCredits(uid);
+    var sid = null;
+    if (accountCredits.subscription) {
+        // If it's already canceled, say so
+        if (/^canceled:/.test(accountCredits.subscription_id))
+            return fail("Already canceled");
+
+        parts = /^paypal:(.*)$/.exec(accountCredits.subscription_id);
+        if (!parts) return fail("Unsupported subscription service");
+        sid = parts[1];
+    } else {
+        return fail("Not subscribed");
+    }
+
+    // Cancel the subscription
+    var result = await nrc.getPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid + "/cancel", {
+        headers: {
+            "content-type": "application/json",
+            authorization
+        },
+        data: JSON.stringify({
+            reason: "Unspecified"
+        })
+    });
+    if (result.response.statusCode !== 204)
+        return fail("Failed to cancel. Perhaps already canceled?");
+
+    // Update the user's account
+    while (true) {
+        try {
+            await db.runP("BEGIN TRANSACTION;");
+
+            await db.runP("UPDATE credits SET " +
+                "subscription_id=@SID WHERE uid=@UID;", {
+                "@SID": ("canceled:paypal:" + sid)
+            });
+
+            await db.runP("COMMIT;");
+            break;
+        } catch (ex) {
+            await db.runP("ROLLBACK;");
+        }
+    }
+
+    // Log it
+    log("canceled-subscription", JSON.stringify(sid), {uid});
+
+    return {success: true, level};
+}
+
+module.exports = {updateSubscription, cancelSubscription};
 ?>

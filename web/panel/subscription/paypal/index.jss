@@ -20,7 +20,7 @@ if (!uid) return;
 
 const s = await include("./s.jss");
 
-if (!request.body || !request.body.id) {
+if (!request.body || (!request.body.id && !request.body.cancel)) {
     writeHead(500);
     write("{\"success\":false}");
     return;
@@ -28,7 +28,10 @@ if (!request.body || !request.body.id) {
 
 var ret;
 try {
-    ret = await s.updateSubscription(uid, "paypal:" + request.body.id, {activateOnly: true});
+    if (request.body.cancel)
+        ret = await s.cancelSubscription(uid);
+    else
+        ret = await s.updateSubscription(uid, "paypal:" + request.body.id, {activateOnly: true});
 } catch (ex) {
     writeHead(500, {"content-type": "application/json"});
     write(JSON.stringify({success: false, reason: ex+""}));

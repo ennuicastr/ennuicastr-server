@@ -75,6 +75,65 @@ async function genSub(level) {
     <?JS
 }
 
+// Generate a cancel button
+async function genCancel(id) {
+    var parts = /^([^:]*):.*$/.exec(id);
+    if (!parts || parts[1] !== "paypal") return;
+
+    ?>
+    <p id="cancel-box">
+        <button id="cancel-button">Cancel</button>
+        <span id="cancel-sure" style="display: none">
+            <br/>
+            Are you sure?<br/>
+            <button id="cancel-button-yes">Yes</button>
+            <button id="cancel-button-no">No</button>
+        </span>
+    </p>
+
+    <script type="text/javascript">(function() {
+    var cbox = document.getElementById("cancel-box");
+    var cb = document.getElementById("cancel-button");
+    var cs = document.getElementById("cancel-sure");
+    var cby = document.getElementById("cancel-button-yes");
+    var cbn = document.getElementById("cancel-button-no");
+    cb.onclick = function() {
+        cb.disabled = true;
+        cs.style.display = "";
+    };
+    cby.onclick = function() {
+        cs.style.display = "none";
+        return fetch("/panel/subscription/paypal/", {
+            method: "POST",
+            headers: {"content-type": "application/json"},
+            body: JSON.stringify({cancel: true})
+
+        }).then(function(res) {
+            return res.json();
+
+        }).then(function(res) {
+            if (res.success) {
+                cbox.innerText = "Your subscription has been canceled. Note that you still get to keep the remainder of your subscription time, so this page will only be updated when that time expires.";
+
+            } else {
+                alert("Cancelation failed! Details: " + res.reason);
+
+            }
+
+        }).catch(function(ex) {
+            alert("Cancelation failed! Details: " + ex);
+
+        });
+    };
+    cbn.onclick = function() {
+        cb.disabled = false;
+        cs.style.display = "none";
+    };
+    })();
+    </script>
+    <?JS
+}
+
 ?>
     <section class="wrapper special" id="sub-box">
 <?JS
@@ -94,6 +153,8 @@ if (accountCredits.subscription) {
 <?JS
     }
 ?>
+
+        <?JS genCancel(accountCredits.subscription_id); ?>
 
         <p>(If you have canceled your subscription, you still get to keep the remainder of your subscription time, and so are still subscribed until the expiry date above.)</p>
 
