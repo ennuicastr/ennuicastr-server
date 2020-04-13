@@ -68,10 +68,17 @@ await include("../../../head.jss", {menu: false, title: "Log in — Google"});
     }
 
     function googleSignIn(googleUser) {
+        var token = googleUser.getAuthResponse().id_token;
+        if (!token) {
+            // Not logged in?
+            googleError("Check for browser plugins blocking Google's cookies.");
+            return;
+        }
+
         fetch("/panel/login/google/", {
             method: "POST",
             headers: {"content-type": "application/json"},
-            body: JSON.stringify({token: googleUser.getAuthResponse().id_token})
+            body: JSON.stringify({token: token})
 
         }).then(function(res) {
             return res.text();
@@ -82,13 +89,14 @@ await include("../../../head.jss", {menu: false, title: "Log in — Google"});
             if (res.success)
                 document.location = "/panel/";
             else
-                alert("Failed to log in!");
+                googleError();
 
         }).catch(googleError);
     }
 
     function googleError(ex) {
         alert("Failed to log in! " + (ex||""));
+        document.location = "/panel/login/";
     }
 </script>
 <script src="https://apis.google.com/js/platform.js?onload=googleInit" async defer></script>
