@@ -29,30 +29,7 @@ const config = require("../config.js");
             "redirect_uri": "https://ennuicastr.com/panel/login/google/"
         });
     }
-
-    function onGoogleSignIn(googleUser) {
-        fetch("/panel/login/google/", {
-            method: "POST",
-            headers: {"content-type": "application/json"},
-            body: JSON.stringify({token: googleUser.getAuthResponse().id_token})
-
-        }).then(function(res) {
-            return res.text();
-
-        }).then(function(res) {
-            googleUser.disconnect();
-            res = JSON.parse(res);
-            if (res.success)
-                document.location = "/panel/";
-            else
-                alert("Failed to log in!");
-
-        }).catch(function(ex) {
-            alert("Failed to log in!");
-
-        });
-    }
 //--></script>
 <meta name="google-signin-client_id" content="<?JS= config.google.clientId ?>">
-<p class="align-center"><div id="google-signin2" style="display: inline-block" data-onsuccess="onGoogleSignIn"></div></p>
+<p class="align-center"><div id="google-signin2" style="display: inline-block"></div></p>
 <script src="https://apis.google.com/js/platform.js?onload=googleRenderButton" async defer></script>
