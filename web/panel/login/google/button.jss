@@ -25,7 +25,8 @@ const config = require("../config.js");
             "height": 50,
             "longtitle": true,
             "theme": "dark",
-            "onsuccess": onGoogleSignIn
+            "ux_mode": "redirect",
+            "redirect_uri": "https://ennuicastr.com/panel/login/google/"
         });
     }
 

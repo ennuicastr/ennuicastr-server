@@ -23,25 +23,76 @@ const login = await include("../login.jss");
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(config.google.clientId);
 
-// Make sure they gave us a token
-if (!request.body || !request.body.token)
+// Perform an actual login if that's the request
+if (request.body && request.body.token) {
+    // Verify it
+    const ticket = await client.verifyIdToken({
+        idToken: request.body.token,
+        audience: config.google.clientId
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.sub)
+        return write('{"success": false}');
+
+    // Log in with this ID
+    await login.login("google:" + payload.sub, {
+        name: payload.name,
+        email: payload.email
+    });
+
+    write('{"success": true}');
     return;
 
-// Verify it
-const ticket = await client.verifyIdToken({
-    idToken: request.body.token,
-    audience: config.google.clientId
-});
-const payload = ticket.getPayload();
+}
 
-if (!payload || !payload.sub)
-    return write('{"success": false}');
+// Otherwise, this is the login landing page
+await include("../../../head.jss", {menu: false, title: "Log in — Google"});
+?>
 
-// Log in with this ID
-await login.login("google:" + payload.sub, {
-    name: payload.name,
-    email: payload.email
-});
+<section class="wrapper special">
+    Logging in...
+</section>
 
-write('{"success": true}');
+<script type="text/javascript">
+    function googleInit() {
+        gapi.load("auth2", function() {
+            gapi.auth2.init({client_id: <?JS= JSON.stringify(config.google.clientId) ?>}).then(function() {
+                try {
+                    googleSignIn(gapi.auth2.getAuthInstance().currentUser.get());
+                } catch (ex) {
+                    googleError(ex);
+                }
+            }, googleError);
+        });
+    }
+
+    function googleSignIn(googleUser) {
+        fetch("/panel/login/google/", {
+            method: "POST",
+            headers: {"content-type": "application/json"},
+            body: JSON.stringify({token: googleUser.getAuthResponse().id_token})
+
+        }).then(function(res) {
+            return res.text();
+
+        }).then(function(res) {
+            googleUser.disconnect();
+            res = JSON.parse(res);
+            if (res.success)
+                document.location = "/panel/";
+            else
+                alert("Failed to log in!");
+
+        }).catch(googleError);
+    }
+
+    function googleError(ex) {
+        alert("Failed to log in! " + (ex||""));
+    }
+</script>
+<script src="https://apis.google.com/js/platform.js?onload=googleInit" async defer></script>
+
+<?JS
+await include("../../../tail.jss");
 ?>
