@@ -46,6 +46,11 @@
         "secret": ""
     },
 
+    "facebook": {
+        "appId": "",
+        "secret": ""
+    },
+
     "paypal": {
         "api": "api.paypal.com",
         "clientId": "",

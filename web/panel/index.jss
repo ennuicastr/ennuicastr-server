@@ -21,7 +21,8 @@ if (!uid) return;
 const providerNames = {
     beta: "a beta account",
     google: "Google",
-    paypal: "PayPal"
+    paypal: "PayPal",
+    facebook: "Facebook"
 };
 
 const edb = require("../db.js");
