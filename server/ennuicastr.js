@@ -340,6 +340,20 @@ wss.on("connection", (ws, wsreq) => {
             }
         }
 
+        // Don't go over the limit
+        if (!id && tracks.length > config.limits.tracksPaid) {
+            // FIXME: Distinct tracksFree and tracksPaid
+            var p = prot.parts.nack;
+            var textBuf = Buffer.from("This recording is limited to " + config.limits.tracksPaid + " tracks (users).");
+            var ret = Buffer.alloc(p.length + textBuf.length);
+            ret.writeUInt32LE(prot.ids.nack, 0);
+            ret.writeUInt32LE(prot.ids.login, p.ackd);
+            ret.writeUInt32LE(0, p.code);
+            textBuf.copy(ret, p.msg);
+            ws.send(ret);
+            return die();
+        }
+
         // Or make one if we need to
         if (!id) {
             id = tracks.length;

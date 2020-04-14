@@ -66,7 +66,7 @@ server.on("connection", (sock) => {
     // Handle commands in the buffer
     function handleData() {
         while (true) {
-            // Commands are line-separated JSOn
+            // Commands are line-separated JSON
             var i = 0;
             for (i = 0; i < buf.length && buf[i] !== 10; i++) {}
             if (i === buf.length) break;

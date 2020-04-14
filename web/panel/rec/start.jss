@@ -22,13 +22,19 @@ const net = require("net");
 const config = require("../config.js");
 const db = require("../db.js").db;
 
-function fail() {
-    writeHead(500);
+function fail(msg) {
+    writeHead(500, {"content-type": "application/json"});
+    if (msg) write(JSON.stringify(msg));
 }
 
 if (typeof request.body !== "object" ||
     request.body === null)
     return fail();
+
+// Check that this user isn't over the simultaneous recording limit (note: 0x30 == finished)
+var recordings = await db.allP("SELECT rid FROM recordings WHERE uid=@UID AND status<0x30;", {"@UID": uid});
+if (recordings.length >= config.limits.simultaneous)
+    return fail({"error": "You may not have more than " + config.limits.simultaneous + " simultaneous recordings."});
 
 // Get the request into the correct format
 var rec = request.body;

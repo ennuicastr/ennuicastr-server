@@ -24,6 +24,11 @@ const creditsj = await include("../credits.jss");
 
 const accountCredits = await creditsj.accountCredits(uid);
 
+// Check that this user isn't over the simultaneous recording limit (note: 0x30 == finished)
+var recordings = await db.allP("SELECT rid FROM recordings WHERE uid=@UID AND status<0x30;", {"@UID": uid});
+if (recordings.length >= config.limits.simultaneous)
+    return;
+
 const defaults = await (async function() {
     var row = await db.getP("SELECT * FROM defaults WHERE uid=@UID;", {"@UID": uid});
     if (!row)
@@ -193,6 +198,13 @@ function launchRecording() {
 
     }).then(function(res) {
         res = JSON.parse(res);
+
+        // Check for failure
+        if (res.error) {
+            clientWindow.document.body.innerText = "Recording failed!\n\n" + res.error;
+            document.location = "/panel/rec/";
+            return;
+        }
 
         // Get the feature flags
         var features = 0;

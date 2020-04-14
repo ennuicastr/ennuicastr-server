@@ -36,6 +36,12 @@
         }
     },
 
+    "limits": {
+        "simultaneous": 4,
+        "tracksFree": 8,
+        "tracksPaid": 64
+    },
+
     "subscription": {
         "basic": 1000,
         "hq": 1500
