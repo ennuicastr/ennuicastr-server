@@ -22,7 +22,8 @@ const providerNames = {
     beta: "a beta account",
     google: "Google",
     paypal: "PayPal",
-    facebook: "Facebook"
+    facebook: "Facebook",
+    discord: "Discord"
 };
 
 const edb = require("../db.js");

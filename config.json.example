@@ -51,6 +51,11 @@
         "secret": ""
     },
 
+    "discord": {
+        "clientId": "",
+        "secret": ""
+    },
+
     "paypal": {
         "api": "api.paypal.com",
         "clientId": "",
