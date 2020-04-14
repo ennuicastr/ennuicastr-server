@@ -27,19 +27,15 @@ function discordUrl() {
 
 <style type="text/css">
     .discordlogin {
-        display: inline-block;
         background-color: #26262b;
-        border-radius: 4px;
         color: white;
-        min-width: 247px;
-        min-height: 40px;
-        padding: 0.5em 1em 0.5em 1em;
-        text-decoration: none;
-        text-align: center;
-        vertical-align: middle;
+    }
+
+    .discordlogin:hover {
+        background-color: #3c3c41;
     }
 </style>
 
-<p><a href="<?JS= discordUrl() ?>" class="discordlogin">
+<span class="loginblock"><a href="<?JS= discordUrl() ?>" class="loginb discordlogin">
     <i class="fab fa-discord"></i> Log in with Discord
-</a></p>
+</a></span>

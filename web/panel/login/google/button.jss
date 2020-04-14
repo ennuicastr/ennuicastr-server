@@ -31,5 +31,5 @@ const config = require("../config.js");
     }
 //--></script>
 <meta name="google-signin-client_id" content="<?JS= config.google.clientId ?>">
-<p class="align-center"><div id="google-signin2" style="display: inline-block"></div></p>
+<span id="google-signin2" class="loginblock"></span>
 <script src="https://apis.google.com/js/platform.js?onload=googleRenderButton" async defer></script>

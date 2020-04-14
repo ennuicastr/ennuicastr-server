@@ -17,7 +17,7 @@
 
 const config = require("../config.js");
 ?>
-<p id='cwppButton'></p>
+<span id="cwppButton" class="loginblock"></span>
 <script src='https://www.paypalobjects.com/js/external/connect/api.js'></script>
 <script>
 paypal.use( ['login'], function (login) {

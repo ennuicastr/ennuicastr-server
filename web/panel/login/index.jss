@@ -29,17 +29,39 @@ const db = require("../db.js");
 await include("../../head.jss", {menu: false, title: "Log in"});
 ?>
 
+<style type="text/css">
+    .loginblock {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 0.5em 0 0.5em;
+    }
+
+    .loginb {
+        display: inline-block;
+        border-radius: 4px;
+        min-width: 247px;
+        min-height: 40px;
+        padding: 0.5em 1em 0.5em 1em;
+        text-decoration: none;
+        text-align: center;
+        vertical-align: middle;
+    }
+</style>
+
 <section class="wrapper special">
     <!-- BETA -->
     <p>NOTE: During the beta, if you have <a href="https://discordapp.com/">Discord</a>, <em>please</em> <a href="https://discord.gg/ZKgWgyq">join the Discord server</a>.</p>
 
     <p>You may log in to Ennuicastr using an account on any of these online services:</p>
+    <p>
     <?JS
     await include("paypal/button.jss");
     await include("google/button.jss");
+    ?></p><p><?JS
     await include("facebook/button.jss");
     await include("discord/button.jss");
     ?>
+    </p>
 
     <p><a href="/">Return to home page</a></p>
 </section>

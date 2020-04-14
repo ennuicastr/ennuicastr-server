@@ -26,20 +26,16 @@ function facebookUrl() {
 
 <style type="text/css">
     .fblogin {
-        display: inline-block;
         background-color: #1877f2;
-        border-radius: 4px;
         font-family: Helvetica, Arial, sans-serif;
         color: white;
-        min-width: 247px;
-        min-height: 40px;
-        padding: 0.5em 1em 0.5em 1em;
-        text-decoration: none;
-        text-align: center;
-        vertical-align: middle;
+    }
+
+    .fblogin:hover {
+        background-color: #005fd5;
     }
 </style>
 
-<p><a href="<?JS= facebookUrl() ?>" class="fblogin">
+<span class="loginblock"><a href="<?JS= facebookUrl() ?>" class="loginb fblogin">
     <i class="fab fa-facebook"></i> Log in with Facebook
-</a></p>
+</a></span>
