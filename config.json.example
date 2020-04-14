@@ -46,6 +46,19 @@
         "secret": ""
     },
 
+    "firebase": {
+        "config": {
+            "apiKey": "",
+            "authDomain": "",
+            "databaseURL": "",
+            "projectId": "",
+            "storageBucket": "",
+            "messagingSenderId": "",
+            "appId": ""
+        },
+        "serviceAccountKey": "~/firebase-adminsdk.json"
+    },
+
     "facebook": {
         "appId": "",
         "secret": ""

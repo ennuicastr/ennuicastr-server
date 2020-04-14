@@ -33,7 +33,7 @@ await include("../../head.jss", {menu: false, title: "Log in"});
     .loginblock {
         display: inline-block;
         vertical-align: middle;
-        margin: 0 0.5em 0 0.5em;
+        margin: 0.5em;
     }
 
     .loginb {
@@ -57,9 +57,11 @@ await include("../../head.jss", {menu: false, title: "Log in"});
     <?JS
     await include("paypal/button.jss");
     await include("google/button.jss");
-    ?></p><p><?JS
+    ?><br/><?JS
     await include("facebook/button.jss");
     await include("discord/button.jss");
+    ?><br/><?JS
+    await include("firebase/button.jss");
     ?>
     </p>
 

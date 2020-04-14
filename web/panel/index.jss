@@ -23,7 +23,8 @@ const providerNames = {
     google: "Google",
     paypal: "PayPal",
     facebook: "Facebook",
-    discord: "Discord"
+    discord: "Discord",
+    firebase: "password authentication"
 };
 
 const edb = require("../db.js");
