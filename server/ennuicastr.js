@@ -113,6 +113,9 @@ var port = null, tryPort;
 // When the recording started (now)
 var startTime = process.hrtime();
 
+// When the recording began, as in when record was clicked
+var beginTime = null;
+
 // When we last paused as a granule position
 var lastPaused = 0;
 
@@ -191,6 +194,10 @@ wss.on("connection", (ws, wsreq) => {
         if (dead)
             return;
         console.error(new Error().stack);
+        try {
+            console.error("RID: " + recInfo.rid.toString(36));
+            console.error("Remote IP: " + wsreq.connection.remoteAddress);
+        } catch (ex) {}
         ws.close();
         dead = true;
         if (id)
@@ -396,6 +403,15 @@ wss.on("connection", (ws, wsreq) => {
         ret.writeUInt32LE(prot.info.mode, p.key);
         ret.writeUInt32LE(recInfo.mode, p.value);
         ws.send(Buffer.from(ret));
+
+        // And possibly the start time
+        if (recInfo.mode >= prot.mode.rec) {
+            var st = Buffer.alloc(p.length + 4);
+            st.writeUInt32LE(prot.ids.info, 0);
+            st.writeUInt32LE(prot.info.startTime, p.key);
+            st.writeDoubleLE(beginTime, p.value);
+            ws.send(st);
+        }
 
         // Send them the ICE servers
         config.turn.forEach((turn) => {
@@ -654,7 +670,7 @@ wss.on("connection", (ws, wsreq) => {
         }
 
         // And make sure we're not being flooded
-        if (floodLogSz > 48000*16)
+        if (floodLogSz > 48000*128)
             return true;
         return false;
     }
@@ -925,10 +941,23 @@ function modeUpdate(toMode) {
 // Start recording
 async function startRec() {
     // Update the mode
+    beginTime = curTime();
     lastResumed = curGranule();
     modeUpdate(prot.mode.rec);
 
-    // First update the status in the database
+    // Tell the users the start time
+    var op = prot.parts.info;
+    var ret = Buffer.alloc(op.length + 4);
+    ret.writeUInt32LE(prot.ids.info, 0);
+    ret.writeUInt32LE(prot.info.startTime, op.key);
+    ret.writeDoubleLE(beginTime, op.value);
+
+    connections.forEach((connection) => {
+        if (connection)
+            connection.send(ret);
+    });
+
+    // Update the status in the database
     while (true) {
         try {
             await db.runP("UPDATE recordings SET status=@MODE, start=datetime('now') WHERE rid=@RID;", {
