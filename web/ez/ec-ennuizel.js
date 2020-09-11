@@ -15,15 +15,15 @@
  */
 
 var Ennuizel = (function(ez) {
-    var libav, l;
-
-    if (typeof LibAV === "undefined") LibAV = {};
+    var l, threads;
 
     /* Use half as many threads as we have available, to sort of play nice with
      * the rest of the system, but no more than 8, to play nice with the server */
     if (navigator.hardwareConcurrency) {
-        LibAV.threads = Math.ceil(navigator.hardwareConcurrency/2);
-        if (LibAV.threads > 8) LibAV.threads = 8;
+        threads = Math.ceil(navigator.hardwareConcurrency/2);
+        if (threads > 8) threads = 8;
+    } else {
+        threads = 1;
     }
 
     if (!ez.plugins) ez.plugins = [];
@@ -78,7 +78,7 @@ var Ennuizel = (function(ez) {
 
     // At startup, just choose our mode
     function start() {
-        libav = LibAV;
+        libav = ez.libav;
         l = ez.l;
 
         // Create our wizard before anything else
@@ -281,7 +281,6 @@ var Ennuizel = (function(ez) {
 
     // Manage all of our downloaders
     function doDownloads() {
-        var threads = libav.threads;
         var downloaders = [], downloaded = [];
         var i, j;
         for (i = 0; i < threads; i++) downloaders.push(null);
@@ -377,7 +376,7 @@ var Ennuizel = (function(ez) {
 
     // The main loop for a single download
     function connection(sock, thread, trackNo) {
-        var la = libav.targets[thread];
+        var la;
 
         // And we have a message buffer for handling
         var msgbuf = [];
@@ -490,7 +489,11 @@ var Ennuizel = (function(ez) {
                 // Collect data until we have 1MB or EOF
                 if (data.length >= 1024*1024 || eof) {
                     // Now it's time to start libav. First make the device.
-                    return la.mkreaderdev("dev.ogg").then(function() {
+                    return LibAV.LibAV().then(function(ret) {
+                        la = ret;
+                        return la.mkreaderdev("dev.ogg");
+
+                    }).then(function() {
                         return la.ff_reader_dev_send("dev.ogg", data);
 
                     }).then(function() {
