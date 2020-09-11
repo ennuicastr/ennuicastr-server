@@ -231,7 +231,11 @@ if (request.query.f) {
 
 // Determine their platform
 var mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
-var recommend = (mac?"heaac":"flac");
+var mobile = (/(android|iphone|ipad)/i.test(params.HTTP_USER_AGENT));
+var recommend = [];
+if (!mobile)
+    recommend.push("aup");
+recommend.push(mac?"heaac":"flac");
 
 var samplePost = "";
 
@@ -389,7 +393,7 @@ if (!recInfo.purchased) {
     <header><h3>Suggested formats</h3></header>
 
     <p><?JS
-    ["aup", recommend].forEach(showDL);
+    recommend.forEach(showDL);
     ?></p>
 
     <?JS
@@ -407,6 +411,8 @@ if (!recInfo.purchased) {
     <header><h3>Other formats</h3></header>
 
     <p><?JS
+    if (mobile)
+        showDL("aup");
     [(mac?"flac":"heaac"), "aac", "opus"].forEach(showDL);
     ?></p>
 
