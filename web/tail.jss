@@ -6,9 +6,9 @@
                 </div>
 
                 <p class="align-center">
-                    <a href="/privacy.jss">Privacy policy</a> —
-                    <a href="/terms.jss">Terms of service</a> —
-                    <a href="/licenses.jss">Licenses</a> —
+                    <a href="/privacy/">Privacy policy</a> —
+                    <a href="/terms/">Terms of service</a> —
+                    <a href="/licenses/">Licenses</a> —
                     <a href="/contact.jss">Contact us</a>
                 </p>
             </footer>
