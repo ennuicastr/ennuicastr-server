@@ -36,20 +36,20 @@ const authorization = "Basic " + Buffer.from(config.discord.clientId + ":" + con
 // Get a client access token
 var token = await nrc.postPromise("https://discordapp.com/api/v6/oauth2/token", {
     headers: {
-        "content-type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/x-www-form-urlencoded",
         authorization
     },
-    parameters: {
+    data: {
         grant_type: "authorization_code",
         code: request.query.code,
         redirect_uri: config.panel + "login/discord/",
         scope: "identify email"
-    }
+    },
 });
 token = token.data;
 
 if (!("access_token" in token)) {
-    write("Failed to log in with Discord!");
+    write("Failed to log in with Discord! " + JSON.stringify(token));
     return;
 }
 
