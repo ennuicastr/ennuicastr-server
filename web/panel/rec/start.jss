@@ -47,6 +47,7 @@ var dname = rec.m;
 rec = {
     uid,
     name: rec.n,
+    hostname: dname,
     format: (rec.f==="flac")?"flac":"opus",
     continuous: !!rec.c,
     rtc: !!rec.r,

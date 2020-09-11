@@ -129,14 +129,14 @@ rows.forEach((row) => {
                     if (row.format === "flac")
                         features |= 0x10;
 
-                    // Open up the recording interface (FIXME: name default)
+                    // Open up the recording interface
                     var url = config.client +
                         "?" + row.rid.toString(36) +
                         "-" + row.key.toString(36) +
                         "-m" + row.master.toString(36) +
                         "-p" + row.port.toString(36) +
                         "-f" + features.toString(36) +
-                        "&nm=" + "Host";
+                        "&nm=" + (row.hostname||"Host");
 
                     write("<script type=\"text/javascript\"><!--\n" +
                           "function join" + row.rid.toString(36) + "() {\n" +

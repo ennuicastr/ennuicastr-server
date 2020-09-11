@@ -222,7 +222,7 @@ function launchRecording() {
             "-m" + res.master.toString(36) +
             "-p" + res.port.toString(36) +
             "-f" + features.toString(36) +
-            "&nm=" + encodeURIComponent(q.dname||"Host");
+            "&nm=" + encodeURIComponent(q.m||"Host");
         document.location = "/panel/rec/";
 
     }).catch(function(ex) {
