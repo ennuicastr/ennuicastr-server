@@ -1,0 +1,22 @@
+body {
+    background: #033;
+    color: #cff;
+}
+
+a {
+    color: #fcc;
+}
+
+#status-surround {
+    text-align: center;
+}
+
+#status {
+    display: inline-block;
+    padding: 0.5em;
+    background: #333;
+    color: #fff;
+    border: 2px solid black;
+    border-radius: 0.5em;
+    max-width: 35em;
+}

@@ -44,6 +44,7 @@ if (typeof rec.n !== "string" ||
     return fail();
 
 var dname = rec.m;
+var lid = rec.l;
 rec = {
     uid,
     name: rec.n,
@@ -53,6 +54,8 @@ rec = {
     rtc: !!rec.r,
     universalMonitor: !!rec.um
 };
+if (typeof lid === "string")
+    rec.lid = lid;
 
 // Add these defaults to the database
 while (true) {

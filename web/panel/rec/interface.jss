@@ -93,6 +93,18 @@ const defaults = await (async function() {
         l("dname", "Your display name");
         txt("dname", "m");
 
+        // Only show the lobby selection if they have lobbies
+        var lobbies = await db.allP("SELECT * FROM lobbies WHERE uid=@UID;", {"@UID": uid});
+        if (lobbies.length) {
+            defaults.l = "";
+            var opts = [["", "(None)"]];
+            lobbies.forEach((row) => {
+                opts.push([row.lid, row.name.replace(/\u0022/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")]);
+            });
+            l("lobby", "Room");
+            sel("lobby", "l", opts);
+        }
+
         var showAdvanced = (/* BETA accountCredits.subscription >= 2 || */
                             defaults.format === "flac" ||
                             defaults.continuous ||

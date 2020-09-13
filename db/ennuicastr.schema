@@ -130,3 +130,18 @@ CREATE TABLE IF NOT EXISTS defaults (
 );
 
 CREATE INDEX IF NOT EXISTS defaults_uid ON defaults (uid);
+
+/* Rooms (called "lobbies" internally so that they don't abbreviate to 'r') */
+CREATE TABLE IF NOT EXISTS lobbies (
+    uid TEXT,
+    /* The ID of this lobby */
+    lid TEXT PRIMARY KEY,
+    /* Just a display name */
+    name TEXT,
+    /* Currently associated? */
+    associated BOOLEAN,
+    /* The currently associated recording */
+    rid INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS lobbies_uid ON lobbies (uid);

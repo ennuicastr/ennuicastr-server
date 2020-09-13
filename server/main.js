@@ -19,6 +19,9 @@ try {
 } catch (ex) {}
 server.listen(sockPath);
 
+// Current sockets listening for lobby updates
+var lobbyListeners = {};
+
 // Add a user to all our turn servers
 function turnAddUser(rec) {
     var ps = [];
@@ -87,6 +90,14 @@ server.on("connection", (sock) => {
                     // Start a recording
                     return startRec(sock, msg);
 
+                case "lobby-listen":
+                    // Listen for lobby updates
+                    return lobbyListen(sock);
+
+                case "lobby-update":
+                    // Send a lobby update
+                    return lobbyUpdate(sock, msg);
+
                 default:
                     return sock.destroy();
             }
@@ -111,6 +122,25 @@ function startRec(sock, msg) {
             p.on("end", () => {
                 turnDelUser(pmsg.r);
             });
+
+            // If they wanted a lobby, associate it
+            if (msg.r.lid) {
+                await db.runP("UPDATE lobbies SET associated=TRUE, rid=@RID WHERE uid=@UID AND lid=@LID;", {
+                    "@RID": pmsg.r.rid,
+                    "@UID": msg.r.uid,
+                    "@LID": msg.r.lid
+                });
+                lobbyUpdate(null, {c: "lobby-update", l: msg.r.lid});
+
+                // And dissociate it when done
+                p.on("end", () => {
+                    db.runP("UPDATE lobbies SET associated=FALSE, rid=0 WHERE uid=@UID AND lid=@LID AND rid=@RID;", {
+                        "@UID": msg.r.uid,
+                        "@LID": msg.r.lid,
+                        "@RID": pmsg.r.rid
+                    });
+                });
+            }
         }
 
         // Tell the web client
@@ -118,6 +148,48 @@ function startRec(sock, msg) {
             sock.write(JSON.stringify(pmsg) + "\n");
         } catch (ex) {}
     });
+}
+
+// Listen for lobby updates
+function lobbyListen(sock) {
+    var id;
+    do {
+        id = Math.random();
+        if (!(id in lobbyListeners)) {
+            lobbyListeners[id] = sock;
+            break;
+        }
+    } while (true);
+
+    // Stop listening when it disconnects
+    sock.on("close", () => {
+        delete lobbyListeners[id];
+    });
+    sock.on("error", () => {
+        delete lobbyListeners[id];
+    });
+
+    // And ack
+    try {
+        sock.write(JSON.stringify({c: "lobby-listen-ack"}) + "\n");
+    } catch (ex) {}
+}
+
+// Send a lobby update
+function lobbyUpdate(sock, msg) {
+    msg = JSON.stringify(msg) + "\n";
+    for (var id in lobbyListeners) {
+        try {
+            lobbyListeners[id].write(msg);
+        } catch (ex) {}
+    }
+
+    // And ack
+    if (sock) {
+        try {
+            sock.write(JSON.stringify({c: "lobby-update-ack"}) + "\n");
+        } catch (ex) {}
+    }
 }
 
 // Periodically delete expired recordings

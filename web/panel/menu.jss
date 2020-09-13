@@ -39,6 +39,7 @@ function b(target, icon, text) {
 if (!config.nomain)
     b("/panel/", "user", "Main panel");
 b("/panel/rec/", "microphone", "Recordings");
+b("/panel/room/", "cube", "Rooms");
 b("/panel/subscription/", "calendar-alt", "Subscription");
 //b("/panel/credits/", "dollar-sign", "Credit");
 if (!config.nomain)
