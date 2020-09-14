@@ -143,7 +143,8 @@ rows.forEach((row) => {
                           "window.open(" + JSON.stringify(url) + ", \"\", \"width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0\");\n" +
                           "}\n" +
                           "//--></script>\n" +
-                          "<a href=\"javascript:join" + row.rid.toString(36) + "();\">Join</a>");
+                          "<a href=\"javascript:join" + row.rid.toString(36) + "();\" class=\"button\">" +
+                          "<i class=\"fas fa-door-open\"></i> Join</a>");
 
                 } else {
                     write("-");
@@ -152,13 +153,13 @@ rows.forEach((row) => {
             <td><?JS
                 if (!row.purchased && row.status >= 0x30 /* finished */)
                     write("$" + credits.creditsToDollars(row.cost) + "<br/>");
-                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>">Download</a><?JS
+                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>" class="button"><i class="fas fa-download"></i> Download</a><?JS
             ?></td>
             <td><?JS
                 if (row.status < 0x30 /* finished */) {
                     write("-");
                 } else {
-                    ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>">Delete</a><?JS
+                    ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button"><i class="fas fa-trash-alt"></i> Delete</a><?JS
                 }
             ?></td>
         </tr>
