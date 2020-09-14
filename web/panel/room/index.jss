@@ -80,6 +80,11 @@ for (var ri = 0; ri < rows.length; ri++) {
                     }
 
                     if (rec) {
+                        if (rec.status >= 0x30 /* finished */)
+                            rec = null;
+                    }
+
+                    if (rec) {
                         // Link to the recording
                         // (FIXME: Duplicated from the recording interface)
                         // Get the feature flags
