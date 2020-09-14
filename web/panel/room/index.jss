@@ -72,7 +72,7 @@ for (var ri = 0; ri < rows.length; ri++) {
             <td>
                 <?JS
                     var rec = null;
-                    if (row.available) {
+                    if (row.associated) {
                         rec = await db.getP("SELECT * FROM recordings WHERE uid=@UID AND rid=@RID;", {
                             "@UID": uid,
                             "@RID": row.rid
@@ -81,7 +81,32 @@ for (var ri = 0; ri < rows.length; ri++) {
 
                     if (rec) {
                         // Link to the recording
-                        ?> (Link) <?JS
+                        // (FIXME: Duplicated from the recording interface)
+                        // Get the feature flags
+                        var features = 0;
+                        if (rec.continuous)
+                            features |= 1;
+                        if (rec.rtc)
+                            features |= 2;
+                        if (rec.format === "flac")
+                            features |= 0x10;
+
+                        // Open up the recording interface
+                        var url = config.client +
+                            "?" + rec.rid.toString(36) +
+                            "-" + rec.key.toString(36) +
+                            "-m" + rec.master.toString(36) +
+                            "-p" + rec.port.toString(36) +
+                            "-f" + features.toString(36) +
+                            "&nm=" + (rec.hostname||"Host");
+
+                        write("<script type=\"text/javascript\"><!--\n" +
+                              "function join" + rec.rid.toString(36) + "() {\n" +
+                              "window.open(" + JSON.stringify(url) + ", \"\", \"width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0\");\n" +
+                              "}\n" +
+                              "//--></script>\n" +
+                              "<a href=\"javascript:join" + rec.rid.toString(36) + "();\" class=\"button\">" +
+                              "<i class=\"fas fa-door-open\"></i> Join</a>");
 
                     } else {
                         // Create a new recording
