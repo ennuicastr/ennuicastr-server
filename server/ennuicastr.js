@@ -193,11 +193,6 @@ wss.on("connection", (ws, wsreq) => {
     function die() {
         if (dead)
             return;
-        console.error(new Error().stack);
-        try {
-            console.error("RID: " + recInfo.rid.toString(36));
-            console.error("Remote IP: " + wsreq.connection.remoteAddress);
-        } catch (ex) {}
         ws.close();
         dead = true;
         if (id)
@@ -403,6 +398,14 @@ wss.on("connection", (ws, wsreq) => {
         ret.writeUInt32LE(prot.info.mode, p.key);
         ret.writeUInt32LE(recInfo.mode, p.value);
         ws.send(Buffer.from(ret));
+
+        // Send them the recording name
+        var textBuf = Buffer.from(recInfo.name+"");
+        var recNameBuf = Buffer.alloc(p.length + textBuf.length - 4);
+        recNameBuf.writeUInt32LE(prot.ids.info, 0);
+        recNameBuf.writeUInt32LE(prot.info.recName, p.key);
+        textBuf.copy(recNameBuf, p.value);
+        ws.send(recNameBuf);
 
         // And possibly the start time
         if (recInfo.mode >= prot.mode.rec) {
