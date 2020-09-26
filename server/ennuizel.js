@@ -23,6 +23,8 @@ const ws = require("ws");
 const config = require("../config.js");
 const db = require("../db.js").db;
 
+const sendSize = 1024*1024;
+
 var hs;
 var wss;
 
@@ -118,14 +120,21 @@ function connection(ws) {
             stdio: ["ignore", "pipe", "inherit"]
         });
 
-        c.stdout.on("data", (chunk) => {
+        var paused = false;
+
+        function readable() {
+            if (paused) return;
+            var chunk = c.stdout.read();
+            if (!chunk) return;
             buf = Buffer.concat([buf, chunk]);
-            if (buf.length >= 1024*1024)
+            if (buf.length >= sendSize)
                 sendBuffer();
-        });
+        }
+        c.stdout.on("readable", readable);
         c.stdout.on("end", () => {
-            if (buf.length > 0)
-                sendBuffer();
+            // Read any remaining data before closing
+            paused = false;
+            readable();
             ws.close();
         });
 
@@ -140,7 +149,7 @@ function connection(ws) {
 
             if (sending > ackd + 16) {
                 // Stop accepting data
-                c.stdout.pause();
+                paused = true;
             }
         }
 
@@ -154,7 +163,8 @@ function connection(ws) {
                 ackd = p;
                 if (sending <= ackd + 16) {
                     // Accept data
-                    c.stdout.resume();
+                    paused = false;
+                    readable();
                 }
             }
         });
@@ -162,9 +172,7 @@ function connection(ws) {
         ws.on("close", () => {
             // If they close early, we need to let the processing finish
             ackd = Infinity;
-            try {
-                c.stdout.resume();
-            } catch (ex) {}
+            paused = false;
         });
     };
 }
