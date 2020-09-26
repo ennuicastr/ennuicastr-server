@@ -94,11 +94,12 @@ if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
 
 const dlName = (function() {
     if (recInfo.name)
-        return recInfo.name.replace(/["\r\n\\]/g, "_");
+        return recInfo.name;
     else
         return rid.toString(36);
 })();
 
+const uriName = encodeURIComponent(dlName);
 const safeName = dlName.replace(/[^A-Za-z0-9]/g, "_");
 
 function formatToName(format) {
@@ -164,7 +165,7 @@ if (request.query.f) {
 
     writeHead(200, {
         "content-type": mime,
-        "content-disposition": "attachment; filename=\"" + dlName + (request.query.s?"-sample":"") + (mext?"."+mext:"") + "." + ext + "\""
+        "content-disposition": "attachment; filename=\"" + uriName + (request.query.s?"-sample":"") + (mext?"."+mext:"") + "." + ext + "\""
     });
 
     // Give plenty of time
@@ -403,7 +404,7 @@ if (!recInfo.purchased) {
 
         <p><div style="display: inline-block; max-width: 30em">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC, you can use this tool to do processing in your browser:</div></p>
 
-        <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= encodeURIComponent(dlName) ?>" target="_blank">Advanced processing</a></p>
+        <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= uriName ?>" target="_blank">Advanced processing</a></p>
         <?JS
     }
     ?>
