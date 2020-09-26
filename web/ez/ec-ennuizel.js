@@ -25,6 +25,7 @@ var Ennuizel = (function(ez) {
     } else {
         threads = 1;
     }
+    threads = 1;
 
     if (!ez.plugins) ez.plugins = [];
 
@@ -41,6 +42,8 @@ var Ennuizel = (function(ez) {
     var wizardOpts = Number.parseInt(wizardOptsS, 36);
     var lang = params.get("lang");
     if (lang !== null) ez.lang = lang;
+    var pthreads = params.get("threads");
+    if (pthreads !== null) threads = +pthreads;
 
     // Set to true if we've been asked to use the wizard automatically
     var autoWizard = false;
@@ -244,7 +247,9 @@ var Ennuizel = (function(ez) {
         var ackbuf = new DataView(new ArrayBuffer(8));
         ackbuf.setUint32(0, 0, true);
         ackbuf.setUint32(4, seq, true);
-        sock.send(ackbuf.buffer);
+        try {
+            sock.send(ackbuf.buffer);
+        } catch (ex) {}
         return msg;
     }
 
