@@ -43,11 +43,11 @@ if (typeof rec.n !== "string" ||
     typeof rec.f !== "string")
     return fail();
 
-var dname = rec.m;
+var dname = rec.m.slice(0, config.limits.recUsernameLength);
 var lid = rec.l;
 rec = {
     uid,
-    name: rec.n,
+    name: rec.n.slice(0, config.limits.recNameLength),
     hostname: dname,
     format: (rec.f==="flac")?"flac":"opus",
     continuous: !!rec.c,

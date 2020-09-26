@@ -42,7 +42,10 @@
         "simultaneous": 4,
         "lobbies": 64,
         "tracksFree": 8,
-        "tracksPaid": 64
+        "tracksPaid": 64,
+        "recNameLength": 512,
+        "recUsernameLength": 32,
+        "lobbyNameLength": 512
     },
 
     "subscription": {

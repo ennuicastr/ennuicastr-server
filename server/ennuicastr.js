@@ -271,7 +271,7 @@ wss.on("connection", (ws, wsreq) => {
          * so get it */
         nick = "";
         try {
-            nick = msg.toString("utf8", prot.parts.login.nick);
+            nick = msg.toString("utf8", prot.parts.login.nick).slice(0, config.limits.recUsernameLength);
         } catch (ex) {}
         if (nick === "") {
             // Check if we've already cached the nick for this IP

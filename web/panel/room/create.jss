@@ -39,6 +39,9 @@ if (recordings.length >= config.limits.lobbies)
 var req = request.body;
 if (typeof req.n !== "string")
     return fail();
+var name = req.n.slice(0, config.limits.lobbyNameLength);
+if (name === "")
+    name = "Anonymous";
 
 function genLID() {
     // 101559956668416  = 1000000000 in base 36
@@ -56,7 +59,7 @@ while (true) {
                       "(@UID, @LID, @NAME, @ASSOCIATED, @RID);", {
             "@UID": uid,
             "@LID": lid,
-            "@NAME": req.n,
+            "@NAME": name,
             "@ASSOCIATED": false,
             "@RID": 0
         });
@@ -67,5 +70,5 @@ while (true) {
 
 // Now it's ready
 writeHead(200, {"content-type": "application/json"});
-write(JSON.stringify({lid: lid, name: req.n}));
+write(JSON.stringify({lid: lid, name: name}));
 ?>
