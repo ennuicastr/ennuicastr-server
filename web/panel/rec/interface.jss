@@ -58,8 +58,10 @@ const defaults = await (async function() {
             write('<label for="r-' + forr + '">' + txt + ':&nbsp;</label>');
         }
 
-        function txt(id, q) {
-            write('<input id="r-' + id + '" /><br/>' +
+        function txt(id, q, limit) {
+            write('<input id="r-' + id + '"' +
+                  (limit ? (' maxlength=' + limit) : '') +
+                  ' /><br/>' +
                   '<script type="text/javascript"><!--\n' +
                   '$("#r-' + id + '")[0].value = ' + JSON.stringify(defaults[id]) + ';\n' +
                   '//--></script>');
@@ -88,10 +90,10 @@ const defaults = await (async function() {
         }
 
         l("name", "Recording name");
-        txt("name", "n");
+        txt("name", "n", config.limits.recNameLength);
 
         l("dname", "Your display name");
-        txt("dname", "m");
+        txt("dname", "m", config.limits.recUsernameLength);
 
         // Only show the lobby selection if they have lobbies
         var lobbies = await db.allP("SELECT * FROM lobbies WHERE uid=@UID;", {"@UID": uid});

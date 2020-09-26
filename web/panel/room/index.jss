@@ -152,7 +152,7 @@ if (rows.length === 0) {
                 <span style="display: inline-block; text-align: left">
                     <div style="display: flex">
                         <label for="lobby-name" style="width: auto; margin: auto">Name:&nbsp;</label>
-                        <input id="lobby-name" type="text" style="flex: auto" />
+                        <input id="lobby-name" type="text" style="flex: auto" maxlength=<?JS= config.limits.lobbyNameLength ?> />
                     </div>
 
                     <a id="create-lobby-b" class="button" href="javascript:createLobby();" style="width: 100%">
