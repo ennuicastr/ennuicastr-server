@@ -15,6 +15,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+const config = require("../config.js");
 if (!params.QUERY_STRING) {
     writeHead(302, {"location": config.site});
     return;
