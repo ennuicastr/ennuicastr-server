@@ -7,6 +7,7 @@
     "repo": "~/ennuicastr-server",
     "db": "~/ennuicastr-server/db",
     "rec": "~/ennuicastr-server/rec",
+    "sounds": "~/ennuicastr-server/sounds",
     "cert": "~/cert",
     "sock": "/tmp/ennuicastr-server.sock",
     "ezsock": "/tmp/ennuicastr-ennuizel-server.sock",
@@ -45,7 +46,8 @@
         "tracksPaid": 64,
         "recNameLength": 512,
         "recUsernameLength": 32,
-        "lobbyNameLength": 512
+        "lobbyNameLength": 512,
+        "soundNameLength": 512
     },
 
     "subscription": {

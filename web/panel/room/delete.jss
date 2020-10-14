@@ -20,7 +20,9 @@ if (!uid) return;
 
 const net = require("net");
 const config = require("../config.js");
-const db = require("../db.js").db;
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
 
 function fail(msg) {
     writeHead(500, {"content-type": "application/json"});
@@ -30,11 +32,6 @@ function fail(msg) {
 if (typeof request.body !== "object" ||
     request.body === null)
     return fail();
-
-// Check that this user isn't over the simultaneous lobbies limit
-var recordings = await db.allP("SELECT lid FROM lobbies WHERE uid=@UID;", {"@UID": uid});
-if (recordings.length >= config.limits.lobbies)
-    return fail({"error": "You may not have more than " + config.limits.lobbies + " rooms."});
 
 // Get the request into the correct format
 var req = request.body;
@@ -74,6 +71,7 @@ await new Promise(function(res, rej) {
 });
 
 // Now it's ready
+log("lobby-delete", "", {uid, lid: req.l});
 writeHead(200, {"content-type": "application/json"});
 write("{}");
 ?>

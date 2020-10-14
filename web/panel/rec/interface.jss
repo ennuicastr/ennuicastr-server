@@ -59,7 +59,7 @@ const defaults = await (async function() {
         }
 
         function txt(id, q, limit) {
-            write('<input id="r-' + id + '"' +
+            write('<input id="r-' + id + '" type="text"' +
                   (limit ? (' maxlength=' + limit) : '') +
                   ' /><br/>' +
                   '<script type="text/javascript"><!--\n' +

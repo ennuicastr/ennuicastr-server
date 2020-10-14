@@ -77,7 +77,9 @@ CREATE TABLE IF NOT EXISTS recordings (
     /* The number of credits that this recording will/did cost to purchase */
     cost INTEGER,
     /* When it was purchased, if it's been purchased, or an empty string otherwise */
-    purchased TEXT
+    purchased TEXT,
+    /* Extra, recording-specific data in JSON format */
+    extra TEXT
 );
 
 CREATE INDEX IF NOT EXISTS recordings_uid ON recordings (uid);
@@ -145,3 +147,16 @@ CREATE TABLE IF NOT EXISTS lobbies (
 );
 
 CREATE INDEX IF NOT EXISTS lobbies_uid ON lobbies (uid);
+
+/* Soundboard */
+CREATE TABLE IF NOT EXISTS sounds (
+    uid TEXT,
+    /* An ID for this sound */
+    sid TEXT PRIMARY KEY,
+    /* Just a display name */
+    name TEXT,
+    /* The duration */
+    duration REAL
+);
+
+CREATE INDEX IF NOT EXISTS sounds_uid ON sounds (uid);

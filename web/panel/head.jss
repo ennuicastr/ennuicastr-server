@@ -21,6 +21,8 @@ await include("../head.jss", config);
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
 
+<script src="<?JS= econfig.client ?>hotkeys.min.js" async defer></script>
+
 <?JS if (config.paypal) { ?>
 <script type="text/javascript">
 PayPalLoader = (function() {

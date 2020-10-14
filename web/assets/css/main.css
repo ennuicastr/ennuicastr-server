@@ -64,7 +64,7 @@
         --bg-3: #666;
         --bg-4: #555;
         --bg-5: #eaeaea;
-        --bg-6: #f7f7f7;
+        --bg-6: #d7d7d7;
         --bg-7: #008183;
         --bg-8: #009a9c;
         --bg-9: #00b4b5;
@@ -86,6 +86,8 @@
         --fg-8: #009a9c;
         --fg-9: #f7f7f7;
         --fg-10: #ddd;
+
+        --img-filter: none;
     }
 
     [data-theme="dark"] {
@@ -116,6 +118,8 @@
         --fg-8: #008183;
         --fg-9: #f7f7f7;
         --fg-10: #ddd;
+
+        --img-filter: invert(100%);
     }
 
 /* Menu */
@@ -4088,4 +4092,20 @@ th[aria-sort]:not(.no-sort):after {
 th[role=columnheader]:not(.no-sort):hover:after {
 	visibility: visible;
 	opacity: 1;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(359deg);
+    }
+}
+
+.spinner {
+	height: 1em;
+	animation: spin 2s infinite steps(8, jump-start);
+	filter: var(--img-filter);
 }

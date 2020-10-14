@@ -19,7 +19,10 @@ const uid = await include("../uid.jss");
 if (!uid) return;
 
 const config = require("../config.js");
-const db = require("../db.js").db;
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
+const id36 = require("../id36.js");
 
 function fail(msg) {
     writeHead(500, {"content-type": "application/json"});
@@ -43,17 +46,11 @@ var name = req.n.slice(0, config.limits.lobbyNameLength);
 if (name === "")
     name = "Anonymous";
 
-function genLID() {
-    // 101559956668416  = 1000000000 in base 36
-    // 3554598483394559 = zzzzzzzzzz-1000000000 in base 36
-    return Math.floor(Math.random()*3554598483394559+101559956668416).toString(36);
-}
-
 // Create the lobby
 var lid;
 while (true) {
     try {
-        lid = genLID();
+        lid = id36.genID(12);
         await db.runP("INSERT INTO lobbies " +
                       "( uid,  lid,  name,  associated,  rid) VALUES " +
                       "(@UID, @LID, @NAME, @ASSOCIATED, @RID);", {
@@ -69,6 +66,7 @@ while (true) {
 }
 
 // Now it's ready
+log("lobby-create", "", {uid, lid, name});
 writeHead(200, {"content-type": "application/json"});
 write(JSON.stringify({lid: lid, name: name}));
 ?>

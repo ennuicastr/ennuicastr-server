@@ -31,6 +31,7 @@ const config = require("../config.js");
 const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
+const id36 = require("../id36.js");
 const ogg = require("./ogg.js");
 const prot = require(config.clientRepo + "/protocol.js");
 
@@ -139,6 +140,12 @@ var ipToNick = {};
 
 // Counter so we can give new "Anonymous (x)" names to anonymous users
 var anonCt = 1;
+
+// Information on available sounds
+var sounds = {
+    list: null,
+    urls: {}
+};
 
 // We need to try ports until we find one that works
 function tryListenHTTPS() {
@@ -751,6 +758,38 @@ wss.on("connection", (ws, wsreq) => {
             ws.send(ret);
         }
 
+        // Inform them of available sounds
+        Promise.all([]).then(function() {
+            if (!sounds.list)
+                return db.allP("SELECT * FROM sounds WHERE uid=@UID ORDER BY name ASC, sid ASC;", {"@UID": recInfo.uid});
+
+        }).then(function(rows) {
+            if (!sounds.list && rows) {
+                var key = Buffer.from(recInfo.extra.assetKey, "binary");
+                sounds.list = [];
+                rows.forEach((row) => {
+                    var encd = Buffer.from(id36.enc(row.sid, key), "binary").toString("base64");
+                    var url = "/sound.jss?" + recInfo.rid.toString(36) + "-" + encd;
+                    sounds.urls[":" + row.sid] = url;
+                    sounds.list.push({
+                        i: row.sid,
+                        u: url,
+                        n: row.name
+                    });
+                });
+            }
+
+            if (sounds.list && sounds.list.length) {
+                var p = prot.parts.info;
+                var jsonBuf = Buffer.from(JSON.stringify(sounds.list), "utf8");
+                var ret = Buffer.alloc(p.length + jsonBuf.length - 4);
+                ret.writeUInt32LE(prot.ids.info, 0);
+                ret.writeUInt32LE(prot.info.sounds, p.key);
+                jsonBuf.copy(ret, p.value);
+                ws.send(ret);
+            }
+        });
+
         // And prepare for messages
         ws.on("message", masterMsg);
     }
@@ -791,6 +830,42 @@ wss.on("connection", (ws, wsreq) => {
                     // Invalid mode change!
                     return die();
                 }
+                break;
+
+            case prot.ids.sound:
+                var p = prot.parts.sound.cs;
+                if (msg.length <= p.length)
+                    return die();
+                var status = !!msg.readUInt8(p.status);
+                var sid = "";
+                try {
+                    sid = msg.toString("utf8", p.id);
+                } catch (ex) {}
+                var csid = ":" + sid;
+                if (!(csid in sounds.urls))
+                    break;
+                var url = sounds.urls[csid];
+
+                // Send the request along
+                p = prot.parts.sound.sc;
+                var urlBuf = Buffer.from(url, "utf8");
+                var ret = Buffer.alloc(p.length + urlBuf.length);
+                ret.writeUInt32LE(prot.ids.sound, 0);
+                ret.writeDoubleLE(curTime(), p.time);
+                ret.writeUInt8(status?1:0, p.status);
+                urlBuf.copy(ret, p.url);
+                connections.forEach((connection) => {
+                    if (connection)
+                        connection.send(ret);
+                });
+
+                // Don't record it if we're not in the right mode
+                if (recInfo.mode !== prot.mode.rec &&
+                    recInfo.mode !== prot.mode.buffering)
+                    break;
+
+                // Record it
+                recMeta({c:"sound",sid,status:+status});
                 break;
 
             default:
@@ -845,6 +920,9 @@ async function recvRecInfo(r) {
     r.key = ~~(Math.random()*2000000000);
     r.master = ~~(Math.random()*2000000000);
     r.wskey = ~~(Math.random()*2000000000);
+    r.extra = {
+        assetKey: id36.genKey().toString("binary")
+    };
 
     // Make a recording ID
     var rid;
@@ -853,10 +931,10 @@ async function recvRecInfo(r) {
             rid = ~~(Math.random()*2000000000);
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  hostname,  format," +
-                          "  continuous,  rtc,  key,  master,  wskey," +
+                          "  continuous,  rtc,  key,  master,  wskey,  extra," +
                           "  status,  init,  expiry,  tracks,  cost, purchased) VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @HOSTNAME, @FORMAT," +
-                          " @CONTINUOUS, @RTC, @KEY, @MASTER, @WSKEY," +
+                          " @CONTINUOUS, @RTC, @KEY, @MASTER, @WSKEY, @EXTRAS," +
                           " 0, datetime('now'), datetime('now', '1 month'), 0, 0, '');", {
                 "@UID": r.uid,
                 "@RID": rid,
@@ -868,7 +946,8 @@ async function recvRecInfo(r) {
                 "@RTC": r.rtc,
                 "@KEY": r.key,
                 "@MASTER": r.master,
-                "@WSKEY": r.wskey
+                "@WSKEY": r.wskey,
+                "@EXTRAS": JSON.stringify(r.extra)
             });
             break;
 

@@ -27,22 +27,26 @@ if (!config.nomain) {
 <?JS
 }
 
-function b(target, icon, text) {
+function b(target, icon, text, id) {
     var cl = "button";
     if (target === params.REQUEST_URI)
         cl += " recurrent";
     if (icon)
         text = '<i class="fas fa-' + icon + '"></i> ' + text;
-    write('<a class="button ' + cl + '" href="' + target + '">' + text + '</a>\n');
+    id = "ec-menu-" + id;
+    if (config.nomain)
+        id += "-mini";
+    write('<a id="' + id + '" class="' + cl + '" href="' + target + '">' + text + '</a>\n');
 }
 
 if (!config.nomain)
-    b("/panel/", "user", "Main panel");
-b("/panel/rec/", "microphone", "Recordings");
-b("/panel/room/", "cube", "Rooms");
-b("/panel/subscription/", "calendar-alt", "Subscription");
-//b("/panel/credits/", "dollar-sign", "Credit");
+    b("/panel/", "user", "Main panel", "main");
+b("/panel/rec/", "microphone", "Recordings", "recordings");
+b("/panel/room/", "cube", "Rooms", "rooms");
+b("/panel/subscription/", "calendar-alt", "Subscription", "subscription");
+b("/panel/sounds/", "music", "Soundboard", "sounds");
+//b("/panel/credits/", "dollar-sign", "Credit", "credit");
 if (!config.nomain)
-    b(econfig.site, "home", "Home page");
-b("/panel/logout/", "sign-out-alt", "Log out");
+    b(econfig.site, "home", "Home page", "home");
+b("/panel/logout/", "sign-out-alt", "Log out", "log-out");
 ?>

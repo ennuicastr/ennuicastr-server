@@ -19,7 +19,7 @@ const fs = require("fs");
 const config = require("./config.json");
 
 // Handle ~'s in paths
-["repo", "db", "rec", "cert", "clientRepo"].forEach((path) => {
+["repo", "db", "rec", "sounds", "cert", "clientRepo"].forEach((path) => {
     config[path] = config[path].replace(/~/g, process.env.HOME);
 });
 

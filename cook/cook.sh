@@ -189,6 +189,10 @@ CODECS=`timeout 10 "$SCRIPTBASE/oggtracks" < $ID.ogg.header1`
 STREAM_NOS=`timeout 10 "$SCRIPTBASE/oggtracks" -n < $ID.ogg.header1`
 NB_STREAMS=`echo "$CODECS" | wc -l`
 
+timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
+    timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" > $tmpdir/meta
+NB_SFX=`timeout 10 "$SCRIPTBASE/sfx.js" < $tmpdir/meta`
+
 # Prepare the self-extractor or project file
 if [ "$FORMAT" = "wavsfx" ]
 then
@@ -268,6 +272,20 @@ do
     fi
 done
 
+# Plus SFX (FIXME: duplication)
+for c in `seq -w 1 $NB_SFX`
+do
+    O_FN="sfx-$c.$ext"
+    O_FFN="$OUTDIR/$O_FN"
+    mkfifo "$O_FFN"
+
+    if [ "$CONTAINER" = "aupzip" ]
+    then
+        printf '\t<import filename="%s" offset="0.00000000" mute="0" solo="0" height="150" minimized="0" gain="1.0" pan="0.0"/>\n' \
+            "$O_FN" >> "$tmpdir/out/$FNAME.aup"
+    fi
+done
+
 if [ "$FORMAT" = "wavsfxm" -o "$FORMAT" = "wavsfxu" ]
 then
     printf "printf '\\\\n\\\\n===\\\\nProcessing complete.\\\\n===\\\\n\\\\n'\\n" >> "$OUTDIR/RunMe.$RUNMESUFFIX"
@@ -313,6 +331,19 @@ do
 
     fi
 done &
+for c in `seq -w 1 $NB_SFX`
+do
+    O_FN="sfx-$c.$ext"
+    O_FFN="$OUTDIR/$O_FN"
+    T_DURATION="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -d $((c-1)) < $tmpdir/meta)"
+    LFILTER="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" $((c-1)) < $tmpdir/meta)"
+    timeout $DEF_TIMEOUT $NICE ffmpeg -filter_complex "$LFILTER" -map '[aud]' -flags bitexact -f wav - |
+        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/wavduration" "$T_DURATION" |
+        (
+            timeout $DEF_TIMEOUT $NICE $ENCODE > "$O_FFN";
+            cat > /dev/null
+        )
+done &
 if [ "$FORMAT" = "copy" -o "$CONTAINER" = "mix" ]
 then
     # Wait for the immediate child, which has spawned more children
@@ -324,9 +355,7 @@ fi
 if [ "$CONTAINER" = "zip" -o "$CONTAINER" = "aupzip" -o "$CONTAINER" = "exe" ]
 then
     mkfifo $OUTDIR/info.txt
-    timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-        timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" |
-        timeout $DEF_TIMEOUT "$SCRIPTBASE/info.js" "$ID" > $OUTDIR/info.txt &
+    timeout $DEF_TIMEOUT "$SCRIPTBASE/info.js" "$ID" < $tmpdir/meta > $OUTDIR/info.txt &
 fi
 
 
