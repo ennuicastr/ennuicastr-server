@@ -55,7 +55,7 @@ process.argv.slice(2).forEach(arg => {
         let t = c.t / 48000;
         c = c.d;
         if (c.c !== "sound")
-            return;
+            continue;
 
         // Get the associated sound
         let sound;
