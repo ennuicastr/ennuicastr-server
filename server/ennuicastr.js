@@ -886,7 +886,9 @@ process.on("message", (msg) => {
 });
 
 // Record to the metadata track
-function recMeta(data) {
+function recMeta(data, opt) {
+    opt = opt || {};
+
     try {
         data = Buffer.from(JSON.stringify(data));
     } catch (ex) {
@@ -901,8 +903,11 @@ function recMeta(data) {
         outHeader2.write(0, 0, track.packetNo++, metaHeader[1]);
     }
 
+    // Get the time
+    opt.time = opt.time || curGranule();
+
     // Write this data
-    outData.write(curGranule(), 0, track.packetNo++, data);
+    outData.write(opt.time, 0, track.packetNo++, data);
 }
 
 // Once we get the recording info, we can start
@@ -1027,6 +1032,7 @@ async function startRec() {
     beginTime = curTime();
     lastResumed = curGranule();
     modeUpdate(prot.mode.rec);
+    recMeta({c: "start"}, {time: lastResumed});
 
     // Tell the users the start time
     var op = prot.parts.info;
@@ -1065,7 +1071,7 @@ async function pauseRec() {
     modeUpdate(prot.mode.paused);
 
     // Record it in the metadata
-    recMeta({c: "pause"});
+    recMeta({c: "pause"}, {time: lastPaused});
 
     // Pause crediting
     if (chargeCreditsTimeout)
@@ -1081,7 +1087,7 @@ async function resumeRec() {
     modeUpdate(prot.mode.rec);
 
     // Record it in the metadata
-    recMeta({c: "resume"});
+    recMeta({c: "resume"}, {time: lastResumed});
 
     // Resume crediting
     if (chargeCreditsTimeout)
