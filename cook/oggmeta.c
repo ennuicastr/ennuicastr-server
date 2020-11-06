@@ -79,31 +79,6 @@ ssize_t writeAll(int fd, const void *vbuf, size_t count)
     return wt;
 }
 
-void writeOgg(struct OggHeader *header, const unsigned char *data, uint32_t size)
-{
-    unsigned char sequencePart;
-    uint32_t sizeMod;
-
-    if (writeAll(1, "OggS\0", 5) != 5 ||
-        writeAll(1, header, sizeof(*header)) != sizeof(*header))
-        exit(1);
-
-    // Write out the sequence info
-    sequencePart = (size+254)/255;
-    if (writeAll(1, &sequencePart, 1) != 1) exit(1);
-    sequencePart = 255;
-    sizeMod = size;
-    while (sizeMod > 255) {
-        if (writeAll(1, &sequencePart, 1) != 1) exit(1);
-        sizeMod -= 255;
-    }
-    sequencePart = sizeMod;
-    if (writeAll(1, &sequencePart, 1) != 1) exit(1);
-
-    // Then write the data
-    if (writeAll(1, data, size) != size) exit(1);
-}
-
 int main(int argc, char **argv)
 {
     int foundMeta = 0;
