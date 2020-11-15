@@ -99,6 +99,9 @@ sock.once("message", async function(msg) {
         // Read any remaining data before closing
         paused = false;
         readable();
+        if (buf.length > 4)
+            sendBuffer();
+        sendBuffer();
         sock.close();
     });
 

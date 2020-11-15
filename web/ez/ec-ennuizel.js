@@ -25,7 +25,6 @@ var Ennuizel = (function(ez) {
     } else {
         threads = 1;
     }
-    threads = 1;
 
     if (!ez.plugins) ez.plugins = [];
 
@@ -240,19 +239,6 @@ var Ennuizel = (function(ez) {
         });
     }
 
-    // General purpose ack for received messages
-    function ack(sock, msg) {
-        var seq = new DataView(msg.buffer).getUint32(0, true);
-        msg = msg.subarray(4);
-        var ackbuf = new DataView(new ArrayBuffer(8));
-        ackbuf.setUint32(0, 0, true);
-        ackbuf.setUint32(4, seq, true);
-        try {
-            sock.send(ackbuf.buffer);
-        } catch (ex) {}
-        return msg;
-    }
-
     // Perform our initial connection
     function begin() {
         // Start by downloading the info
@@ -383,8 +369,11 @@ var Ennuizel = (function(ez) {
     function connection(sock, thread, trackNo) {
         var la;
 
-        // And we have a message buffer for handling
+        // A buffer of received but not yet acknowledged messages
         var msgbuf = [];
+
+        // The message we're expecting
+        var expecting = 0;
 
         // Are we currently handling messages?
         var handling = false;
@@ -437,14 +426,31 @@ var Ennuizel = (function(ez) {
         newTrack();
         return promise;
 
+        // Find a suitable next message and ack it
+        function getNext() {
+            while (msgbuf.length) {
+                var msg = msgbuf.shift();
+                var seq = new DataView(msg.buffer).getUint32(0, true);
+                if (seq !== expecting) continue;
+                expecting++;
+                msg = msg.subarray(4);
+                var ackbuf = new DataView(new ArrayBuffer(8));
+                ackbuf.setUint32(0, 0, true);
+                ackbuf.setUint32(4, seq, true);
+                try {
+                    sock.send(ackbuf.buffer);
+                } catch (ex) {}
+                return msg;
+            }
+            return null;
+        }
+
         // Data handler
         function handle() {
             handling = true;
 
             // Get a message from the queue and acknowledge it
-            var msg = null;
-            if (msgbuf.length > 0)
-                msg = ack(sock, msgbuf.shift());
+            var msg = getNext();
 
             // Perhaps we're done?
             if (msg === null) {
