@@ -69,6 +69,8 @@ var Ennuizel = (function(ez) {
     function reportError(err) {
         if (err instanceof Error) {
             err = err + "\n\n" + err.stack;
+        } else if (err instanceof Event && err.type === "error") {
+            err = "Unexpected disconnection";
         } else if (typeof err === "object") {
             try {
                 err = JSON.stringify(err);
@@ -331,9 +333,7 @@ var Ennuizel = (function(ez) {
         // First we need to send our login and get an ack
         return new Promise(function(res, rej) {
             sock.onopen = res;
-            sock.onerror = function(err) {
-                rej(new Error(err));
-            };
+            sock.onerror = rej;
 
         }).then(function() {
             // Send our login and anticipate acknowledgement
@@ -346,9 +346,10 @@ var Ennuizel = (function(ez) {
 
             return new Promise(function(res, rej) {
                 sock.onmessage = res;
-                sock.onclose = sock.onerror = function(err) {
-                    rej(new Error(err));
+                sock.onclose = function() {
+                    rej("Socket unexpectedly closed!");
                 };
+                sock.onerror = rej;
             });
 
         }).then(function(msg) {
@@ -356,7 +357,7 @@ var Ennuizel = (function(ez) {
             if (msg.getUint32(0, true) !== 0 ||
                 msg.getUint32(4, true) !== 0x11) {
                 sock.close();
-                throw new Error(l("invalid"));
+                throw l("invalid");
             }
 
             // Now we're into normal message mode
@@ -380,6 +381,9 @@ var Ennuizel = (function(ez) {
 
         // Is the stream over?
         var eos = false;
+
+        // Were we disconnected?
+        var disconnected = false;
 
         // Handler to send a packet (or null for EOF) to Ennuizel
         var packet = null;
@@ -405,16 +409,13 @@ var Ennuizel = (function(ez) {
 
         // When we're closed, we're done
         sock.onclose = function() {
-            eos = true;
+            disconnected = true;
             if (!handling)
                 handle();
         };
 
         // If there's an error, die
-        sock.onerror = function(err) {
-            reportError(new Error(err));
-            rej(err);
-        };
+        sock.onerror = rej;
 
         // Start our new track and we're done for now
         var name;
@@ -429,10 +430,13 @@ var Ennuizel = (function(ez) {
         // Find a suitable next message and ack it
         function getNext() {
             while (msgbuf.length) {
+                // Get out a message
                 var msg = msgbuf.shift();
                 var seq = new DataView(msg.buffer).getUint32(0, true);
                 if (seq !== expecting) continue;
                 expecting++;
+
+                // Ack it
                 msg = msg.subarray(4);
                 var ackbuf = new DataView(new ArrayBuffer(8));
                 ackbuf.setUint32(0, 0, true);
@@ -440,6 +444,9 @@ var Ennuizel = (function(ez) {
                 try {
                     sock.send(ackbuf.buffer);
                 } catch (ex) {}
+
+                // If it's empty, EOS
+                if (msg.length === 0) eos = true;
                 return msg;
             }
             return null;
@@ -454,9 +461,13 @@ var Ennuizel = (function(ez) {
 
             // Perhaps we're done?
             if (msg === null) {
-                if (eos) {
+                if (eos || disconnected) {
                     // We're done!
                     return packet(null).then(function() {
+                        // Was this unexpected?
+                        if (!eos)
+                            return reportError("Unexpected disconnection!");
+                    }).then(function() {
                         res(thread);
                         /* If we're not rendering, it's safe to show the tracks
                          * in multithreaded mode */

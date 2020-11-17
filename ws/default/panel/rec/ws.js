@@ -21,7 +21,7 @@ const http = require("http");
 const config = require("../config.js");
 const db = require("../db.js").db;
 
-const sendSize = 1024*1024;
+const sendSize = 65536;
 
 sock.once("message", async function(msg) {
     msg = Buffer.from(msg); // Just in case
@@ -85,36 +85,55 @@ sock.once("message", async function(msg) {
     });
 
     var paused = false;
+    var onack = null;
 
+    c.stdout.on("readable", readable);
     function readable() {
         if (paused) return;
-        var chunk = c.stdout.read();
-        if (!chunk) return;
+        var chunk;
+        while (chunk = c.stdout.read(sendSize)) {
+            data(chunk);
+            if (paused) break;
+        }
+    }
+
+    function data(chunk) {
         buf = Buffer.concat([buf, chunk]);
-        if (buf.length >= sendSize)
+        while (buf.length >= sendSize)
             sendBuffer();
     }
-    c.stdout.on("readable", readable);
+
     c.stdout.on("end", () => {
-        // Read any remaining data before closing
-        paused = false;
-        readable();
-        if (buf.length > 4)
+        while (buf.length > 4)
             sendBuffer();
         sendBuffer();
         sock.close();
     });
 
     function sendBuffer() {
+        // Get the sendable part
+        var toSend;
+        if (buf.length > sendSize) {
+            toSend = buf.subarray(0, sendSize);
+            buf = buf.subarray(sendSize);
+        } else {
+            toSend = buf;
+            buf = null;
+        }
+
         try {
-            sock.send(buf);
+            sock.send(toSend);
         } catch (ex) {}
 
-        buf = Buffer.alloc(4);
+        var hdr = Buffer.alloc(4);
         sending++;
-        buf.writeUInt32LE(sending, 0);
+        hdr.writeUInt32LE(sending, 0);
+        if (buf)
+            buf = Buffer.concat([hdr, buf]);
+        else
+            buf = hdr;
 
-        if (sending > ackd + 16) {
+        if (sending > ackd + 128) {
             // Stop accepting data
             paused = true;
         }
@@ -128,7 +147,8 @@ sock.once("message", async function(msg) {
         if (cmd !== 0) return sock.close();
         if (p > ackd) {
             ackd = p;
-            if (sending <= ackd + 16) {
+            if (onack) onack();
+            if (sending <= ackd + 128) {
                 // Accept data
                 paused = false;
                 readable();
@@ -140,5 +160,6 @@ sock.once("message", async function(msg) {
         // If they close early, we need to let the processing finish
         ackd = Infinity;
         paused = false;
+        readable();
     });
 });
