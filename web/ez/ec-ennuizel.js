@@ -571,13 +571,13 @@ var Ennuizel = (function(ez) {
 
             var againRes, downPromise, downRes;
 
-            downPromise = new Promise(function(res, rej) {
+            downPromise = new Promise(function(res) {
                 downRes = res;
             });
 
             function againCb() {
                 // Prepare to wait for more download
-                var ret = new Promise(function(res, rej) {
+                var ret = new Promise(function(res) {
                     againRes = res;
                 });
 
@@ -608,12 +608,11 @@ var Ennuizel = (function(ez) {
 
                 }).then(function() {
                     // Tell them we have more
-                    var waiter = new Promise(function(res, rej) {
+                    downPromise = new Promise(function(res) {
                         downRes = res;
                     });
                     againRes();
-                    sent = 0;
-                    return waiter;
+                    return downPromise;
 
                 });
 
