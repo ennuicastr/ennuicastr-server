@@ -868,6 +868,38 @@ wss.on("connection", (ws, wsreq) => {
                 recMeta({c:"sound",sid,status:+status});
                 break;
 
+            case prot.ids.admin:
+                var p = prot.parts.admin;
+                var acts = prot.flags.admin.actions;
+                if (msg.length < p.length)
+                    return die();
+                var target = msg.readUInt32LE(p.target);
+                if (~target === 0)
+                    target = -1;
+                var action = msg.readUInt32LE(p.action);
+
+                if (action === acts.kick) {
+                    // This we do ourselves!
+                    target = connections[target];
+                    if (target)
+                        target.close();
+
+                } else {
+                    // Just forward it to the affected party/ies
+                    if (target < 0) {
+                        connections.forEach((connection) => {
+                            if (connection)
+                                connection.send(msg);
+                        });
+                    } else {
+                        target = connections[target];
+                        if (target)
+                            target.send(msg);
+                    }
+
+                }
+                break;
+
             default:
                 return die();
         }
