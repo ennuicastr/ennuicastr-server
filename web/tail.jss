@@ -9,7 +9,7 @@
                     <a href="/privacy/">Privacy policy</a> —
                     <a href="/terms/">Terms of service</a> —
                     <a href="/licenses/">Licenses</a> —
-                    <a href="/contact.jss">Contact us</a>
+                    <a href="/contact/">Contact us</a>
                 </p>
             </footer>
 
