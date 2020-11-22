@@ -195,6 +195,19 @@ wss.on("connection", (ws, wsreq) => {
     var floodLog = [];
     var floodLogSz = 0;
 
+    // Make sure we pingpong
+    ws.isAlive = true;
+    ws.on("pong", () => { ws.isAlive = true; });
+
+    var interval = setInterval(() => {
+        if (!ws.isAlive) {
+            die();
+            return;
+        }
+        ws.isAlive = false;
+        ws.ping(()=>{});
+    }, 30000);
+
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
     function die() {
@@ -206,6 +219,10 @@ wss.on("connection", (ws, wsreq) => {
             connections[id] = null;
         if (mid)
             masters[mid] = null;
+        if (interval) {
+            clearTimeout(interval);
+            interval = null;
+        }
 
         // If this was a data connection, inform others of their disconnection
         if (id) {
