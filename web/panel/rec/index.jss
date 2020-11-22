@@ -101,7 +101,7 @@ for (var ri = 0; ri < rows.length; ri++) {
 rows.forEach((row) => {
 ?>
         <tr>
-            <td><?JS= row.name||"(Anonymous)" ?></td>
+            <td class="renamable" data-id="<?JS= row.rid.toString(36) ?>"><?JS= row.name||"(Anonymous)" ?></td>
             <td><?JS= row.init ?><br/><?JS= row.expiry ?></td>
             <td><?JS
                 switch (row.status) {
@@ -174,6 +174,7 @@ if (rows.length === 0) {
     </div>
 </section>
 
+<script type="text/javascript" src="/assets/js/utils.js" async defer></script>
 <script type="text/javascript" src="/assets/js/tablesort.min.js"></script>
 <script type="text/javascript"><!--
 new Tablesort(document.getElementById("available-recordings"));

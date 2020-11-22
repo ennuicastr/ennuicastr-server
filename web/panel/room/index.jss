@@ -60,7 +60,7 @@ for (var ri = 0; ri < rows.length; ri++) {
     var row = rows[ri];
 ?>
         <tr>
-            <td><?JS= row.name||"(Anonymous)" ?></td>
+            <td class="renamable" data-id="<?JS= row.lid ?>"><?JS= row.name||"(Anonymous)" ?></td>
             <td>
                 <?JS=
                     '<input id="lobby-link-' + row.lid + '" type="text" value="' + config.lobby + '?' + row.lid + '" />' +
@@ -285,6 +285,7 @@ function deleteLobbyNo(lid) {
 }
 </script>
 
+<script type="text/javascript" src="/assets/js/utils.js" async defer></script>
 <script type="text/javascript" src="/assets/js/tablesort.min.js"></script>
 <script type="text/javascript"><!--
 new Tablesort(document.getElementById("available-lobbies"));
