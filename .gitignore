@@ -4,7 +4,7 @@ config.json
 *.db*
 nohup.out
 *.ogg*
-sounds
+/sounds
 cook/oggduration
 cook/oggmeta
 cook/oggstender
