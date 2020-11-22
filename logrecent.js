@@ -32,7 +32,7 @@ db.all("SELECT * FROM log" + when + " ORDER BY time ASC;", function(err, rows) {
             line += " U" + row.uid;
         if (row.rid >= 0)
             line += " R" + row.rid;
-        line += ": " + row.details;
+        line += ": " + (row.details+"").replace(/[\x00-\x1F\u007F-\uFFFF]/g, "_");
         process.stdout.write(line + "\n");
     });
 });
