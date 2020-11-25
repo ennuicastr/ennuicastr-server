@@ -523,6 +523,12 @@ wss.on("connection", (ws, wsreq) => {
                 if (master)
                     master.send(ret);
             });
+            if (recInfo.universalMonitor) {
+                connections.forEach((connection) => {
+                    if (connection && connection !== ws)
+                        connection.send(ret);
+                });
+            }
 
             // Consider ending the recording
             if (recInfo.mode === prot.mode.rec) {
