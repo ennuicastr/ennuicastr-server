@@ -140,7 +140,7 @@ rows.forEach((row) => {
 
                     write("<script type=\"text/javascript\"><!--\n" +
                           "function join" + row.rid.toString(36) + "() {\n" +
-                          "window.open(" + JSON.stringify(url) + ", \"\", \"width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0\");\n" +
+                          "window.open(" + JSON.stringify(url) + ", \"\", \"width=800,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0\");\n" +
                           "}\n" +
                           "//--></script>\n" +
                           "<a href=\"javascript:join" + row.rid.toString(36) + "();\" class=\"button\">" +
