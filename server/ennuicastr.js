@@ -594,8 +594,13 @@ wss.on("connection", (ws, wsreq) => {
                 // Are they actually speaking?
                 var speaking = true;
                 var continuous = !!(flags & prot.flags.features.continuous);
+                var flac = (flags & prot.flags.dataTypeMask) === prot.flags.dataType.flac;
                 if (continuous)
                     speaking = !!(chunk[0]);
+                else if (flac)
+                    speaking = (chunk.length >= 16);
+                else
+                    speaking = (chunk.length >= 8);
 
                 // Update masters
                 speechStatus(id, speaking);
