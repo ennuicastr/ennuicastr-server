@@ -52,7 +52,7 @@ rec = {
     format: (rec.f==="flac")?"flac":"opus",
     continuous: !!rec.c,
     rtc: !!rec.r,
-    universalMonitor: !!rec.um
+    universalMonitor: !!rec.r
 };
 if (typeof lid === "string")
     rec.lid = lid;

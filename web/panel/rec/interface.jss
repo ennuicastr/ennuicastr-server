@@ -143,9 +143,6 @@ const defaults = await (async function() {
 
         l("rtc", "Live voice chat");
         chk("rtc", "r");
-
-        l("universal_monitor", "Show user list to all users");
-        chk("universal_monitor", "um");
         ?>
 
         </div><br/>
