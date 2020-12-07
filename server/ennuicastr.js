@@ -1051,10 +1051,19 @@ async function recvRecInfo(r) {
     process.send({c: "ready", r});
 }
 
-// They have an hour to start recording
-setTimeout(function() {
-    if (!recInfo || recInfo.mode === prot.mode.init)
+// Quit if the recording is unused
+var preRecordingInterval = setInterval(function() {
+    if (!recInfo)
         process.exit(1);
+    if (recInfo.mode !== prot.mode.init) {
+        clearInterval(preRecordingInterval);
+        return;
+    }
+    for (var connection of connections) {
+        if (connection)
+            return;
+    }
+    process.exit(1);
 }, 1000*60*60);
 
 // Current time in ms from start time
@@ -1198,12 +1207,14 @@ async function stopRec() {
         } catch (ex) {}
     }
 
-    // Give them two minutes, then shut it all down
-    setTimeout(function() {
-        connections.forEach((connection) => {
+    // Shut it all down after everyone's disconnected
+    var postRecordingInterval = setInterval(function() {
+        for (var connection of connections) {
             if (connection)
-                connection.close();
-        });
+                return;
+        }
+
+        clearInterval(postRecordingInterval);
         wss.close();
         hs.close();
 
@@ -1212,12 +1223,10 @@ async function stopRec() {
         outData.end();
         outUsers.end();
         outInfo.end();
-    }, 1000*60*2);
 
-    /* Force the actual process exit after 5 minutes (timeouts and such will
-     * keep it alive) */
-    setTimeout(function() {
-        process.exit(0);
+        setTimeout(function() {
+            process.exit(0);
+        }, 60000);
     }, 1000*60*5);
 
     // And log it
