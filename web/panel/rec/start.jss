@@ -64,14 +64,15 @@ while (true) {
 
         await db.runP("DELETE FROM defaults WHERE uid=@UID;", {"@UID": uid});
         await db.runP("INSERT INTO defaults " +
-                      "( uid,  name,  dname,  format,  continuous,  rtc,  universal_monitor) VALUES " +
-                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @UNIVERSAL_MONITOR);", {
+                      "( uid,  name,  dname,  format,  continuous,  rtc,  lid,  universal_monitor) VALUES " +
+                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @LID, @UNIVERSAL_MONITOR);", {
             "@UID": uid,
             "@NAME": rec.name,
             "@DNAME": dname,
             "@FORMAT": rec.format,
             "@CONTINUOUS": rec.continuous,
             "@RTC": rec.rtc,
+            "@LID": rec.lid || null,
             "@UNIVERSAL_MONITOR": rec.universalMonitor
         });
 

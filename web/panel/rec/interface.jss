@@ -38,6 +38,7 @@ const defaults = await (async function() {
             format: "opus",
             continuous: false,
             rtc: true,
+            lid: null,
             universal_monitor: true
         };
     row.universal_monitor = !!row.universal_monitor;
@@ -103,8 +104,8 @@ const defaults = await (async function() {
             lobbies.forEach((row) => {
                 opts.push([row.lid, row.name.replace(/\u0022/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")]);
             });
-            l("lobby", "Room");
-            sel("lobby", "l", opts);
+            l("lid", "Room");
+            sel("lid", "l", opts);
         }
 
         var showAdvanced = (/* BETA accountCredits.subscription >= 2 || */
