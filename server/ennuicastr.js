@@ -117,11 +117,16 @@ var startTime = process.hrtime();
 // When the recording began, as in when record was clicked
 var beginTime = null;
 
-// When we last paused as a granule position
+// When we last paused as a granule position and time
 var lastPaused = 0;
+var lastPausedT = 0;
 
-// When we last resumed as a granule position
+// When we last resumed as a granule position and time
 var lastResumed = 0;
+var lastResumedT = 0;
+
+// When we last paused or resumed, in recording time
+var lastEventRecTime = 0;
 
 // Current active connections, by ID
 var connections = [null], masters = [null];
@@ -419,9 +424,13 @@ wss.on("connection", (ws, wsreq) => {
         ws.send(Buffer.from(ret));
 
         // Send them the current mode
-        ret.writeUInt32LE(prot.info.mode, p.key);
-        ret.writeUInt32LE(recInfo.mode, p.value);
-        ws.send(Buffer.from(ret));
+        var mode = Buffer.alloc(p.length + 16);
+        mode.writeUInt32LE(prot.ids.info, 0);
+        mode.writeUInt32LE(prot.info.mode, p.key);
+        mode.writeUInt32LE(recInfo.mode, p.value);
+        mode.writeDoubleLE(Math.max(lastPausedT, lastResumedT), p.value + 4);
+        mode.writeDoubleLE(lastEventRecTime, p.value + 12);
+        ws.send(Buffer.from(mode));
 
         // Send them the recording name
         var textBuf = Buffer.from(recInfo.name+"");
@@ -1073,21 +1082,23 @@ function curTime() {
 }
 
 // Current time in granule pos
-function curGranule() {
-    return Math.round(curTime() * 48);
+function curGranule(ct) {
+    return Math.round((ct || curTime()) * 48);
 }
 
 // General mode-update. Updates recInfo.mode and informs clients
-function modeUpdate(toMode) {
+function modeUpdate(toMode, time) {
     if (recInfo.mode === toMode)
         return;
 
     recInfo.mode = toMode
     var op = prot.parts.info;
-    var ret = Buffer.alloc(op.length);
+    var ret = Buffer.alloc(op.length + 16);
     ret.writeUInt32LE(prot.ids.info, 0);
     ret.writeUInt32LE(prot.info.mode, op.key);
     ret.writeUInt32LE(toMode, op.value);
+    ret.writeDoubleLE(time, op.value + 4);
+    ret.writeDoubleLE(lastEventRecTime, op.value + 12);
 
     connections.forEach((connection) => {
         if (connection)
@@ -1098,9 +1109,10 @@ function modeUpdate(toMode) {
 // Start recording
 async function startRec() {
     // Update the mode
-    beginTime = curTime();
-    lastResumed = curGranule();
-    modeUpdate(prot.mode.rec);
+    beginTime = lastResumedT = curTime();
+    lastResumed = curGranule(beginTime);
+    lastEventRecTime = 0;
+    modeUpdate(prot.mode.rec, beginTime);
     recMeta({c: "start"}, {time: lastResumed});
 
     // Tell the users the start time
@@ -1136,8 +1148,10 @@ async function startRec() {
 // Pause recording
 async function pauseRec() {
     // Update the mode
-    lastPaused = curGranule();
-    modeUpdate(prot.mode.paused);
+    lastPausedT = curTime();
+    lastPaused = curGranule(lastPausedT);
+    lastEventRecTime += lastPausedT - lastResumedT;
+    modeUpdate(prot.mode.paused, lastPausedT);
 
     // Record it in the metadata
     recMeta({c: "pause"}, {time: lastPaused});
@@ -1152,8 +1166,9 @@ async function pauseRec() {
 // Resume a paused recording
 async function resumeRec() {
     // Update the mode
-    lastResumed = curGranule();
-    modeUpdate(prot.mode.rec);
+    lastResumedT = curTime();
+    lastResumed = curGranule(lastResumedT);
+    modeUpdate(prot.mode.rec, lastResumedT);
 
     // Record it in the metadata
     recMeta({c: "resume"}, {time: lastResumed});
@@ -1166,7 +1181,10 @@ async function resumeRec() {
 /* End the recording. This is distinct from stopRec, because it still has to
  * wait for buffers. */
 function endRec() {
-    modeUpdate(prot.mode.buffering);
+    lastPausedT = curTime();
+    lastPaused = curGranule(lastPausedT);
+    lastEventRecTime += lastPausedT - lastResumedT;
+    modeUpdate(prot.mode.buffering, curTime());
 
     // No update to the database, as we're still recording
 
@@ -1187,7 +1205,7 @@ function awaitBuffering() {
 
 // Stop recording
 async function stopRec() {
-    modeUpdate(prot.mode.finished);
+    modeUpdate(prot.mode.finished, curTime());
 
     // Finish charging credits
     if (chargeCreditsTimeout) {
