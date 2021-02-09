@@ -228,7 +228,7 @@ function createLobby() {
 }
 
 function createRecordingLobby(lid) {
-    $("#r-lobby")[0].value = lid;
+    $("#r-lid")[0].value = lid;
     $("#create-recording-b")[0].style.display = "inline-block";
     $("#create-recording-b")[0].classList.add("disabled");
     $("#create-recording")[0].style.display = "block";
