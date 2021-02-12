@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Yahweasel
+ * Copyright (c) 2018-2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -149,7 +149,10 @@ var anonCt = 1;
 // Information on available sounds
 var sounds = {
     list: null,
-    urls: {}
+    urls: {},
+    durations: {},
+    msgs: {},
+    timeouts: {}
 };
 
 // We need to try ports until we find one that works
@@ -549,6 +552,12 @@ wss.on("connection", (ws, wsreq) => {
             }
         });
 
+        // Give them any existing sounds
+        for (let key in sounds.msgs) {
+            let msg = sounds.msgs[key];
+            ws.send(msg);
+        }
+
         // Inform masters for credit rate
         informMastersCredit();
 
@@ -808,6 +817,7 @@ wss.on("connection", (ws, wsreq) => {
                     var encd = Buffer.from(id36.enc(row.sid, key), "binary").toString("base64");
                     var url = "/sound.jss?" + recInfo.rid.toString(36) + "-" + encd;
                     sounds.urls[":" + row.sid] = url;
+                    sounds.durations[":" + row.sid] = row.duration;
                     sounds.list.push({
                         i: row.sid,
                         u: url,
@@ -882,6 +892,7 @@ wss.on("connection", (ws, wsreq) => {
                 if (!(csid in sounds.urls))
                     break;
                 var url = sounds.urls[csid];
+                let duration = sounds.durations[csid];
 
                 // Send the request along
                 p = prot.parts.sound.sc;
@@ -895,6 +906,20 @@ wss.on("connection", (ws, wsreq) => {
                     if (connection)
                         connection.send(ret);
                 });
+
+                // Remember it for later
+                if (sounds.timeouts[csid])
+                    clearTimeout(sounds.timeouts[csid]);
+                if (status) {
+                    sounds.msgs[csid] = ret;
+                    sounds.timeouts[csid] = setTimeout(function() {
+                        delete sounds.msgs[csid];
+                        delete sounds.timeouts[csid];
+                    }, duration * 1000);
+                } else {
+                    delete sounds.msgs[csid];
+                    delete sounds.timeouts[csid];
+                }
 
                 // Don't record it if we're not in the right mode
                 if (recInfo.mode !== prot.mode.rec &&
