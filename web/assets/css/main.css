@@ -2704,6 +2704,11 @@
         text-align: center;
     }
 
+    section.narrow {
+        max-width: 50em;
+        margin: auto;
+    }
+
     header {
         margin-bottom: 1em;
     }

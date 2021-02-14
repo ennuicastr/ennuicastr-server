@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -48,7 +48,7 @@ if ("cookie" in request.headers) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <!--[if lte IE 8]><script src="/assets/js/ie/html5shiv.js"></script><![endif]-->
-        <link rel="stylesheet" href="/assets/css/main.css?v=3" />
+        <link rel="stylesheet" href="/assets/css/main.css?v=4" />
         <!--[if lte IE 9]><link rel="stylesheet" href="/assets/css/ie9.css" /><![endif]-->
 
         <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png" />
