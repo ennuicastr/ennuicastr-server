@@ -109,6 +109,8 @@ function formatToName(format) {
         return "HE-AAC";
     else if (format === "opus")
         return "Opus";
+    else if (format === "vorbis")
+        return "Ogg Vorbis";
     else
         return format.toUpperCase();
 }
@@ -137,6 +139,10 @@ if (request.query.f) {
             break;
         case "opus":
             format = mext = "opus";
+            break;
+        case "vorbis":
+            format = "vorbis";
+            mext = "ogg";
             break;
         case "raw":
             format = "raw";
@@ -414,7 +420,7 @@ if (!recInfo.purchased) {
     <p><?JS
     if (mobile)
         showDL("aup");
-    [(mac?"flac":"heaac"), "aac", "opus"].forEach(showDL);
+    [(mac?"flac":"heaac"), "aac", "opus", "vorbis"].forEach(showDL);
     ?></p>
 
     <?JS
