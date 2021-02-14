@@ -53,6 +53,6 @@ const lobbyNameHTML = lobby.name.replace(/\u0022/g, "&quot;").replace(/</g, "&lt
             </span>
         </div>
 
-        <script type="text/javascript" src="lobby.js"></script>
+        <script type="text/javascript" src="lobby.jss"></script>
     </body>
 </html>

@@ -1,5 +1,9 @@
+<?JS
+const config = require("../config.js");
+writeHead(200, {"content-type": "text/javascript"});
+?>
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,7 +35,7 @@
     }
 
     function start() {
-        sock = new WebSocket("wss://l.ecastr.com/ws");
+        sock = new WebSocket("<?JS= config.lobby.replace("http", "ws") ?>ws");
         sock.addEventListener("open", connected);
     }
     start();
