@@ -119,7 +119,7 @@ function startRec(sock, msg) {
             await turnAddUser(pmsg.r);
 
             // And disable it when the child exits
-            p.on("end", () => {
+            p.on("exit", () => {
                 turnDelUser(pmsg.r);
             });
 
