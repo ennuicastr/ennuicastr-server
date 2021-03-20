@@ -20,7 +20,9 @@ if (!uid) return;
 
 const fs = require("fs");
 const config = require("../config.js");
-const db = require("../db.js").db;
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
 
 function fail(msg) {
     writeHead(500, {"content-type": "application/json"});

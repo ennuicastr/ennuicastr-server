@@ -87,7 +87,7 @@ try {
 
             data = Buffer.concat([data, chunk]);
 
-            if (data.length > 32*1024*1024 /* FIXME: configurable size */)
+            if (data.length > 1024*1024*1024 /* FIXME: configurable size */)
                 rej();
         }
 
