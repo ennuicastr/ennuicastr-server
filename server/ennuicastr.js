@@ -243,6 +243,7 @@ wss.on("connection", (ws, wsreq) => {
                 if (ci === id || !connections[ci]) continue;
                 connections[ci].send(Buffer.from(ret));
             }
+            log("rec-part", "User " + JSON.stringify(nick) + " (" + id + ") parted", {uid: recInfo.uid, rid: recInfo.rid});
         }
     }
 
@@ -415,6 +416,8 @@ wss.on("connection", (ws, wsreq) => {
             // Mark it in the database
             setDBTrackCount(id);
         }
+
+        log("rec-join", "User " + JSON.stringify(nick) + " (" + id + ") joined", {uid: recInfo.uid, rid: recInfo.rid});
 
         presence[id] = true;
 
