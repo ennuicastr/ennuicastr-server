@@ -218,9 +218,15 @@ wss.on("connection", (ws, wsreq) => {
 
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
-    function die() {
+    function die(expected) {
         if (dead)
             return;
+
+        if (!expected) {
+            // Report this
+            log("rec-die", "Unexpected disconnection of user " + id + ":\n" + new Error().stack, {uid: recInfo.uid, rid: recInfo.rid});
+        }
+
         ws.close();
         dead = true;
         if (id)
@@ -248,7 +254,7 @@ wss.on("connection", (ws, wsreq) => {
     }
 
     ws.on("error", die);
-    ws.on("close", die);
+    ws.on("close", function() { die(true); });
 
     // The first message must be login
     ws.once("message", (msg) => {
