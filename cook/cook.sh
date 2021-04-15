@@ -55,12 +55,7 @@ then
     shift
 fi
 
-# NOTE: The max_soft_comp hand min_hard_comp here are just arbitrarily high, as
-# the timestamps are already being smoothed by oggstender such that (a) we'll
-# always do stretching/squeezing and (b) the rate of stretching/squeezing is
-# limited by the drop rate of packets
-ARESAMPLE="aresample=flags=res:min_comp=0.001:max_soft_comp=1000000:min_hard_comp=16:first_pts=0"
-FILTER="$ARESAMPLE"
+FILTER="anull"
 
 for arg in "$@"
 do
@@ -308,8 +303,10 @@ do
     sno=`echo "$STREAM_NOS" | sed -n "$c"p`
     if [ "$FORMAT" = "copy" -o "$CONTAINER" = "mix" ]
     then
-        timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggstender" $sno > "$O_FFN" &
+        timeout $DEF_TIMEOUT cat \
+            $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data \
+            $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
+            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $sno > "$O_FFN" &
 
     else
         CODEC=`echo "$CODECS" | sed -n "$c"p`
@@ -317,8 +314,10 @@ do
 
         LFILTER="$(echo "$FILTER" | sed 's/@DELAY@/'"$(node -p '18500+Math.random()*2000')"'/g')"
 
-        timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggstender" $sno |
+        timeout $DEF_TIMEOUT cat \
+            $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data \
+            $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
+            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $sno |
             timeout $DEF_TIMEOUT $NICE ffmpeg -codec $CODEC -copyts -i - \
             -filter_complex '[0:a]'"$LFILTER"'[aud]' \
             -map '[aud]' \
