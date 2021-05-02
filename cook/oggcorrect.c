@@ -378,14 +378,15 @@ int main(int argc, char **argv)
             break;
 
         // Check the difference between the expected range and the actual range
-        double expected = ct * packetTime;
-        double actual = end->inputGranulePos + packetTime - granulePos;
-        if (expected < actual && (begin->flags & FLAG_SILENT)) {
+        double expected = granulePos + ct * packetTime;
+        double actual = end->inputGranulePos + packetTime;
+        if (actual < expected && (begin->flags & FLAG_SILENT)) {
             // Cut out silence from the beginning
-            while (expected < actual) {
+            while (actual < expected) {
                 if (begin->preSkip) {
                     begin->preSkip--;
                     expected -= packetTime;
+                    granulePos -= packetTime;
                 } else if (begin != end) {
                     begin->flags |= FLAG_DROP;
                     begin = begin->next;
