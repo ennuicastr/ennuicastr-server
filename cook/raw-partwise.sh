@@ -55,6 +55,8 @@ fi
 # Output each requested component
 for c in $STREAMS
 do
-    timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggstender" $c
+    timeout $DEF_TIMEOUT cat \
+        $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data \
+        $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
+        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $c
 done
