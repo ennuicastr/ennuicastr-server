@@ -216,6 +216,19 @@ wss.on("connection", (ws, wsreq) => {
         ws.ping(()=>{});
     }, 30000);
 
+    /* Interval for pinging the client on socks that don't regularly
+     * communicate back and forth */
+    let pingInterval = null;
+
+    // Enable pinging on this sock
+    function sendPings() {
+        let pingMsg = Buffer.alloc(4);
+        pingMsg.writeUInt32LE(prot.ids.ping, 0);
+        pingInterval = setInterval(() => {
+            ws.send(pingMsg);
+        }, 15000);
+    }
+
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
     function die(expected) {
@@ -236,6 +249,10 @@ wss.on("connection", (ws, wsreq) => {
         if (interval) {
             clearTimeout(interval);
             interval = null;
+        }
+        if (pingInterval) {
+            clearTimeout(pingInterval);
+            pingInterval = null;
         }
 
         // If this was a data connection, inform others of their disconnection
@@ -571,6 +588,7 @@ wss.on("connection", (ws, wsreq) => {
         informMastersCredit();
 
         // Now this connection is totally ready
+        sendPings();
         ws.on("message", dataMsg);
     }
 
@@ -847,6 +865,7 @@ wss.on("connection", (ws, wsreq) => {
         });
 
         // And prepare for messages
+        sendPings();
         ws.on("message", masterMsg);
     }
 

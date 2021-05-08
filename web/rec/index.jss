@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -44,6 +44,6 @@ if (!params.QUERY_STRING) {
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=6f"></script>
+        <script type="text/javascript" src="ennuicastr.js?v=6w"></script>
     </body>
 </html>
