@@ -196,7 +196,7 @@ wss.on("connection", (ws, wsreq) => {
 
     // ID and flags for this client. id is 0 until the user is logged in
     // FIXME: Document these...
-    var id = 0, mid = 0, flags = 0, nick = "", track = null;
+    var id = 0, mid = 0, setSampleRate = 0, flags = 0, nick = "", track = null;
     var lastGranule = 0;
 
     // Log of recent messages to prevent floods
@@ -299,6 +299,12 @@ wss.on("connection", (ws, wsreq) => {
             if (key !== recInfo.key) return die();
         }
 
+        // Extract the nick
+        nick = "";
+        try {
+            nick = msg.toString("utf8", p.nick).slice(0, config.limits.recUsernameLength);
+        } catch (ex) {}
+
         // Acknowledge the connection
         p = prot.parts.ack;
         var ret = Buffer.alloc(p.length);
@@ -324,11 +330,7 @@ wss.on("connection", (ws, wsreq) => {
         var ip = wsreq.connection.remoteAddress;
 
         /* This is the only kind of connection for which we care about a nick,
-         * so get it */
-        nick = "";
-        try {
-            nick = msg.toString("utf8", prot.parts.login.nick).slice(0, config.limits.recUsernameLength);
-        } catch (ex) {}
+         * so make sure it has one */
         if (nick === "") {
             // Check if we've already cached the nick for this IP
             if (ip in ipToNick)
@@ -381,6 +383,7 @@ wss.on("connection", (ws, wsreq) => {
     function acceptConnData(format, sampleRate) {
         var continuous = !!(flags & prot.flags.features.continuous);
         var rtc = !!(flags & prot.flags.features.rtc);
+        setSampleRate = sampleRate;
 
         // Look for an existing, matching track
         for (var i = 1; i < tracks.length; i++) {
@@ -699,14 +702,35 @@ wss.on("connection", (ws, wsreq) => {
                 break;
 
             case prot.ids.info:
-                // If a user changes their input device, they can send sample rate again
-                // FIXME: But this is not the right way to handle it!
-                var p = prot.parts.info;
+            {
+                // There are only two C->S pieces of info
+                let p = prot.parts.info;
                 if (msg.length < p.length) return die();
 
-                var key = msg.readUInt32LE(p.key);
-                if (key !== prot.info.sampleRate) return die();
+                let key = msg.readUInt32LE(p.key);
+                let value = msg.readUInt32LE(p.value);
+                switch (key) {
+                    case prot.info.sampleRate:
+                        // If a user changes their input device, they can send sample rate again
+                        if (value !== setSampleRate) return die();
+                        break;
+
+                    case prot.info.allowAdmin:
+                    case prot.info.adminState:
+                    {
+                        // Forward admin information to the relevant admin
+                        let master = masters[value];
+                        if (!master) break;
+                        msg.writeUInt32LE(id, p.value);
+                        master.send(msg);
+                        break;
+                    }
+
+                    default:
+                        return die();
+                }
                 break;
+            }
 
             case prot.ids.rtc:
                 var p = prot.parts.rtc;
@@ -975,6 +999,20 @@ wss.on("connection", (ws, wsreq) => {
                         target.close();
 
                 } else {
+                    if (action === acts.request) {
+                        /* They've requested admin access. Build a new message
+                         * that tells the target *who* is requesting admin
+                         * access. */
+                        if (target < 0)
+                            break;
+                        var nickBuf = Buffer.from(nick || "Anonymous", "utf8");
+                        msg = Buffer.alloc(p.length + nickBuf.length);
+                        msg.writeUInt32LE(prot.ids.admin, 0);
+                        msg.writeUInt32LE(target, p.target);
+                        msg.writeUInt32LE(action, p.action);
+                        nickBuf.copy(msg, p.argument);
+                    }
+
                     // Just forward it to the affected party/ies
                     if (target < 0) {
                         connections.forEach((connection) => {
@@ -982,6 +1020,7 @@ wss.on("connection", (ws, wsreq) => {
                                 connection.send(msg);
                         });
                     } else {
+                        msg.writeUInt32LE(mid, p.target);
                         target = connections[target];
                         if (target)
                             target.send(msg);
