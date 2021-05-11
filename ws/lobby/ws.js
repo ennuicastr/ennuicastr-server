@@ -121,6 +121,8 @@ async function sendRec(rid) {
         features |= 1;
     if (rec.rtc)
         features |= 2;
+    if (rec.videoRec)
+        features |= 4;
     if (rec.format === "flac")
         features |= 0x10;
     var url = config.client +

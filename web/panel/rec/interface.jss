@@ -38,6 +38,7 @@ const defaults = await (async function() {
             format: "opus",
             continuous: false,
             rtc: true,
+            videoRec: false,
             lid: null,
             universal_monitor: true
         };
@@ -95,6 +96,9 @@ const defaults = await (async function() {
 
         l("dname", "Your display name");
         txt("dname", "m", config.limits.recUsernameLength);
+
+        l("videoRec", "Record video");
+        chk("videoRec", "v");
 
         // Only show the lobby selection if they have lobbies
         var lobbies = await db.allP("SELECT * FROM lobbies WHERE uid=@UID;", {"@UID": uid});
@@ -224,6 +228,8 @@ function launchRecording() {
             features |= 1;
         if (res.rtc)
             features |= 2;
+        if (res.videoRec)
+            features |= 4;
         if (res.format === "flac")
             features |= 0x10;
 
