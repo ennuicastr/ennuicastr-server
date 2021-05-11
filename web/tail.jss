@@ -6,6 +6,11 @@
                 </div>
 
                 <p class="align-center">
+                    <a href="/faq/">FAQ</a> —
+                    <a href="/contact/">Contact us</a>
+                </p>
+
+                <p class="align-center">
                     <a href="/privacy/">Privacy policy</a> —
                     <a href="/terms/">Terms of service</a> —
                     <a href="/licenses/">Licenses</a> —
