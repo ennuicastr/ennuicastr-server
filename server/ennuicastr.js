@@ -143,6 +143,9 @@ var speakingStatus = [null];
 // Mapping of IP addresses to nicknames
 var ipToNick = {};
 
+// Temporary banning by IP addresses
+var ipBan = {};
+
 // Counter so we can give new "Anonymous (x)" names to anonymous users
 var anonCt = 1;
 
@@ -190,6 +193,15 @@ const wss = new ws.Server({
 wss.on("connection", (ws, wsreq) => {
     // Make sure we're ready
     if (!recInfo || !recInfo.rid) {
+        ws.close();
+        return;
+    }
+
+    var ip = wsreq.connection.remoteAddress;
+    ws.ecRemoteAddress = ip;
+
+    // Ignore it if it's banned
+    if (ipBan[ip]) {
         ws.close();
         return;
     }
@@ -327,7 +339,6 @@ wss.on("connection", (ws, wsreq) => {
 
     // Data connection
     function connData(msg) {
-        var ip = wsreq.connection.remoteAddress;
 
         /* This is the only kind of connection for which we care about a nick,
          * so make sure it has one */
@@ -995,8 +1006,16 @@ wss.on("connection", (ws, wsreq) => {
                 if (action === acts.kick) {
                     // This we do ourselves!
                     target = connections[target];
-                    if (target)
+                    if (target) {
+                        // Set a one-minute ban so they don't instantly reconnect
+                        ipBan[target.ecRemoteAddress] = true;
+                        setTimeout(function() {
+                            delete ipBan[target.ecRemoteAddress];
+                        }, 60000);
+
+                        // And close the connection
                         target.close();
+                    }
 
                 } else {
                     if (action === acts.request) {
