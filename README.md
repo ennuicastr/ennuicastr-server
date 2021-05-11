@@ -44,6 +44,13 @@ For nodejs-server-pages WebSockets to work, your web server needs to delegate
         }
 ```
 
+For the AudioWorkletProcessor to be able to use SharedArrayBuffer, you need the
+correct "security" features. For instance, in nginx:
+```
+        add_header 'Cross-Origin-Opener-Policy' 'same-origin';
+        add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
+```
+
 The client uses Jitsi to communicate, so you'll need to set up a Jitsi server.
 If the client is at https://weca.st/ , then Jitsi must be at
 https://jitsi.weca.st/ . That is, it must be at jitsi.X, where X is the domain
