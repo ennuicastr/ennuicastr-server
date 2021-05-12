@@ -100,7 +100,7 @@ const hs = hss;
  * time/cutoff time.
  */
 var outHeader1 = null,
-    outHeader = null,
+    outHeader2 = null,
     outData = null,
     outUsers = null,
     outInfo = null;
@@ -243,7 +243,7 @@ wss.on("connection", (ws, wsreq) => {
 
     // Set to true when this sock is dead and any lingering data should be ignored
     var dead = false;
-    function die(expected) {
+    function die(expected?: boolean) {
         if (dead)
             return;
 
@@ -270,7 +270,7 @@ wss.on("connection", (ws, wsreq) => {
         // If this was a data connection, inform others of their disconnection
         if (id) {
             var p = prot.parts.info;
-            var ret = Buffer.alloc(p.length);
+            let ret = Buffer.alloc(p.length);
             ret.writeUInt32LE(prot.ids.info, 0);
             ret.writeUInt32LE(prot.info.peerLost, p.key);
             ret.writeUInt32LE(id, p.value);
@@ -319,7 +319,7 @@ wss.on("connection", (ws, wsreq) => {
 
         // Acknowledge the connection
         p = prot.parts.ack;
-        var ret = Buffer.alloc(p.length);
+        let ret = Buffer.alloc(p.length);
         ret.writeUInt32LE(prot.ids.ack, 0);
         ret.writeUInt32LE(prot.ids.login, p.ackd);
         ws.send(ret);
@@ -417,7 +417,7 @@ wss.on("connection", (ws, wsreq) => {
             // FIXME: Distinct tracksFree and tracksPaid
             var p = prot.parts.nack;
             var textBuf = Buffer.from("This recording is limited to " + config.limits.tracksPaid + " tracks (users).");
-            var ret = Buffer.alloc(p.length + textBuf.length);
+            let ret = Buffer.alloc(p.length + textBuf.length);
             ret.writeUInt32LE(prot.ids.nack, 0);
             ret.writeUInt32LE(prot.ids.login, p.ackd);
             ret.writeUInt32LE(0, p.code);
@@ -460,7 +460,7 @@ wss.on("connection", (ws, wsreq) => {
 
         // Send them their own ID
         var p = prot.parts.info;
-        var ret = Buffer.alloc(p.length);
+        let ret = Buffer.alloc(p.length);
         ret.writeUInt32LE(prot.ids.info, 0);
         ret.writeUInt32LE(prot.info.id, p.key);
         ret.writeUInt32LE(id, p.value);
@@ -499,7 +499,7 @@ wss.on("connection", (ws, wsreq) => {
                 username: recInfo.rid.toString(36),
                 credential: recInfo.key.toString(36)
             }), "utf8");
-            var ret = Buffer.alloc(p.value + iceServer.length);
+            let ret = Buffer.alloc(p.value + iceServer.length);
             ret.writeUInt32LE(prot.ids.info, 0);
             ret.writeUInt32LE(prot.info.ice, p.key);
             iceServer.copy(ret, p.value);
@@ -612,7 +612,7 @@ wss.on("connection", (ws, wsreq) => {
         msg = Buffer.from(msg); // Just in case
         if (msg.length < 4) return die();
         var cmd = msg.readUInt32LE(0);
-        var ret;
+        let ret;
 
         switch (cmd) {
             case prot.ids.data:
@@ -803,7 +803,7 @@ wss.on("connection", (ws, wsreq) => {
         msg = Buffer.from(msg); // Just in case
         if (msg.length < 4) return die();
         var cmd = msg.readUInt32LE(0);
-        var ret;
+        let ret;
 
         switch (cmd) {
             case prot.ids.ping:
@@ -837,7 +837,7 @@ wss.on("connection", (ws, wsreq) => {
 
         // Inform them of the credit cost
         var p = prot.parts.info;
-        var ret = Buffer.alloc(p.length + 4);
+        let ret = Buffer.alloc(p.length + 4);
         ret.writeUInt32LE(prot.ids.info, 0);
         ret.writeUInt32LE(prot.info.creditCost, p.key);
         var neededSubscription = ((recInfo.format==="flac"||recInfo.continuous)?2:1);
@@ -858,7 +858,7 @@ wss.on("connection", (ws, wsreq) => {
             var track = tracks[i];
             if (!track) continue;
             var nickBuf = Buffer.from(track.nick, "utf8");
-            var ret = Buffer.alloc(p.length + nickBuf.length);
+            let ret = Buffer.alloc(p.length + nickBuf.length);
             ret.writeUInt32LE(prot.ids.user, 0);
             ret.writeUInt32LE(i, p.index);
             ret.writeUInt32LE((connections[i])?1:0, p.status);
@@ -891,7 +891,7 @@ wss.on("connection", (ws, wsreq) => {
             if (sounds.list && sounds.list.length) {
                 var p = prot.parts.info;
                 var jsonBuf = Buffer.from(JSON.stringify(sounds.list), "utf8");
-                var ret = Buffer.alloc(p.length + jsonBuf.length - 4);
+                let ret = Buffer.alloc(p.length + jsonBuf.length - 4);
                 ret.writeUInt32LE(prot.ids.info, 0);
                 ret.writeUInt32LE(prot.info.sounds, p.key);
                 jsonBuf.copy(ret, p.value);
@@ -910,7 +910,7 @@ wss.on("connection", (ws, wsreq) => {
         msg = Buffer.from(msg); // Just in case
         if (msg.length < 4) return die();
         var cmd = msg.readUInt32LE(0);
-        var ret;
+        let ret;
 
         switch (cmd) {
             case prot.ids.mode:
@@ -943,6 +943,7 @@ wss.on("connection", (ws, wsreq) => {
                 break;
 
             case prot.ids.sound:
+            {
                 var p = prot.parts.sound.cs;
                 if (msg.length <= p.length)
                     return die();
@@ -960,7 +961,7 @@ wss.on("connection", (ws, wsreq) => {
                 // Send the request along
                 p = prot.parts.sound.sc;
                 var urlBuf = Buffer.from(url, "utf8");
-                var ret = Buffer.alloc(p.length + urlBuf.length);
+                let ret = Buffer.alloc(p.length + urlBuf.length);
                 ret.writeUInt32LE(prot.ids.sound, 0);
                 ret.writeDoubleLE(curTime(), p.time);
                 ret.writeUInt8(status?1:0, p.status);
@@ -992,6 +993,7 @@ wss.on("connection", (ws, wsreq) => {
                 // Record it
                 recMeta({c:"sound",sid,status:+status});
                 break;
+            }
 
             case prot.ids.admin:
                 var p = prot.parts.admin;
@@ -1066,7 +1068,7 @@ process.on("message", (msg) => {
 });
 
 // Record to the metadata track
-function recMeta(data, opt) {
+function recMeta(data, opt?: any) {
     opt = opt || {};
 
     try {
@@ -1193,7 +1195,7 @@ function curTime() {
 }
 
 // Current time in granule pos
-function curGranule(ct) {
+function curGranule(ct?: number) {
     return Math.round((ct || curTime()) * 48);
 }
 
@@ -1202,9 +1204,9 @@ function modeUpdate(toMode, time) {
     if (recInfo.mode === toMode)
         return;
 
-    recInfo.mode = toMode
+    recInfo.mode = toMode;
     var op = prot.parts.info;
-    var ret = Buffer.alloc(op.length + 16);
+    let ret = Buffer.alloc(op.length + 16);
     ret.writeUInt32LE(prot.ids.info, 0);
     ret.writeUInt32LE(prot.info.mode, op.key);
     ret.writeUInt32LE(toMode, op.value);
@@ -1228,7 +1230,7 @@ async function startRec() {
 
     // Tell the users the start time
     var op = prot.parts.info;
-    var ret = Buffer.alloc(op.length + 4);
+    let ret = Buffer.alloc(op.length + 4);
     ret.writeUInt32LE(prot.ids.info, 0);
     ret.writeUInt32LE(prot.info.startTime, op.key);
     ret.writeDoubleLE(beginTime, op.value);
@@ -1363,7 +1365,7 @@ async function stopRec() {
 }
 
 // Calculate the credit rate currently in use
-function calculateCredits(reset) {
+function calculateCredits(reset?: boolean) {
     // Count the number of HQ and RQ clients
     var rq = 0, hq = 0, charge = 0;
     for (var i = 1; i < connections.length; i++) {
@@ -1406,7 +1408,7 @@ function calculateCredits(reset) {
 }
 
 // Inform masters of the credit rate
-async function informMastersCredit(charge) {
+async function informMastersCredit(charge?: number) {
     // Get the total for the recording so far
     var row = await db.getP("SELECT cost FROM recordings WHERE rid=@RID;", {"@RID": recInfo.rid});
     var cost = (row?row.cost:0);
@@ -1417,7 +1419,7 @@ async function informMastersCredit(charge) {
 
     // Make the informational command
     var op = prot.parts.info;
-    var ret = Buffer.alloc(op.length + 4);
+    let ret = Buffer.alloc(op.length + 4);
     ret.writeUInt32LE(prot.ids.info, 0);
     ret.writeUInt32LE(prot.info.creditRate, op.key);
     ret.writeUInt32LE(cost, op.value);
@@ -1486,7 +1488,7 @@ function speechStatus(id, speaking) {
 
     // Change to status, so send the packet
     var p = prot.parts.speech;
-    var ret = Buffer.alloc(p.length);
+    let ret = Buffer.alloc(p.length);
     ret.writeUInt32LE(prot.ids.speech, 0);
     ret.writeUInt32LE((id<<1) + (speaking?1:0), p.indexStatus);
     masters.forEach((master) => {
