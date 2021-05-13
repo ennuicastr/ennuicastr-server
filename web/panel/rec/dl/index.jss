@@ -214,7 +214,19 @@ if (request.query.f) {
     } else if (format === "info") {
         write("{\"tracks\":{\n");
         await sendPart("users", write);
-        write("}}\n");
+        write("},\"sfx\":");
+
+        await new Promise((res, rej) => {
+            let p = cp.spawn(config.repo + "/cook/sfx-partwise.sh",
+                [config.rec, ""+rid],
+                {
+                stdio: ["ignore", "pipe", "ignore"]
+            });
+            p.stdout.on("data", write);
+            p.stdout.on("end", res);
+        });
+
+        write("}\n");
 
     } else {
         // Jump through to the actual downloader

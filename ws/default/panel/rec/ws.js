@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Yahweasel 
+ * Copyright (c) 2019-2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,6 +30,7 @@ sock.once("message", async function(msg) {
     var p = {
         alllogin: 0x10,
         onelogin: 0x11,
+        sfxlogin: 0x12,
         id: 4,
         key: 8,
         track: 12
@@ -38,7 +39,7 @@ sock.once("message", async function(msg) {
         return sock.close();
 
     var cmd = msg.readUInt32LE(p.cmd);
-    if (cmd !== p.alllogin && cmd !== p.onelogin)
+    if (cmd !== p.alllogin && cmd !== p.onelogin && cmd !== p.sfxlogin)
         return sock.close();
 
     var id = msg.readUInt32LE(p.id);
@@ -59,11 +60,24 @@ sock.once("message", async function(msg) {
 
     // Get the requested track
     var track = null;
+    var sfx = null;
     if (cmd === p.onelogin) {
         if (msg.length !== p.track + 4)
             return sock.close();
         track = msg.readInt32LE(p.track);
         if (track < 0) return sock.close();
+    } else if (cmd === p.sfxlogin) {
+        if (msg.length !== p.track + 4)
+            return sock.close();
+        sfx = msg.readInt32LE(p.track);
+    }
+    let gen = "raw";
+    let args = [config.rec, id];
+    if (sfx) {
+        gen = "sfx";
+        args.push(""+sfx);
+    } else if (track) {
+        args.push(""+track);
     }
 
     // Tell them "OK"
@@ -79,8 +93,7 @@ sock.once("message", async function(msg) {
     // Start getting data
     buf = Buffer.alloc(4);
     buf.writeUInt32LE(sending, 0);
-    var c = cp.spawn(config.repo + "/cook/raw-partwise.sh",
-        (track === null) ? [config.rec, id] : [config.rec, id, ""+track], {
+    var c = cp.spawn(config.repo + "/cook/" + gen + "-partwise.sh", args, {
         stdio: ["ignore", "pipe", "inherit"]
     });
 

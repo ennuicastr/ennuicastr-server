@@ -51,6 +51,7 @@ process.argv.slice(2).forEach(arg => {
     let tracks = [];
     let current = {};
     for (let line of meta) {
+        if (line === "") continue;
         let c = JSON.parse(line);
         let t = c.t / 48000;
         c = c.d;

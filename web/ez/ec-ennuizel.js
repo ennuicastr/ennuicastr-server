@@ -59,6 +59,7 @@ var Ennuizel = (function(ez) {
 
     // The track numbers to request
     var tracks = [];
+    var sfxTracks = [];
 
     // Has there been a catastrophic error?
     var error = false;
@@ -317,6 +318,10 @@ var Ennuizel = (function(ez) {
                 tracks.push(length);
                 length++;
             }
+            if (info.sfx) {
+                for (let i = 1; i <= info.sfx; i++)
+                    sfxTracks.push(i);
+            }
 
             // Now start our actual downloads
             doDownloads();
@@ -333,10 +338,11 @@ var Ennuizel = (function(ez) {
 
     // Manage all of our downloaders
     function doDownloads() {
-        var downloaders = [], downloaded = [];
+        var downloaders = [], downloaded = [], sfxDownloaded = [];
         var i, j;
         for (i = 0; i < threads; i++) downloaders.push(null);
         for (i = 0; i < tracks.length; i++) downloaded.push(false);
+        for (i = 0; i < sfxTracks.length; i++) sfxDownloaded.push(false);
 
         function mainLoop() {
             // Activate any inactive threads
@@ -350,6 +356,14 @@ var Ennuizel = (function(ez) {
                         downloaders[i] = doDownload(i, j);
                         downloaded[j] = true;
                         allInactive = false;
+                    } else {
+                        for (j = 0; j < sfxTracks.length; j++)
+                            if (!sfxDownloaded[j]) break;
+                        if (j !== sfxTracks.length) {
+                            downloaders[i] = doDownload(i, j, true);
+                            sfxDownloaded[j] = true;
+                            allInactive = false;
+                        }
                     }
                 } else allInactive = false;
             }
@@ -383,8 +397,11 @@ var Ennuizel = (function(ez) {
     }
 
     // Perform a single download
-    function doDownload(thread, trackNo) {
-        trackNo = tracks[trackNo];
+    function doDownload(thread, trackNo, sfxTrack) {
+        if (sfxTrack)
+            trackNo = sfxTracks[trackNo];
+        else
+            trackNo = tracks[trackNo];
 
         var sock = new WebSocket("wss://" + url.host + "/panel/rec/ws");
         sock.binaryType = "arraybuffer";
@@ -397,7 +414,7 @@ var Ennuizel = (function(ez) {
         }).then(function() {
             // Send our login and anticipate acknowledgement
             var loginbuf = new DataView(new ArrayBuffer(16));
-            loginbuf.setUint32(0, 0x11, true);
+            loginbuf.setUint32(0, sfxTrack ? 0x12 : 0x11, true);
             loginbuf.setUint32(4, id, true);
             loginbuf.setUint32(8, key, true);
             loginbuf.setInt32(12, trackNo, true);
@@ -414,19 +431,19 @@ var Ennuizel = (function(ez) {
         }).then(function(msg) {
             msg = new DataView(msg.data);
             if (msg.getUint32(0, true) !== 0 ||
-                msg.getUint32(4, true) !== 0x11) {
+                msg.getUint32(4, true) !== (sfxTrack ? 0x12 : 0x11)) {
                 sock.close();
                 throw l("invalid");
             }
 
             // Now we're into normal message mode
-            return connection(sock, thread, trackNo);
+            return connection(sock, thread, trackNo, sfxTrack);
 
         }).catch(reportError);
     }
 
     // The main loop for a single download
-    function connection(sock, thread, trackNo) {
+    function connection(sock, thread, trackNo, sfxTrack) {
         var la;
 
         // A buffer of received but not yet acknowledged messages
@@ -478,7 +495,9 @@ var Ennuizel = (function(ez) {
 
         // Start our new track and we're done for now
         var name;
-        if (trackNo in info.tracks) {
+        if (sfxTrack) {
+            name = "SFX-" + trackNo;
+        } else if (trackNo in info.tracks) {
             name = trackNo + "-" + info.tracks[trackNo].nick;
         } else {
             name = trackNo + "";
