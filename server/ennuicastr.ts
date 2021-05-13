@@ -162,6 +162,9 @@ var sounds = {
  * simulcast on Jitsi) */
 let nonChromeCt = 0;
 
+/* How many Safari users are there? (Because Safari + Jitsi + P2P = fail) */
+let safariCt = 0;
+
 // Allowable Jitsi features
 let jitsiFeatures: any = {};
 
@@ -220,6 +223,9 @@ wss.on("connection", (ws, wsreq) => {
 
     // Is this a non-Chrome user?
     let nonChrome: boolean = false;
+
+    // Is this a Safari user?
+    let safari: boolean = false;
 
     // Log of recent messages to prevent floods
     var floodLog = [];
@@ -292,10 +298,17 @@ wss.on("connection", (ws, wsreq) => {
         }
 
         // And possibly free up non-Chrome features
+        let doSignal = false;
         if (nonChrome && --nonChromeCt === 0) {
             delete jitsiFeatures.disableSimulcast;
-            signalJitsi();
+            doSignal = true;
         }
+        if (safari && --safariCt === 0) {
+            delete jitsiFeatures.disableP2P;
+            doSignal = true;
+        }
+        if (doSignal)
+            signalJitsi();
     }
 
     ws.on("error", die);
@@ -477,13 +490,25 @@ wss.on("connection", (ws, wsreq) => {
         // Decide Jitsi state based on their user agent
         let ua = wsreq.headers["user-agent"] || "";
         if (ua.indexOf("Chrome") < 0) {
+            let doSignal = false;
+
             // Non-Chrome user!
             nonChrome = true;
             if (nonChromeCt++ === 0) {
                 // Need to update everyone on the Jitsi features
                 jitsiFeatures.disableSimulcast = true;
-                signalJitsi();
+                doSignal = true;
             }
+            if (ua.indexOf("Safari") < 0) {
+                // Safari user!
+                safari = true;
+                if (safariCt++ === 0) {
+                    jitsiFeatures.disableP2P = true;
+                    doSignal = true;
+                }
+            }
+            if (doSignal)
+                signalJitsi();
         }
 
         // Send them the Jitsi state
