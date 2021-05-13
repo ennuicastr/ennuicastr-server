@@ -158,6 +158,13 @@ var sounds = {
     timeouts: {}
 };
 
+/* How many non-Chrome users are there? (Because non-Chrome users can't use
+ * simulcast on Jitsi) */
+let nonChromeCt = 0;
+
+// Allowable Jitsi features
+let jitsiFeatures: any = {};
+
 // We need to try ports until we find one that works
 function tryListenHTTPS() {
     tryPort = 36678 + ~~(Math.random()*16384);
@@ -210,6 +217,9 @@ wss.on("connection", (ws, wsreq) => {
     // FIXME: Document these...
     var id = 0, mid = 0, setSampleRate = 0, flags = 0, nick = "", track = null;
     var lastGranule = 0;
+
+    // Is this a non-Chrome user?
+    let nonChrome: boolean = false;
 
     // Log of recent messages to prevent floods
     var floodLog = [];
@@ -279,6 +289,12 @@ wss.on("connection", (ws, wsreq) => {
                 connections[ci].send(Buffer.from(ret));
             }
             log("rec-part", "User " + JSON.stringify(nick) + " (" + id + ") parted", {uid: recInfo.uid, rid: recInfo.rid});
+        }
+
+        // And possibly free up non-Chrome features
+        if (nonChrome && --nonChromeCt === 0) {
+            delete jitsiFeatures.disableSimulcast;
+            signalJitsi();
         }
     }
 
@@ -457,6 +473,21 @@ wss.on("connection", (ws, wsreq) => {
         log("rec-join", "User " + JSON.stringify(nick) + " (" + id + ") joined", {uid: recInfo.uid, rid: recInfo.rid});
 
         presence[id] = true;
+
+        // Decide Jitsi state based on their user agent
+        let ua = wsreq.headers["user-agent"] || "";
+        if (ua.indexOf("Chrome") < 0) {
+            // Non-Chrome user!
+            nonChrome = true;
+            if (nonChromeCt++ === 0) {
+                // Need to update everyone on the Jitsi features
+                jitsiFeatures.disableSimulcast = true;
+                signalJitsi();
+            }
+        }
+
+        // Send them the Jitsi state
+        signalJitsi(ws);
 
         // Send them their own ID
         var p = prot.parts.info;
@@ -1052,6 +1083,28 @@ wss.on("connection", (ws, wsreq) => {
 
             default:
                 return die();
+        }
+    }
+
+    // Signal all connections or one connection about the Jitsi state
+    function signalJitsi(connection?: WebSocket) {
+        let p = prot.parts.info;
+        let jitsiStr = JSON.stringify(jitsiFeatures);
+        while (jitsiStr.length < 4)
+            jitsiStr += " ";
+        let jitsiBuf = Buffer.from(jitsiStr, "utf8");
+        let ret = Buffer.alloc(p.value + jitsiBuf.length);
+        ret.writeUInt32LE(prot.ids.info, 0);
+        ret.writeUInt32LE(prot.info.jitsi, p.key);
+        jitsiBuf.copy(ret, p.value);
+
+        if (connection) {
+            connection.send(Buffer.from(ret));
+        } else {
+            for (let ci = 1; ci < connections.length; ci++) {
+                if (!connections[ci]) continue;
+                connections[ci].send(Buffer.from(ret));
+            }
         }
     }
 

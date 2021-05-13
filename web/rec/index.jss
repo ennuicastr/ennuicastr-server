@@ -34,7 +34,7 @@ if (!params.QUERY_STRING) {
         <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png" />
         <link rel="manifest" href="/img/site.webmanifest" />
-        <script type="text/javascript" src="protocol.js?v=h"></script>
+        <script type="text/javascript" src="protocol.js?v=i"></script>
     </head>
     <body>
         <div id="log"></div>
@@ -44,6 +44,6 @@ if (!params.QUERY_STRING) {
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=7b"></script>
+        <script type="text/javascript" src="ennuicastr.js?v=7j"></script>
     </body>
 </html>
