@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -249,12 +249,13 @@ if (request.query.f) {
 }
 
 // Determine their platform
-var mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
-var mobile = (/(android|iphone|ipad)/i.test(params.HTTP_USER_AGENT));
-var recommend = [];
+const mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
+const mobile = (/(android|iphone|ipad)/i.test(params.HTTP_USER_AGENT));
+const recommend = [];
 if (!mobile)
     recommend.push("aup");
-recommend.push(mac?"heaac":"flac");
+const recommendBasic = (mac?"heaac":"flac");
+recommend.push(recommendBasic);
 
 var samplePost = "";
 
@@ -411,18 +412,30 @@ if (!recInfo.purchased) {
 
     <header><h3>Suggested formats</h3></header>
 
+    <p><span style="display: inline-block; max-width: 50em">
+    <?JS if (!mobile) { ?>
+    If you use Audacity (a popular, free audio editor), download the Audacity project. Otherwise, the
+    <?JS } else { ?>
+    The
+    <?JS } ?>
+    suggested format for your platform is <?JS= formatToName(recommendBasic) ?>.</span></p>
+
     <p><?JS
     recommend.forEach(showDL);
     ?></p>
+
+    <p>&nbsp;</p>
 
     <?JS
     if (recInfo.purchased) {
         ?>
         <header><h3>Advanced processing</h3></header>
 
-        <p><div style="display: inline-block; max-width: 30em">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC or uncompressed WAV, you can use this tool to do processing in your browser:</div></p>
+        <p><span style="display: inline-block; max-width: 50em">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC or uncompressed WAV, you can use this tool to do processing in your browser:</span></p>
 
         <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= uriName ?>" target="_blank">Advanced processing</a></p>
+
+        <p>&nbsp;</p>
         <?JS
     }
     ?>

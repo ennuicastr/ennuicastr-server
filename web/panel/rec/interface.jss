@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -47,6 +47,18 @@ const defaults = await (async function() {
 })();
 ?>
 
+<style type="text/css">
+.explainer {
+    position: absolute;
+    max-width: 30em;
+    background-color: var(--bg-8);
+    color: var(--fg-6);
+    border: 2px solid black;
+    border-radius: 1em;
+    padding: 1em;
+}
+</style>
+
 <a id="create-recording-b" class="button" href="javascript:createRecording();">
 <i class="fas fa-play-circle"></i> Create a new recording
 </a>
@@ -56,8 +68,10 @@ const defaults = await (async function() {
         <?JS
         var els = [];
 
-        function l(forr, txt) {
-            write('<label for="r-' + forr + '">' + txt + ':&nbsp;</label>');
+        function l(forr, txt, alt) {
+            write('<label for="r-' + forr + '">' + txt +
+                (alt?'<a href="javascript:toggle(\'' + forr + '\')"><i class="fas fa-question-circle"></i></a>':'') +
+                ':&nbsp;</label>');
         }
 
         function txt(id, q, limit) {
@@ -91,14 +105,19 @@ const defaults = await (async function() {
             els.push([id, q]);
         }
 
+        function alt(id, text) {
+            write('<div id="alt-' + id + '" class="explainer" style="display: none">' + text + '</div>');
+        }
+
         l("name", "Recording name");
         txt("name", "n", config.limits.recNameLength);
 
         l("dname", "Your display name");
         txt("dname", "m", config.limits.recUsernameLength);
 
-        l("videoRec", "Record video");
+        l("videoRec", "Record video", true);
         chk("videoRec", "v");
+        alt("videoRec", "If checked, participants who enable their camera or share their screen will also have their video recorded by default, and sent to the host. This can be changed within the Ennuicastr recording application. Video recording is free.");
 
         // Only show the lobby selection if they have lobbies
         var lobbies = await db.allP("SELECT * FROM lobbies WHERE uid=@UID;", {"@UID": uid});
@@ -140,14 +159,17 @@ const defaults = await (async function() {
         if (accountCredits.subscription >= 2)
             priceAdvice = "";
 
-        l("format", "Recording format");
+        l("format", "Recording format", true);
         sel("format", "f", [["opus", "High quality (Opus)"], ["flac", "Ultra quality" + priceAdvice + " (FLAC)"]]);
+        alt("format", "Format that guests will use to record locally. Opus offers high—but not lossless—quality. Lossless FLAC is available, but costs extra. You may download in any format regardless of what format you record in.");
 
-        l("continuous", "Continuous" + priceAdvice);
+        l("continuous", "Continuous" + priceAdvice, true);
         chk("continuous", "c");
+        alt("continuous", "By default, Ennuicastr is only recording when you speak. This saves on recording space, but can also save on editing time. However, to do this, it uses a technique called voice activity detection (VAD), and VAD is not always perfect. It is possible to miss things. Check this to disable the VAD, and thus get a continuous and complete recording, but at an extra cost.");
 
-        l("rtc", "Live voice chat");
+        l("rtc", "Live voice chat", true);
         chk("rtc", "r");
+        alt("rtc", "Ennuicastr's primary function is to record, but you probably want to <em>hear</em> who you're recording! If you're going to use some other software to actually chat with your guests, uncheck this so that you don't hear them in both.");
         ?>
 
         </div><br/>
@@ -248,5 +270,10 @@ function launchRecording() {
         document.location = "/panel/rec/";
 
     });
+}
+
+function toggle(feature) {
+    var el = $("#alt-" + feature)[0];
+    el.style.display = (el.style.display==="none")?"":"none";
 }
 </script>
