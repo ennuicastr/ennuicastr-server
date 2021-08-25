@@ -143,7 +143,7 @@ int main(int argc, char **argv)
         oggHeader.granulePos -= granuleOffset;
 
         // Now write it out
-        printf("{\"t\":%lu,\"d\":%.*s}\n", oggHeader.granulePos, packetSize, buf);
+        printf("{\"t\":%lu,\"o\":%lu,\"d\":%.*s}\n", oggHeader.granulePos, granuleOffset, packetSize, buf);
     }
 
     return 0;

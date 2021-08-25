@@ -768,6 +768,37 @@ wss.on("connection", (ws, wsreq) => {
 
                 break;
 
+            case prot.ids.caption:
+            {
+                const p = prot.parts.caption;
+                if (msg.length < p.length)
+                    return die();
+
+                // Get out the message
+                let text = "";
+                let caption: any;
+                try {
+                    text = msg.toString("utf8", p.data);
+                    caption = JSON.parse(text);
+                } catch (ex) {
+                    return die();
+                }
+
+                // Check for abuse
+                if (floodDetect({p: lastGranule, l: text.length}))
+                    return die();
+
+                // Don't record it if we're not in the right mode
+                if (recInfo.mode !== prot.mode.rec &&
+                    recInfo.mode !== prot.mode.buffering)
+                    break;
+
+                // Record it
+                recMeta({c:"caption", id, caption});
+
+                break;
+            }
+
             case prot.ids.info:
             {
                 // There are only two C->S pieces of info
