@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS recordings (
     rtc BOOLEAN,
     /* Video recording by default? */
     videoRec BOOLEAN,
+    /* Transcription? */
+    transcription BOOLEAN,
     /* Key required to join the recording */
     key INTEGER,
     /* Key required to join as master */
@@ -131,6 +133,7 @@ CREATE TABLE IF NOT EXISTS defaults (
     continuous BOOLEAN,
     rtc BOOLEAN,
     videoRec BOOLEAN,
+    transcription BOOLEAN,
     lid TEXT,
     universal_monitor BOOLEAN
 );

@@ -39,6 +39,7 @@ const defaults = await (async function() {
             continuous: false,
             rtc: true,
             videoRec: false,
+            transcription: false,
             lid: null,
             universal_monitor: true
         };
@@ -135,6 +136,7 @@ const defaults = await (async function() {
                             defaults.format === "flac" ||
                             defaults.continuous ||
                             !defaults.rtc ||
+                            defaults.transcription ||
                             !defaults.universal_monitor);
 
         if (!showAdvanced) {
@@ -166,6 +168,10 @@ const defaults = await (async function() {
         l("continuous", "Continuous" + priceAdvice, true);
         chk("continuous", "c");
         alt("continuous", "By default, Ennuicastr is only recording when you speak. This saves on recording space, but can also save on editing time. However, to do this, it uses a technique called voice activity detection (VAD), and VAD is not always perfect. It is possible to miss things. Check this to disable the VAD, and thus get a continuous and complete recording, but at an extra cost.");
+
+        l("transcription", "ALPHA: Live captions", true);
+        chk("transcription", "t");
+        alt("transcription", "Enable live captions. Currently only English is supported.");
 
         l("rtc", "Live voice chat", true);
         chk("rtc", "r");
@@ -252,6 +258,8 @@ function launchRecording() {
             features |= 2;
         if (res.videoRec)
             features |= 4;
+        if (res.transcription)
+            features |= 8;
         if (res.format === "flac")
             features |= 0x10;
 

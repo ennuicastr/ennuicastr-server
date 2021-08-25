@@ -53,6 +53,7 @@ rec = {
     continuous: !!rec.c,
     rtc: !!rec.r,
     videoRec: !!rec.v,
+    transcription: !!rec.t,
     universalMonitor: !!rec.r
 };
 if (typeof lid === "string")
@@ -65,8 +66,8 @@ while (true) {
 
         await db.runP("DELETE FROM defaults WHERE uid=@UID;", {"@UID": uid});
         await db.runP("INSERT INTO defaults " +
-                      "( uid,  name,  dname,  format,  continuous,  rtc,  videoRec,  lid,  universal_monitor) VALUES " +
-                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @VIDEOREC, @LID, @UNIVERSAL_MONITOR);", {
+                      "( uid,  name,  dname,  format,  continuous,  rtc,  videoRec,  transcription,  lid,  universal_monitor) VALUES " +
+                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @VIDEOREC, @TRANSCRIPTION, @LID, @UNIVERSAL_MONITOR);", {
             "@UID": uid,
             "@NAME": rec.name,
             "@DNAME": dname,
@@ -74,6 +75,7 @@ while (true) {
             "@CONTINUOUS": rec.continuous,
             "@RTC": rec.rtc,
             "@VIDEOREC": rec.videoRec,
+            "@TRANSCRIPTION": rec.transcription,
             "@LID": rec.lid || null,
             "@UNIVERSAL_MONITOR": rec.universalMonitor
         });
