@@ -188,6 +188,14 @@ timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
     timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" > $tmpdir/meta
 NB_SFX=`timeout 10 "$SCRIPTBASE/sfx.js" < $tmpdir/meta`
 
+# Detect if we have captions
+CAPTIONS=no
+grep -m 1 '"caption"' $tmpdir/meta > /dev/null 2>&1
+if [ "$?" = "0" ]
+then
+    CAPTIONS=yes
+fi
+
 # Prepare the self-extractor or project file
 if [ "$FORMAT" = "wavsfx" ]
 then
@@ -244,8 +252,14 @@ do
     O_USER="`$SCRIPTBASE/userinfo.js $ID $c`"
     [ "$O_USER" ] || unset O_USER
     O_FN="$c${O_USER+-}$O_USER.$ext"
+    C_FN="$c${O_USER+-}$O_USER.vtt"
     O_FFN="$OUTDIR/$O_FN"
+    C_FFN="$OUTDIR/$C_FN"
     mkfifo "$O_FFN"
+    if [ "$CAPTIONS" = "yes" ]
+    then
+        mkfifo "$C_FFN"
+    fi
 
     # Make the extractor line for this file
     if [ "$FORMAT" = "wavsfx" ]
@@ -297,10 +311,13 @@ do
     O_USER="`$SCRIPTBASE/userinfo.js $ID $c`"
     [ "$O_USER" ] || unset O_USER
     O_FN="$c${O_USER+-}$O_USER.$ext"
+    C_FN="$c${O_USER+-}$O_USER.vtt"
     O_FFN="$OUTDIR/$O_FN"
+    C_FFN="$OUTDIR/$C_FN"
     T_DURATION=`timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
         timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $c`
     sno=`echo "$STREAM_NOS" | sed -n "$c"p`
+
     if [ "$FORMAT" = "copy" -o "$CONTAINER" = "mix" ]
     then
         timeout $DEF_TIMEOUT cat \
@@ -329,6 +346,11 @@ do
             )
 
     fi
+
+    if [ "$CAPTIONS" = "yes" ]
+    then
+        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/vtt.js" $sno < $tmpdir/meta > "$C_FFN" &
+    fi
 done &
 for c in `seq -w 1 $NB_SFX`
 do
@@ -355,6 +377,12 @@ if [ "$CONTAINER" = "zip" -o "$CONTAINER" = "aupzip" -o "$CONTAINER" = "exe" ]
 then
     mkfifo $OUTDIR/info.txt
     timeout $DEF_TIMEOUT "$SCRIPTBASE/info.js" "$ID" < $tmpdir/meta > $OUTDIR/info.txt &
+
+    if [ "$CAPTIONS" = "yes" ]
+    then
+        mkfifo $OUTDIR/captions.vtt
+        timeout $DEF_TIMEOUT "$SCRIPTBASE/vtt.js" -u $ID.ogg.users < $tmpdir/meta > $OUTDIR/captions.vtt &
+    fi
 fi
 
 
@@ -423,11 +451,12 @@ case "$CONTAINER" in
         ;;
 
     aupzip)
-        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -r -FI - "$FNAME.aup" "${FNAME}_data"/*.$ext "${FNAME}_data"/info.txt
+        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -r -FI - "$FNAME.aup" \
+            "${FNAME}_data"/*.$ext "${FNAME}_data"/*.vtt "${FNAME}_data"/info.txt
         ;;
 
     *)
-        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext $EXTRAFILES info.txt
+        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext *.vtt $EXTRAFILES info.txt
         ;;
 esac | (cat || cat > /dev/null)
 
