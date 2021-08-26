@@ -770,7 +770,7 @@ wss.on("connection", (ws, wsreq) => {
 
             case prot.ids.caption:
             {
-                const p = prot.parts.caption;
+                const p = prot.parts.caption.cs;
                 if (msg.length < p.length)
                     return die();
 
