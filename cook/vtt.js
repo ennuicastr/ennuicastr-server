@@ -92,7 +92,7 @@ function toStamp(time) {
             toStamp(caption[0].start) +
             " --> " +
             toStamp(caption[caption.length-1].end + 3) +
-            "\n");
+            "\n<c>");
 
         // Name
         if (trackNo < 0) {
@@ -105,9 +105,9 @@ function toStamp(time) {
         for (let i = 0; i < caption.length; i++) {
             const word = caption[i];
             if (i !== 0)
-                process.stdout.write(" <" + toStamp(word.start) + ">");
+                process.stdout.write(" </c><" + toStamp(word.start) + "><c>");
             process.stdout.write(word.word);
         }
-        process.stdout.write("\n\n");
+        process.stdout.write("</c>\n\n");
     }
 })();
