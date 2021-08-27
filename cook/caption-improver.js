@@ -74,7 +74,7 @@ sock.on("data", text => {
             const curLine = out[ei].d;
             const nextLine = out[ei+1].d;
             if (curLine.id !== nextLine.id ||
-                nextLine.caption[0].start >= curLine.caption[curLine.caption.length-1].end + 4)
+                nextLine.caption[0].start >= curLine.caption[curLine.caption.length-1].end + 4000)
                 break;
         }
 
