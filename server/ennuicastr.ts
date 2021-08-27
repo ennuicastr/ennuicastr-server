@@ -20,6 +20,7 @@
  * This is the server for a single recording session.
  */
 
+const cproc = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
@@ -1470,8 +1471,13 @@ async function stopRec() {
         }, 60000);
     }, 1000*60*5);
 
-    // And log it
+    // Log it
     log("recording-end", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
+
+    // Postproc (FIXME: Only do this if we have captions)
+    cproc.spawn(config.repo + "/cook/postproc.sh", [
+        config.rec, recInfo.rid
+    ]);
 }
 
 // Calculate the credit rate currently in use

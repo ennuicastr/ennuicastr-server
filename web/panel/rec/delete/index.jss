@@ -44,7 +44,10 @@ if (request.query.sure) {
     // OK, delete it then!
 
     // Delete the files
-    ["header1", "header2", "data", "users", "info"].forEach((footer) => {
+    [
+        "header1", "header2", "data", "users", "info", "captions.tmp",
+        "captions"
+    ].forEach((footer) => {
         try {
             fs.unlinkSync(config.rec + "/" + rid + ".ogg." + footer);
         } catch (ex) {}

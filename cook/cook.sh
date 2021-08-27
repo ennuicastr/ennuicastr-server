@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2017-2018, 2020 Yahweasel
+# Copyright (c) 2017-2018, 2020-2021 Yahweasel
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -194,6 +194,12 @@ grep -m 1 '"caption"' $tmpdir/meta > /dev/null 2>&1
 if [ "$?" = "0" ]
 then
     CAPTIONS=yes
+
+    CAPTION_FILE=$tmpdir/meta
+    if [ -e $ID.ogg.captions ]
+    then
+        CAPTION_FILE=$ID.ogg.captions
+    fi
 fi
 
 # Prepare the self-extractor or project file
@@ -349,7 +355,7 @@ do
 
     if [ "$CAPTIONS" = "yes" ]
     then
-        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/vtt.js" $sno < $tmpdir/meta > "$C_FFN" &
+        timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/vtt.js" $sno < $CAPTION_FILE > "$C_FFN" &
     fi
 done &
 for c in `seq -w 1 $NB_SFX`
