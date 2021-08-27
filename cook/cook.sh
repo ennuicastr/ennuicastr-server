@@ -387,7 +387,10 @@ then
     if [ "$CAPTIONS" = "yes" ]
     then
         mkfifo $OUTDIR/captions.vtt
-        timeout $DEF_TIMEOUT "$SCRIPTBASE/vtt.js" -u $ID.ogg.users < $tmpdir/meta > $OUTDIR/captions.vtt &
+        timeout $DEF_TIMEOUT "$SCRIPTBASE/vtt.js" -u $ID.ogg.users < $CAPTION_FILE > $OUTDIR/captions.vtt &
+        mkfifo $tmpdir/out/transcript.txt
+        timeout $DEF_TIMEOUT "$SCRIPTBASE/vtt.js" -u $ID.ogg.users -t < $CAPTION_FILE > $tmpdir/out/transcript.txt &
+        EXTRAFILES="$EXTRAFILES transcript.txt"
     fi
 fi
 
@@ -458,7 +461,7 @@ case "$CONTAINER" in
 
     aupzip)
         timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -r -FI - "$FNAME.aup" \
-            "${FNAME}_data"/*.$ext "${FNAME}_data"/*.vtt "${FNAME}_data"/info.txt
+            "${FNAME}_data"/*.$ext "${FNAME}_data"/*.vtt $EXTRAFILES "${FNAME}_data"/info.txt
         ;;
 
     *)
