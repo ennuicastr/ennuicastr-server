@@ -45,7 +45,7 @@ sock.on("data", text => {
 
     meta = meta.trim().split("\n");
 
-    const out = [];
+    let out = [];
 
     // Go through it
     for (let line of meta) {
@@ -53,11 +53,18 @@ sock.on("data", text => {
         const data = line.d;
         if (data.c !== "caption")
             continue;
-        const caption = data.caption;
 
         // And keep it
         out.push(line);
     }
+
+    // Sort them by ID, then start time
+    out = out.sort((l, r) => {
+        if (l.d.id === r.d.id)
+            return l.d.caption[0].start - r.d.caption[0].start;
+        else
+            return l.d.id - r.d.id;
+    });
 
     // Now add punctuation
     for (let si = 0; si < out.length; si++) {
@@ -66,7 +73,8 @@ sock.on("data", text => {
         for (ei = si; ei < out.length - 1; ei++) {
             const curLine = out[ei].d;
             const nextLine = out[ei+1].d;
-            if (nextLine.caption[0].start >= curLine.caption[curLine.caption.length-1].end + 4)
+            if (curLine.id !== nextLine.id ||
+                nextLine.caption[0].start >= curLine.caption[curLine.caption.length-1].end + 4)
                 break;
         }
 
@@ -91,9 +99,16 @@ sock.on("data", text => {
                 line = out[ci];
             }
         }
+
+        si = ei;
     }
 
     sock.end();
+
+    // Sort again, now just by time
+    out = out.sort((l, r) => {
+        return l.d.caption[0].start - r.d.caption[0].start;
+    });
 
     // Output it
     const outS = fs.createWriteStream(process.argv[2] + ".tmp", "utf8");
