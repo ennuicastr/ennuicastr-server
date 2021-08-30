@@ -97,6 +97,24 @@ function toStamp(time) {
         return l.d.caption[0].start - r.d.caption[0].start;
     });
 
+    // If we're doing text only, combine them
+    if (transcriptOnly) {
+        for (let si = 0; si < meta.length; si++) {
+            const line = meta[si];
+            for (ei = si + 1; ei < meta.length; ei++) {
+                const eline = meta[ei];
+                if (eline.d.id !== line.d.id)
+                    break;
+            }
+            ei--;
+            while (ei > si) {
+                line.d.caption = line.d.caption.concat(meta[si+1].d.caption);
+                meta.splice(ei, 1);
+                ei--;
+            }
+        }
+    }
+
     // Go through it
     for (let line of meta) {
         const data = line.d;
