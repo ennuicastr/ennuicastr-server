@@ -394,6 +394,24 @@ if (!recInfo.purchased) {
         ?>
     </section>
 <?JS
+
+// Check for transcription with no finished post-processing
+} else if (recInfo.transcription) {
+    let hasCaptionsFile = false;
+    try {
+        fs.accessSync(config.rec + "/" + rid + ".ogg.captions", fs.constants.R_OK);
+        hasCaptionsFile = true;
+    } catch (ex) {}
+
+    if (!hasCaptionsFile) {
+?>
+        <section class="wrapper special style1" id="captions-dialog">
+            <header><h2>Note</h2></header>
+
+            <p>Your recording used live captioning. Post-processing is currently running to improve the quality of the captions. That post-processing has not yet finished; check back later for improved captions. You may download with the original (live) captions now.</p>
+        </section>
+<?JS
+    }
 }
 ?>
 

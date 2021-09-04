@@ -17,7 +17,7 @@ timeout() {
     /usr/bin/timeout -k 5 "$@"
 }
 
-DEF_TIMEOUT=7200
+DEF_TIMEOUT=21600
 ulimit -v $(( 8 * 1024 * 1024 ))
 echo 10 > /proc/self/oom_adj
 
@@ -37,7 +37,5 @@ shift
 cd "$RECBASE"
 
 # Improve the captions
-timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-    timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" |
-    timeout $DEF_TIMEOUT "$SCRIPTBASE/caption-improver.js" \
-    "$ID.ogg.captions"
+timeout $DEF_TIMEOUT "$SCRIPTBASE/caption-improver.js" \
+    "$ID.ogg.captions" "$ID"
