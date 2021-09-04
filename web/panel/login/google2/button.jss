@@ -17,19 +17,15 @@
 
 const config = require("../config.js");
 ?>
-<script type="text/javascript"><!--
-    function googleRenderButton() {
-        gapi.signin2.render("google-signin2", {
-            "scope": "openid profile email",
-            "width": 240,
-            "height": 50,
-            "longtitle": true,
-            "theme": "dark",
-            "ux_mode": "redirect",
-            "redirect_uri": "https://ennuicastr.com/panel/login/google/"
-        });
-    }
-//--></script>
-<meta name="google-signin-client_id" content="<?JS= config.google.clientId ?>">
-<span id="google-signin2" class="loginblock"></span>
-<script src="https://apis.google.com/js/platform.js?onload=googleRenderButton" async defer></script>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<span id="g_id_onload"
+    data-client_id="<?JS= config.google.clientId ?>"
+    data-ux_mode="redirect"
+    data-login_uri="<?JS= config.panel ?>login/google2/">
+</span>
+<span class="loginblock">
+    <span class="g_id_signin"
+        data-type="standard"
+        data-theme="filled_blue"></span>
+</span>
