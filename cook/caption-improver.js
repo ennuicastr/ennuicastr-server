@@ -195,7 +195,7 @@ fastPunct.on("data", text => {
         `${config.repo}/cook/oggtracks`
     ], {stdio: ["ignore", "pipe", "ignore"]});
     proc.stdout.on("data", chunk => {
-        meta = meta + chunk.toString();
+        formats = formats + chunk.toString();
     });
     await new Promise(res => {
         proc.stdout.on("end", res);
