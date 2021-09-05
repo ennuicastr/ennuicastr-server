@@ -1172,7 +1172,7 @@ wss.on("connection", (ws, wsreq) => {
 });
 
 // Data from the server
-process.on("message", (msg) => {
+process.on("message", (msg: any) => {
     if (msg.c === "info")
         recvRecInfo(msg.r);
 });
