@@ -15,17 +15,37 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+const util = require("util");
+
 // Delete all session data and you are now logged out!
 await session.init();
-var sd = await session.getAll();
-for (var key in sd)
+const uid = await session.get("uid");
+const sd = await session.getAll();
+for (const key in sd)
     await session.delete(key);
+
+// Check for a delete-all request
+let all = false;
+if (request.query && ("all" in request.query) && uid) {
+    all = true;
+
+    // Look for any session with the same UID
+    const dbAll = util.promisify(session.db.all.bind(session.db));
+    const rows = await dbAll(
+            "SELECT * FROM session WHERE key='uid' AND value=@UID;",
+            {"@UID": JSON.stringify(uid)}
+    );
+    for (const row of rows)
+        await session.run("DELETE FROM session WHERE sid=@SID;", {"@SID": row.sid});
+}
 
 await include("../../head.jss", {menu: false, title: "Log out"});
 ?>
 
 <section class="wrapper special">
-    <p>You are now logged out.</p>
+    <p>You are now logged out<?JS
+    if (all) { write(" on all devices"); }
+    ?>.</p>
 
     <p><a href="/">Return to the home page</a></p>
 </section>

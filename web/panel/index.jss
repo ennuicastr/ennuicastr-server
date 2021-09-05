@@ -83,6 +83,8 @@ await include("head.jss");
     <p>
     <?JS await include("menu.jss", {nomain: true}); ?>
     </p>
+
+    <p><a class="button" href="/panel/logout/?all"><i class="fas fa-sign-out-alt"></i> Log out on <em>all</em> devices</a></p>
 </section>
 
 <?JS await include("../tail.jss"); ?>
