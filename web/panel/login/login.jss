@@ -50,7 +50,7 @@ async function getUID(login) {
             // BETA
             await db.runP("INSERT INTO credits " +
                           "( uid,  credits,  purchased,  subscription,  subscription_expiry,  subscription_id) VALUES " +
-                          "(@UID,        0,          0,             2, datetime('2022-01-01'), 'beta:');",
+                          "(@UID,        0,          0,             2, '2021-11-01 14:00:00', 'beta:');",
                           {"@UID": uid});
             break;
         } catch (ex) {
