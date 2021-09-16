@@ -67,6 +67,25 @@ if (email) {
 await include("head.jss");
 ?>
 
+<?JS
+if (uid === "8r0yhzg2bawwig7id2h6u0ip6wm2535us") {
+?>
+<script type="text/javascript">
+(function() {
+    // Check for client login
+    if (!window.parent) return;
+    const wUrl = new URL(document.location.href);
+    const pUrl = new URL(window.parent.document.location.href);
+    if (window.parent.ennuicastrClientLogin &&
+        wUrl.origin === pUrl.origin) {
+        window.parent.document.location.href = "/panel/login-client/otk/";
+    }
+})();
+</script>
+<?JS
+}
+?>
+
 <section class="wrapper special">
     <p onclick="showUID();">You are logged into Ennuicastr using <?JS= loginProvider + asLine ?>.</p>
 

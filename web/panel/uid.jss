@@ -15,6 +15,8 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+const config = (arguments[1] || {});
+
 await session.init();
 const uid = await session.get("uid");
 
@@ -25,7 +27,7 @@ var row;
 if (uid)
     row = await db.getP("SELECT * FROM users WHERE uid=@UID;", {"@UID": uid});
 
-if (!uid || !row) {
+if ((!uid || !row) && !config.noRedirect) {
     // Throw them to the login page
     writeHead(302, {"location": "/panel/login/"});
 }

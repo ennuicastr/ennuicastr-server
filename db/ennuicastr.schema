@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS names (
 
 CREATE INDEX IF NOT EXISTS names_uid ON names (uid);
 
+/* One-time keys */
+CREATE TABLE IF NOT EXISTS otk (
+    uid TEXT PRIMARY KEY,
+    otk TEXT UNIQUE,
+    expiry TEXT
+);
+
+CREATE INDEX IF NOT EXISTS otk_otk ON otk (otk);
+
 CREATE TABLE IF NOT EXISTS credits (
     uid TEXT PRIMARY KEY,
     /* How many credits the user currently has remaining */
