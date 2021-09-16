@@ -28,13 +28,13 @@ if (!params.QUERY_STRING) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link href="fa/css/all.min.css" rel="stylesheet" />
-        <link href="ennuicastr2.css?v=c" rel="stylesheet" />
+        <link href="ennuicastr2.css?v=d" rel="stylesheet" />
         <link href="ecastr.css" rel="stylesheet" />
         <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png" />
         <link rel="manifest" href="/img/site.webmanifest" />
-        <script type="text/javascript" src="protocol.js?v=i"></script>
+        <script type="text/javascript" src="protocol.js?v=j"></script>
     </head>
     <body>
         <div id="log"></div>
@@ -44,6 +44,6 @@ if (!params.QUERY_STRING) {
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=88"></script>
+        <script type="text/javascript" src="ennuicastr.js?v=8g"></script>
     </body>
 </html>
