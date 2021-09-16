@@ -26,6 +26,18 @@ const credits = require("../credits.js");
 
 const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + config.paypal.secret).toString("base64");
 
+async function cancel(sid) {
+    return await nrc.postPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid + "/cancel", {
+        headers: {
+            "content-type": "application/json",
+            authorization
+        },
+        data: JSON.stringify({
+            reason: "Unspecified"
+        })
+    });
+}
+
 async function updateSubscription(uid, sid, sconfig) {
     sconfig = sconfig || {};
 
@@ -108,7 +120,6 @@ async function updateSubscription(uid, sid, sconfig) {
                 "subscription_id=@SID WHERE uid=@UID;", {
                 "@UID": uid,
                 "@LEVEL": level,
-                "@START": startTime,
                 "@EXPIRY": expiry,
                 "@SID": (sid ? ("paypal:" + sid) : "")
             });
@@ -128,13 +139,7 @@ async function updateSubscription(uid, sid, sconfig) {
 
     // And cancel any old subscription
     if (prevSubscription) {
-        var res = await nrc.getPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + prevSubscription + "/cancel", {
-            headers: {
-                "content-type": "application/json",
-                authorization
-            },
-            data: JSON.stringify({reason: level?"Upgrade":"Cancelation"})
-        });
+        let res = await cancel(prevSubscription);
         res = res.data;
         log("canceled-subscription", JSON.stringify(res), {uid});
     }
@@ -165,17 +170,9 @@ async function cancelSubscription(uid, sconfig) {
     }
 
     // Cancel the subscription
-    var result = await nrc.getPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid + "/cancel", {
-        headers: {
-            "content-type": "application/json",
-            authorization
-        },
-        data: JSON.stringify({
-            reason: "Unspecified"
-        })
-    });
+    let result = await cancel(sid);
     if (result.response.statusCode !== 204)
-        return fail("Failed to cancel. Perhaps already canceled?");
+        return fail("Paypal refused the cancelation? " + result.response.statusCode);
 
     // Update the user's account
     while (true) {
@@ -184,7 +181,8 @@ async function cancelSubscription(uid, sconfig) {
 
             await db.runP("UPDATE credits SET " +
                 "subscription_id=@SID WHERE uid=@UID;", {
-                "@SID": ("canceled:paypal:" + sid)
+                "@SID": ("canceled:paypal:" + sid),
+                "@UID": uid
             });
 
             await db.runP("COMMIT;");
@@ -197,7 +195,7 @@ async function cancelSubscription(uid, sconfig) {
     // Log it
     log("canceled-subscription", JSON.stringify(sid), {uid});
 
-    return {success: true, level};
+    return {success: true};
 }
 
 module.exports = {updateSubscription, cancelSubscription};
