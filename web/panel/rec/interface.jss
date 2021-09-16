@@ -169,7 +169,7 @@ const defaults = await (async function() {
         chk("continuous", "c");
         alt("continuous", "By default, Ennuicastr is only recording when you speak. This saves on recording space, but can also save on editing time. However, to do this, it uses a technique called voice activity detection (VAD), and VAD is not always perfect. It is possible to miss things. Check this to disable the VAD, and thus get a continuous and complete recording, but at an extra cost.");
 
-        l("transcription", "ALPHA: Live captions", true);
+        l("transcription", "BETA: Live captions", true);
         chk("transcription", "t");
         alt("transcription", "Enable live captions. Currently only English is supported.");
 
