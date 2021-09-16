@@ -4114,3 +4114,13 @@ th[role=columnheader]:not(.no-sort):hover:after {
 	animation: spin 2s infinite steps(8, jump-start);
 	filter: var(--img-filter);
 }
+
+ins {
+    color: green;
+    text-decoration: underline;
+}
+
+del {
+    color: red;
+    text-decoration: line-through;
+}
