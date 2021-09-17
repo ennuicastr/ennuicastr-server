@@ -1,6 +1,6 @@
-<?JS
+<?JS!
 /*
- * Copyright (c) 2020, 2021 Yahweasel
+ * Copyright (c) 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,31 +17,16 @@
 
 const util = require("util");
 
-// Delete all session data and you are now logged out!
-await session.init();
-const uid = await session.get("uid");
-const sd = await session.getAll();
-for (const key in sd)
-    await session.delete(key);
-
-// Check for a log-out-all request
-let all = false;
-if (request.query && ("all" in request.query) && uid) {
-    all = true;
-
-    const l = await include("./logout.jss");
-    await l.logOutAll(uid);
+async function logOutAll(uid) {
+    // Look for any session with the same UID
+    const dbAll = util.promisify(session.db.all.bind(session.db));
+    const rows = await dbAll(
+            "SELECT * FROM session WHERE key='uid' AND value=@UID;",
+            {"@UID": JSON.stringify(uid)}
+    );
+    for (const row of rows)
+        await session.run("DELETE FROM session WHERE sid=@SID;", {"@SID": row.sid});
 }
 
-await include("../../head.jss", {menu: false, title: "Log out"});
+module.exports = {logOutAll};
 ?>
-
-<section class="wrapper special">
-    <p>You are now logged out<?JS
-    if (all) { write(" on all devices"); }
-    ?>.</p>
-
-    <p><a href="/">Return to the home page</a></p>
-</section>
-
-<?JS await include("../../tail.jss"); ?>

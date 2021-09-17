@@ -78,7 +78,15 @@ async function genSub(level) {
 // Generate a cancel button
 async function genCancel(id) {
     var parts = /^([^:]*):.*$/.exec(id);
-    if (!parts || parts[1] !== "paypal") return;
+    if (!parts || parts[1] === "canceled") return;
+
+    if (parts[1] !== "paypal") {
+        // Non-PayPal subscription. Something special, can't be canceled here.
+        ?>
+        <p>If you wish to cancel your subscription, please <a href="/contact/">contact us</a>.</p>
+        <?JS
+        return;
+    }
 
     ?>
     <p id="cancel-box">

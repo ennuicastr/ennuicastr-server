@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -104,6 +104,8 @@ if (uid === "8r0yhzg2bawwig7id2h6u0ip6wm2535us") {
     </p>
 
     <p><a class="button" href="/panel/logout/?all"><i class="fas fa-sign-out-alt"></i> Log out on <em>all</em> devices</a></p>
+
+    <p><a class="button" href="/panel/delete/" style="font-size: 0.75em"><i class="fas fa-trash-alt"></i> Delete account</a></p>
 </section>
 
 <?JS await include("../tail.jss"); ?>
