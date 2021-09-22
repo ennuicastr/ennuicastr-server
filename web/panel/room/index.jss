@@ -95,6 +95,8 @@ for (var ri = 0; ri < rows.length; ri++) {
                             features |= 2;
                         if (rec.videoRec)
                             features |= 4;
+                        if (rec.recordOnly)
+                            features |= 0x100;
                         if (rec.format === "flac")
                             features |= 0x10;
 

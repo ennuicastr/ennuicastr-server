@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS recordings (
     continuous BOOLEAN,
     /* RTC mode? */
     rtc BOOLEAN,
+    /* Recording-only mode? i.e., mute output by default */
+    recordOnly BOOLEAN,
     /* Video recording by default? */
     videoRec BOOLEAN,
     /* Transcription? */
@@ -141,6 +143,7 @@ CREATE TABLE IF NOT EXISTS defaults (
     format TEXT,
     continuous BOOLEAN,
     rtc BOOLEAN,
+    recordOnly BOOLEAN,
     videoRec BOOLEAN,
     transcription BOOLEAN,
     lid TEXT,

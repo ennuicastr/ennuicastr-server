@@ -1228,10 +1228,13 @@ async function recvRecInfo(r) {
             rid = ~~(Math.random()*2000000000);
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  hostname,  format," +
-                          "  continuous,  rtc,  videoRec,  transcription,  key,  master,  wskey,  extra," +
-                          "  status,  init,  expiry,  tracks,  cost, purchased) VALUES " +
+                          "  continuous,  rtc,  recordOnly,  videoRec," +
+                          "  transcription,  key,  master,  wskey,  extra," +
+                          "  status,  init,  expiry,  tracks,  cost, purchased)" +
+                          " VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @HOSTNAME, @FORMAT," +
-                          " @CONTINUOUS, @RTC, @VIDEOREC, @TRANSCRIPTION, @KEY, @MASTER, @WSKEY, @EXTRAS," +
+                          " @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC," +
+                          " @TRANSCRIPTION, @KEY, @MASTER, @WSKEY, @EXTRAS," +
                           " 0, datetime('now'), datetime('now', '1 month'), 0, 0, '');", {
                 "@UID": r.uid,
                 "@RID": rid,
@@ -1241,6 +1244,7 @@ async function recvRecInfo(r) {
                 "@FORMAT": r.format,
                 "@CONTINUOUS": r.continuous,
                 "@RTC": r.rtc,
+                "@RECORDONLY": r.recordOnly,
                 "@VIDEOREC": r.videoRec,
                 "@TRANSCRIPTION": r.transcription,
                 "@KEY": r.key,

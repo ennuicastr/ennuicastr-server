@@ -128,6 +128,8 @@ rows.forEach((row) => {
                         features |= 2;
                     if (row.videoRec)
                         features |= 4;
+                    if (row.recordOnly)
+                        features |= 0x100;
                     if (row.format === "flac")
                         features |= 0x10;
 

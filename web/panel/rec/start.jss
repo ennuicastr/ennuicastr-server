@@ -52,6 +52,7 @@ rec = {
     format: (rec.f==="flac")?"flac":"opus",
     continuous: !!rec.c,
     rtc: !!rec.r,
+    recordOnly: !!rec.x,
     videoRec: !!rec.v,
     transcription: !!rec.t,
     universalMonitor: !!rec.r
@@ -66,14 +67,15 @@ while (true) {
 
         await db.runP("DELETE FROM defaults WHERE uid=@UID;", {"@UID": uid});
         await db.runP("INSERT INTO defaults " +
-                      "( uid,  name,  dname,  format,  continuous,  rtc,  videoRec,  transcription,  lid,  universal_monitor) VALUES " +
-                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @VIDEOREC, @TRANSCRIPTION, @LID, @UNIVERSAL_MONITOR);", {
+                      "( uid,  name,  dname,  format,  continuous,  rtc,  recordOnly,  videoRec,  transcription,  lid,  universal_monitor) VALUES " +
+                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @TRANSCRIPTION, @LID, @UNIVERSAL_MONITOR);", {
             "@UID": uid,
             "@NAME": rec.name,
             "@DNAME": dname,
             "@FORMAT": rec.format,
             "@CONTINUOUS": rec.continuous,
             "@RTC": rec.rtc,
+            "@RECORDONLY": rec.recordOnly,
             "@VIDEOREC": rec.videoRec,
             "@TRANSCRIPTION": rec.transcription,
             "@LID": rec.lid || null,

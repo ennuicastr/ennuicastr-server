@@ -38,6 +38,7 @@ const defaults = await (async function() {
             format: "opus",
             continuous: false,
             rtc: true,
+            recordOnly: false,
             videoRec: false,
             transcription: false,
             lid: null,
@@ -136,6 +137,7 @@ const defaults = await (async function() {
                             defaults.format === "flac" ||
                             defaults.continuous ||
                             !defaults.rtc ||
+                            defaults.recordOnly ||
                             defaults.transcription ||
                             !defaults.universal_monitor);
 
@@ -173,10 +175,22 @@ const defaults = await (async function() {
         chk("transcription", "t");
         alt("transcription", "Enable live captions. Currently only English is supported.");
 
-        l("rtc", "Live voice chat", true);
-        chk("rtc", "r");
-        alt("rtc", "Ennuicastr's primary function is to record, but you probably want to <em>hear</em> who you're recording! If you're going to use some other software to actually chat with your guests, uncheck this so that you don't hear them in both.");
+        l("recordOnly", "Mute live voice chat", true);
+        chk("recordOnly", "x");
+        alt("recordOnly", "Ennuicastr's primary function is to record, but you probably want to <em>hear</em> who you're recording! If you're going to use some other software to actually chat with your guests, check this so that you don't hear them in both. This only <em>mutes</em> live voice chat by default, so that you can still use it for monitoring. To disable live voice chat entirely (and thus disable monitoring), disable WebRTC (the option will appear when you enable this).");
         ?>
+
+        <div id="rtc-hider" style="display: none">
+        <?JS
+        l("rtc", "Enable WebRTC");
+        chk("rtc", "r");
+        alt("rtc", "WebRTC is the technology used by Ennuicastr for live voice chat. Normally, even if you don't need live voice chat, WebRTC is still enabled so that you can use it to monitor the recording. If you really wish to disable WebRTC entirely, uncheck this. The only reason to do so is if it causes undue strain on your bandwidth.");
+        ?>
+        </div>
+
+        <script type="text/javascript">(function() {
+        })();
+        </script>
 
         </div><br/>
 
@@ -193,13 +207,18 @@ const defaults = await (async function() {
 <script type="text/javascript">
 var clientUrl, clientWindow;
 
-function rtcWarn(ev) {
+function updateRecordOnly() {
+    var v = $("#r-recordOnly")[0].checked;
+    $("#rtc-hider")[0].style.display = v ? "" : "none";
+    if (!v)
+        $("#r-rtc")[0].checked = true;
     $("#no-rtc-warn")[0].style.display =
-        ($("#r-rtc")[0].checked ? "none" : "block");
+        (v ? "block" : "none");
 }
 
-$("#r-rtc")[0].onchange = rtcWarn;
-rtcWarn();
+$("#r-recordOnly")[0].onchange = updateRecordOnly;
+$("#r-rtc")[0].onchange = updateRecordOnly;
+updateRecordOnly();
 
 function createRecording() {
     $("#create-recording-b")[0].classList.add("disabled");
@@ -260,6 +279,8 @@ function launchRecording() {
             features |= 4;
         if (res.transcription)
             features |= 8;
+        if (res.recordOnly)
+            features |= 0x100;
         if (res.format === "flac")
             features |= 0x10;
 
