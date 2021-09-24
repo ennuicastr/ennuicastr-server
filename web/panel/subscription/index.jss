@@ -89,7 +89,7 @@ async function genCancel(id) {
     }
 
     ?>
-    <p id="cancel-box">
+    <p id="cancel-box" style="margin-top: 2em">
         <button id="cancel-button">Cancel subscription</button>
         <span id="cancel-sure" style="display: none">
             <br/>

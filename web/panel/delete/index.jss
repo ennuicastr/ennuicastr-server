@@ -21,6 +21,7 @@ if (!uid) return;
 const creditsj = await include("../credits.jss");
 const edb = require("../db.js");
 const db = edb.db;
+const log = edb.log;
 const logout = await include("../logout/logout.jss");
 
 let canDelete = true,
@@ -106,10 +107,13 @@ while (true) {
 
 if (deleted) {
     // OK, the account was deleted
+    log("account-deleted", "", {uid});
     await include("../head.jss", {menu: false, title: "Delete"});
     ?>
 
     <section class="wrapper special">
+        <h2>Delete</h2>
+
         <p>Your account has been deleted.</p>
 
         <p><a href="/">Return to home page</a></p>
@@ -124,6 +128,8 @@ await include("../head.jss", {title: "Delete"});
 ?>
 
 <section class="wrapper special">
+    <h2>Delete</h2>
+
     <p>You may delete your account here if you wish. Note that deleting your account does <em>not</em> delete all personal information, but it does delete account information including your email address, so you will not be contacted. If you wish for us to expunge all personal information, consult the <a href="/privacy/">privacy policy</a>.</p>
 
     <p>Because accounts are created on demand whenever you newly log in with a login service, if you delete your account, you'll still be able to log in; a new account will be created if you do.</p>
