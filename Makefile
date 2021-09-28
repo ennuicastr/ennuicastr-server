@@ -1,11 +1,15 @@
 CC=gcc
 CFLAGS=-O3
 
-all: server/ennuicastr.js \
+all: rec sounds \
+	server/ennuicastr.js \
         cook/oggcorrect cook/oggduration cook/oggmeta cook/oggstender \
         cook/oggtracks cook/wavduration
 
 test: server/ennuicastr-beta.js
+
+rec sounds:
+	mkdir -p $@
 
 server/ennuicastr.js server/ennuicastr-beta.js: server/ennuicastr.ts node_modules/.bin/tsc
 	node_modules/.bin/tsc $< --outFile $@.tmp
