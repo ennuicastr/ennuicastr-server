@@ -18,8 +18,8 @@ web:    The web page
 cook:   Tools used to process raw audio into usable formats.
 
 
-No complete documentation is provided on running your own instance of
-Ennuicastr, but some notes are here, mainly for my own memory.
+Some very light documentation on running your own instance of Ennuicastr is
+provided in [docs/INSTALL.md](docs/INSTALL.md).
 
 
 # Server requirements
