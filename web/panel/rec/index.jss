@@ -174,7 +174,7 @@ for (let row of recs) {
             <td><?JS
                 switch (row.status) {
                     case 0:
-                        write("Created");
+                        write("Ready to record");
                         break;
                     case 0x10: // rec
                         write("Recording");
