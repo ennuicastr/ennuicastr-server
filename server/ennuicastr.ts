@@ -35,6 +35,7 @@ const log = edb.log;
 const id36 = require("../id36.js");
 const ogg = require("./ogg.js");
 const prot = require(config.clientRepo + "/protocol.js");
+const recM = require("../rec.js");
 
 /* Header indicating continuous mode (i.e., data is continuous but has VAD
  * info) */
@@ -1301,7 +1302,13 @@ var preRecordingInterval = setInterval(function() {
         if (connection)
             return;
     }
-    process.exit(1);
+
+    // Since we never did a recording, delete it
+    clearInterval(preRecordingInterval);
+    (async function() {
+        console.error(await recM.del(recInfo.rid, recInfo.uid, {force: true, forget: true}));
+        process.exit(1);
+    })();
 }, 1000*60*60);
 
 // Current time in ms from start time

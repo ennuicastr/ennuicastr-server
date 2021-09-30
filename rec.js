@@ -179,9 +179,11 @@ function hostUrl(rec, opts) {
 }
 
 // Delete a recording directly
-async function del(rid, uid) {
+async function del(rid, uid, opts) {
+    opts = opts || {};
+
     const rec = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
-    if (!rec || rec.uid !== uid || rec.status < 0x30) {
+    if (!rec || rec.uid !== uid || (rec.status < 0x30 && !opts.force)) {
         // Not allowed or not valid
         return false;
     }
@@ -202,22 +204,24 @@ async function del(rid, uid) {
             await db.runP("BEGIN TRANSACTION;");
 
             // Insert the new row
-            await db.runP("INSERT INTO old_recordings " +
-                          "( uid,  rid,  name,  init,  start,  end," +
-                          "  expiry,  tracks,  cost,  purchased) VALUES " +
-                          "(@UID, @RID, @NAME, @INIT, @START, @END," +
-                          " @EXPIRY, @TRACKS, @COST, @PURCHASED);", {
-                "@UID": rec.uid,
-                "@RID": rec.rid,
-                "@NAME": rec.name,
-                "@INIT": rec.init,
-                "@START": rec.start,
-                "@END": rec.end,
-                "@EXPIRY": rec.expiry,
-                "@TRACKS": rec.tracks,
-                "@COST": rec.cost,
-                "@PURCHASED": rec.purchased
-            });
+            if (!opts.forget) {
+                await db.runP("INSERT INTO old_recordings " +
+                              "( uid,  rid,  name,  init,  start,  end," +
+                              "  expiry,  tracks,  cost,  purchased) VALUES " +
+                              "(@UID, @RID, @NAME, @INIT, @START, @END," +
+                              " @EXPIRY, @TRACKS, @COST, @PURCHASED);", {
+                    "@UID": rec.uid,
+                    "@RID": rec.rid,
+                    "@NAME": rec.name,
+                    "@INIT": rec.init,
+                    "@START": rec.start,
+                    "@END": rec.end,
+                    "@EXPIRY": rec.expiry,
+                    "@TRACKS": rec.tracks,
+                    "@COST": rec.cost,
+                    "@PURCHASED": rec.purchased
+                });
+            }
 
             // And drop the old
             var wrid = {"@RID": rec.rid};
