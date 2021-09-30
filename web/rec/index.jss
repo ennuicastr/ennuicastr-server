@@ -44,6 +44,6 @@ if (!params.QUERY_STRING) {
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=8l"></script>
+        <script type="text/javascript" src="ennuicastr.js?v=8m"></script>
     </body>
 </html>
