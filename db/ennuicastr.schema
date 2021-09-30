@@ -153,19 +153,28 @@ CREATE TABLE IF NOT EXISTS defaults (
 CREATE INDEX IF NOT EXISTS defaults_uid ON defaults (uid);
 
 /* Rooms (called "lobbies" internally so that they don't abbreviate to 'r') */
-CREATE TABLE IF NOT EXISTS lobbies (
+CREATE TABLE IF NOT EXISTS lobbies2 (
     uid TEXT,
     /* The ID of this lobby */
-    lid TEXT PRIMARY KEY,
+    lid INTEGER PRIMARY KEY,
     /* Just a display name */
     name TEXT,
-    /* Currently associated? */
-    associated BOOLEAN,
-    /* The currently associated recording */
-    rid INTEGER
+    /* Room key */
+    key INTEGER,
+    /* Room master key */
+    master INTEGER,
+    /* Room configuration (JSON object) */
+    config TEXT,
+    /* The most recently associated recording */
+    rid INTEGER,
+    /* A lock used while creating recordings to make sure multiple recordings
+     * aren't created simultaneously. This is needed because the actual
+     * recording is created in a separate process, so we can't have a simple
+     * SQL transaction to do both. */
+    lock TEXT
 );
 
-CREATE INDEX IF NOT EXISTS lobbies_uid ON lobbies (uid);
+CREATE INDEX IF NOT EXISTS lobbies2_uid ON lobbies2 (uid);
 
 /* Soundboard */
 CREATE TABLE IF NOT EXISTS sounds (

@@ -84,7 +84,7 @@ while (true) {
 
             // Delete in all the other tables
             for (const t of [
-                "emails", "names", "otk", "credits", "defaults", "lobbies"
+                "emails", "names", "otk", "credits", "defaults", "lobbies2"
             ]) {
                 await db.runP("DELETE FROM " + t + " WHERE uid=@UID;", {
                     "@UID": uid

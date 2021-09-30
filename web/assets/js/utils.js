@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,7 +15,7 @@
  */
 
 (function() {
-    function renamable(el, cur, id) {
+    function renamable(el, cur, id, opts) {
         el.innerHTML = "";
         var span = document.createElement("span");
         span.innerText = cur || "(Anonymous)";
@@ -37,7 +37,7 @@
                     return true;
                 inp.disabled = true;
 
-                fetch("rename.jss", {
+                fetch(opts.endpoint || "rename.jss", {
                     method: "POST",
                     headers: {"content-type": "application/json"},
                     body: JSON.stringify({i: id, n: value})
@@ -56,6 +56,9 @@
     Array.prototype.slice.call(document.getElementsByClassName("renamable"), 0).forEach(function(el) {
         var id = el.dataset.id;
         if (!id) return;
-        renamable(el, el.innerText, id);
+        var opts = {};
+        if (el.dataset.endpoint)
+            opts.endpoint = el.dataset.endpoint;
+        renamable(el, el.innerText, id, opts);
     });
 })();

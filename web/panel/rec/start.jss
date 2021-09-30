@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -18,9 +18,9 @@
 const uid = await include("../uid.jss");
 if (!uid) return;
 
-const net = require("net");
 const config = require("../config.js");
 const db = require("../db.js").db;
+const recM = require("../rec.js");
 
 function fail(msg) {
     writeHead(500, {"content-type": "application/json"});
@@ -31,20 +31,15 @@ if (typeof request.body !== "object" ||
     request.body === null)
     return fail();
 
-// Check that this user isn't over the simultaneous recording limit (note: 0x30 == finished)
-var recordings = await db.allP("SELECT rid FROM recordings WHERE uid=@UID AND status<0x30;", {"@UID": uid});
-if (recordings.length >= config.limits.simultaneous)
-    return fail({"error": "You may not have more than " + config.limits.simultaneous + " simultaneous recordings."});
-
 // Get the request into the correct format
-var rec = request.body;
+let rec = request.body;
 if (typeof rec.n !== "string" ||
     typeof rec.m !== "string" ||
     typeof rec.f !== "string")
     return fail();
 
-var dname = rec.m.slice(0, config.limits.recUsernameLength);
-var lid = rec.l;
+let dname = rec.m.slice(0, config.limits.recUsernameLength);
+let persist = !!rec.persist;
 rec = {
     uid,
     name: rec.n.slice(0, config.limits.recNameLength),
@@ -57,8 +52,6 @@ rec = {
     transcription: !!rec.t,
     universalMonitor: !!rec.r
 };
-if (typeof lid === "string")
-    rec.lid = lid;
 
 // Add these defaults to the database
 while (true) {
@@ -91,38 +84,38 @@ while (true) {
     }
 }
 
-var resolve;
-var p = new Promise(function(r) {
-    resolve = r;
-});
+// If we're creating a persistent link, create it
+let lid;
+if (persist) {
+    let lkey = ~~(Math.random()*2000000000);
+    let lmaster = ~~(Math.random()*2000000000);
+    while (true) {
+        try {
+            lid = ~~(Math.random()*2000000000);
+            await db.runP("INSERT INTO lobbies2 " +
+                          "( uid,  lid,  name,  key,  master,  config,  rid," +
+                          " lock)" +
+                          " VALUES " +
+                          "(@UID, @LID, @NAME, @KEY, @MASTER, @CONFIG, -1," +
+                          " datetime('now', '-1 day'));", {
+                "@UID": uid,
+                "@LID": lid,
+                "@NAME": rec.name,
+                "@KEY": lkey,
+                "@MASTER": lmaster,
+                "@CONFIG": JSON.stringify(rec)
+            });
+            break;
 
-// Connect to the server socket
-var sock = net.createConnection(config.sock);
-sock.write(JSON.stringify({c: "rec", r: rec}) + "\n");
-
-// And wait for the recording to start
-var buf = Buffer.alloc(0);
-sock.on("data", (chunk) => {
-    buf = Buffer.concat([buf, chunk]);
-    var i;
-    for (i = 0; i < buf.length && buf[i] !== 10; i++) {}
-    if (i === buf.length) return;
-    var msg = buf.slice(0, i);
-    buf = buf.slice(i+1);
-
-    try {
-        msg = JSON.parse(msg.toString("utf8"));
-    } catch (ex) {
-        return fail();
+        } catch (ex) {}
     }
+}
 
-    if (msg.c === "ready") {
-        // Ready!
-        resolve(msg.r);
-    }
-});
+// Create the recording
+rec = await recM.rec(rec, persist ? {lid} : {});
 
-rec = await p;
+if (typeof rec === "string")
+    return fail({error: rec});
 
 // Now it's ready
 writeHead(200, {"content-type": "application/json"});

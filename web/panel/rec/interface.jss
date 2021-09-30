@@ -117,6 +117,10 @@ const defaults = await (async function() {
         l("dname", "Your display name");
         txt("dname", "m", config.limits.recUsernameLength);
 
+        l("persist", "Persistent room", true);
+        chk("persist", "persist");
+        alt("persist", "If checked, the link to join the recording will be persistent, and new recordings will be created by that link on demand. If unchecked, the link to join the recording is temporary, and is only valid for the duration of a single recording session.");
+
         l("videoRec", "Record video", true);
         chk("videoRec", "v");
         alt("videoRec", "If checked, participants who enable their camera or share their screen will also have their video recorded by default, and sent to the host. This can be changed within the Ennuicastr recording application. Video recording is free.");
@@ -284,14 +288,24 @@ function launchRecording() {
         if (res.format === "flac")
             features |= 0x10;
 
-        // Open up the recording interface
-        clientWindow.location = <?JS= JSON.stringify(config.client) ?> +
-            "?" + res.rid.toString(36) +
-            "-" + res.key.toString(36) +
-            "-m" + res.master.toString(36) +
-            "-p" + res.port.toString(36) +
+        // Make the URL
+        var url = <?JS= JSON.stringify(config.client) ?>;
+        if (res.lid) {
+            url +=
+                "?" + res.lid.toString(36) +
+                "-" + res.lkey.toString(36) +
+                "-m" + res.lmaster.toString(36);
+        } else {
+            url +=
+                "?" + res.rid.toString(36) +
+                "-" + res.key.toString(36) +
+                "-m" + res.master.toString(36) +
+                "-p" + res.port.toString(36);
+        }
+        url +=
             "-f" + features.toString(36) +
             "&nm=" + encodeURIComponent(q.m||"Host");
+        clientWindow.location = url;
         document.location = "/panel/rec/";
 
     }).catch(function(ex) {

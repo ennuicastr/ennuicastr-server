@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -18,22 +18,18 @@
 const uid = await include("../../uid.jss");
 if (!uid) return;
 
-const fs = require("fs");
-
 const config = require("../config.js");
 const db = require("../db.js").db;
-const recM = require("../rec.js");
-const reclib = await include("../lib.jss");
 
 if (!request.query.i) {
     // Delete nothing?
     return writeHead(302, {"location": "/panel/rec/"});
 }
 
-// Get the recording to be deleted
-const rid = Number.parseInt(request.query.i, 36);
-const rec = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
-if (!rec || rec.uid !== uid || rec.status < 0x30) {
+// Get the lobby to be deleted
+const lid = Number.parseInt(request.query.i, 36);
+const lobby = await db.getP("SELECT * FROM lobbies2 WHERE lid=@LID;", {"@LID": lid});
+if (!lobby || lobby.uid !== uid) {
     // Not allowed or not valid
     return writeHead(302, {"location": "/panel/rec/"});
 }
@@ -43,12 +39,19 @@ await include ("../../head.jss", {title: "Delete"});
 
 if (request.query.sure) {
     // OK, delete it then!
-    if (!(await recM.del(rid, uid)))
-        return writeHead(302, {"location": "/panel/rec/"});
+    while (true) {
+        try {
+            await db.runP("DELETE FROM lobbies2 WHERE uid=@UID AND lid=@LID;", {
+                "@UID": uid,
+                "@LID": lid
+            });
+            break;
+        } catch (ex) {}
+    }
 
 ?>
 <section class="wrapper special">
-    <p>Recording deleted!</p>
+    <p>Room deleted!</p>
 
     <a href="/panel/rec/">Return to recordings</a>
 </section>
@@ -58,16 +61,18 @@ if (request.query.sure) {
 ?>
 
 <section class="wrapper special">
-    <header><h2>Delete <?JS= rec.name || "(Anonymous)" ?></h2></header>
+    <header><h2>Delete room <?JS= lobby.name || "(Anonymous)" ?></h2></header>
 
-    <p>This will <em>permanently</em>, <em>irreversibly</em> delete the following recording:</p>
+    <p>This will delete the following room:</p>
 
-    <p><?JS= reclib.recordingName(rec) ?></p>
+    <p><?JS= lobby.name || "(Anonymous)" ?></p>
+
+    <p>The room invite link will no longer be valid, but previously made recordings will not be deleted.</td>
 
     <p>Are you sure?</p>
 
     <p>
-    <a class="button" href="/panel/rec/delete/?i=<?JS= rid.toString(36) ?>&amp;sure=yes">Yes, delete it</a>
+    <a class="button" href="/panel/rec/delete-room/?i=<?JS= lid.toString(36) ?>&amp;sure=yes">Yes, delete it</a>
     <a class="button" href="/panel/rec/">No, cancel</a>
     </p>
 </section>

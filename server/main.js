@@ -4,12 +4,13 @@
  * start recordings, responds with recording IDs, and deletes expired
  * recordings periodically. */
 
-const cp = require("child_process");
+const cproc = require("child_process");
 const fs = require("fs");
 const net = require("net");
 
 const config = require("../config.js");
 const db = require("../db.js").db;
+const recM = require("../rec.js");
 
 const server = net.createServer();
 const sockPath = config.sock || "/tmp/ennuicastr-server.sock";
@@ -21,43 +22,6 @@ server.listen(sockPath);
 
 // Current sockets listening for lobby updates
 var lobbyListeners = {};
-
-// Add a user to all our turn servers
-function turnAddUser(rec) {
-    var ps = [];
-    config.turn.forEach((turn) => {
-        ps.push(new Promise(function(res, rej) {
-            var p = cp.spawn("ssh",
-                [turn.user + "@" + turn.server,
-                 "turnadmin",
-                 "-r", turn.server,
-                 "-u", rec.rid.toString(36),
-                 "-p", rec.key.toString(36),
-                 "-a"],
-                {stdio: "inherit"});
-            p.on("exit", res);
-        }));
-    });
-    return Promise.all(ps);
-}
-
-// Delete a user from all our turn servers
-function turnDelUser(rec) {
-    var ps = [];
-    config.turn.forEach((turn) => {
-        ps.push(new Promise(function(res, rej) {
-            var p = cp.spawn("ssh",
-                [turn.user + "@" + turn.server,
-                 "turnadmin",
-                 "-r", turn.server,
-                 "-u", rec.rid.toString(36),
-                 "-d"],
-                {stdio: "inherit"});
-            p.on("exit", res);
-        }));
-    });
-    return Promise.all(ps);
-}
 
 server.on("connection", (sock) => {
     var buf = Buffer.alloc(0);
@@ -107,7 +71,7 @@ server.on("connection", (sock) => {
 
 // Start a recording
 function startRec(sock, msg) {
-    var p = cp.fork("./ennuicastr.js", {
+    var p = cproc.fork("./ennuicastr.js", {
         detached: true
     });
 
@@ -115,14 +79,6 @@ function startRec(sock, msg) {
 
     p.on("message", async function(pmsg) {
         if (pmsg.c === "ready") {
-            // Enable this ID on the Turn server
-            await turnAddUser(pmsg.r);
-
-            // And disable it when the child exits
-            p.on("exit", () => {
-                turnDelUser(pmsg.r);
-            });
-
             // If they wanted a lobby, associate it
             if (msg.r.lid) {
                 await db.runP("UPDATE lobbies SET associated=TRUE, rid=@RID WHERE uid=@UID AND lid=@LID;", {
@@ -195,58 +151,10 @@ function lobbyUpdate(sock, msg) {
 // Periodically delete expired recordings
 async function checkExpiry() {
     try {
-        var expired = await db.allP("SELECT * FROM recordings WHERE expiry <= datetime('now');");
-        for (var ei = 0; ei < expired.length; ei++) {
-            var rec = expired[ei];
-
-            // Delete the files
-            [
-                "header1", "header2", "data", "users", "info", "captions.tmp",
-                "captions"
-            ].forEach((footer) => {
-                try {
-                    fs.unlinkSync(config.rec + "/" + rec.rid + ".ogg." + footer);
-                } catch (ex) {}
-            });
-
-            // Just in case, remove them from TURN
-            await turnDelUser(rec);
-
-            // Then move the row to old_recordings
-            while (true) {
-                try {
-                    await db.runP("BEGIN TRANSACTION;");
-
-                    // Insert the new row
-                    await db.runP("INSERT INTO old_recordings " +
-                                  "( uid,  rid,  name,  init,  start,  end," +
-                                  "  expiry,  tracks,  cost,  purchased) VALUES " +
-                                  "(@UID, @RID, @NAME, @INIT, @START, @END," +
-                                  " @EXPIRY, @TRACKS, @COST, @PURCHASED);", {
-                        "@UID": rec.uid,
-                        "@RID": rec.rid,
-                        "@NAME": rec.name,
-                        "@INIT": rec.init,
-                        "@START": rec.start,
-                        "@END": rec.end,
-                        "@EXPIRY": rec.expiry,
-                        "@TRACKS": rec.tracks,
-                        "@COST": rec.cost,
-                        "@PURCHASED": rec.purchased
-                    });
-
-                    // And drop the old
-                    var wrid = {"@RID": rec.rid};
-                    await db.runP("DELETE FROM recordings WHERE rid=@RID;", wrid);
-                    await db.runP("DELETE FROM recording_share WHERE rid=@RID;", wrid);
-                    await db.runP("DELETE FROM recording_share_tokens WHERE rid=@RID;", wrid);
-
-                    await db.runP("COMMIT;");
-                    break;
-                } catch (ex) {
-                    await db.runP("ROLLBACK;");
-                }
-            }
+        let expired = await db.allP("SELECT * FROM recordings WHERE expiry <= datetime('now');");
+        for (let ei = 0; ei < expired.length; ei++) {
+            let rec = expired[ei];
+            await recM.del(rec.rid, rec.uid);
         }
     } catch (ex) {
         console.error(ex + "\n\n" + ex.stack);
