@@ -42,7 +42,6 @@ function b(target, icon, text, id) {
 if (!config.nomain)
     b("/panel/", "user", "Main panel", "main");
 b("/panel/rec/", "microphone", "Recordings", "recordings");
-b("/panel/room/", "cube", "Rooms", "rooms");
 b("/panel/subscription/", "calendar-alt", "Subscription", "subscription");
 b("/panel/sounds/", "music", "Soundboard", "sounds");
 //b("/panel/credits/", "dollar-sign", "Credit", "credit");
