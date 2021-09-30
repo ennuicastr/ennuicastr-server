@@ -41,7 +41,6 @@ const defaults = await (async function() {
             recordOnly: false,
             videoRec: false,
             transcription: false,
-            lid: null,
             universal_monitor: true
         };
     row.universal_monitor = !!row.universal_monitor;
@@ -124,18 +123,6 @@ const defaults = await (async function() {
         l("videoRec", "Record video", true);
         chk("videoRec", "v");
         alt("videoRec", "If checked, participants who enable their camera or share their screen will also have their video recorded by default, and sent to the host. This can be changed within the Ennuicastr recording application. Video recording is free.");
-
-        // Only show the lobby selection if they have lobbies
-        var lobbies = await db.allP("SELECT * FROM lobbies WHERE uid=@UID;", {"@UID": uid});
-        if (lobbies.length) {
-            defaults.l = "";
-            var opts = [["", "(None)"]];
-            lobbies.forEach((row) => {
-                opts.push([row.lid, row.name.replace(/\u0022/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;")]);
-            });
-            l("lid", "Room");
-            sel("lid", "l", opts);
-        }
 
         var showAdvanced = (/* BETA accountCredits.subscription >= 2 || */
                             defaults.format === "flac" ||
