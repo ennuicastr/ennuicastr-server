@@ -8,6 +8,7 @@ nohup.out
 cook/oggduration
 cook/oggmeta
 cook/oggstender
+cook/oggcorrect
 cook/oggtracks
 cook/wavduration
 server/ennuicastr.js
