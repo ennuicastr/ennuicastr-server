@@ -13,13 +13,6 @@
     "ezsock": "/tmp/ennuicastr-ennuizel-server.sock",
     "lobbysock": "/tmp/ennuicastr-lobby-server.sock",
 
-    "turn": [
-        {
-            "server": "r.ecastr.com",
-            "user": "turn"
-        }
-    ],
-
     "creditCost": {
         "currency": 100,
         "credits": 3600
