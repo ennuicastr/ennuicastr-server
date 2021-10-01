@@ -550,20 +550,6 @@ wss.on("connection", (ws, wsreq) => {
             ws.send(st);
         }
 
-        // Send them the ICE servers
-        config.turn.forEach((turn) => {
-            var iceServer = Buffer.from(JSON.stringify({
-                urls: ["turns:" + turn.server],
-                username: recInfo.rid.toString(36),
-                credential: recInfo.key.toString(36)
-            }), "utf8");
-            let ret = Buffer.alloc(p.value + iceServer.length);
-            ret.writeUInt32LE(prot.ids.info, 0);
-            ret.writeUInt32LE(prot.info.ice, p.key);
-            iceServer.copy(ret, p.value);
-            ws.send(ret);
-        });
-
         // Send them a list of peers
         ret.writeUInt32LE(prot.info.peerContinuing, p.key);
         var ci;
