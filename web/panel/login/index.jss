@@ -49,9 +49,6 @@ await include("../../head.jss", {menu: false, title: "Log in"});
 </style>
 
 <section class="wrapper special">
-    <!-- BETA -->
-    <p>NOTE: During the beta, if you have <a href="https://discordapp.com/">Discord</a>, <em>please</em> <a href="https://discord.gg/ZKgWgyq">join the Discord server</a>.</p>
-
     <p>You may log in to Ennuicastr using an account on any of these online services:</p>
     <p>
     <?JS

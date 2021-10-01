@@ -1,5 +1,5 @@
 {
-    "betawarning":          "THIS SERVICE IS IN BETA. If you have any problems, please go back and choose a different format. In particular, on mobile devices, this is likely to be unusable for very long recordings or recordings with many participants.",
+    "betawarning":          "This service operates in your browser. If you have any problems, please go back and choose a different format. In particular, on mobile devices, this is likely to be unusable for very long recordings or recordings with many participants.",
     "wizarddesc":           "This tool will download, process, and export your audio. Click 'Auto' to do all of that in automatic mode, 'Edit' if you'd like to perform other editing, or 'Cancel' otherwise.",
     "postedit":             "After downloading and performing any editing you wish, you may click 'Wizard' to continue automatic processing.",
     "edit":                 "Edit",

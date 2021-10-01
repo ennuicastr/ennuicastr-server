@@ -52,7 +52,6 @@ if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
         try {
             await db.runP("BEGIN TRANSACTION;");
 
-            /* BETA
             // Decrease credits
             await db.runP("UPDATE credits SET credits=credits-@COST WHERE uid=@UID;", {
                 "@UID": uid,
@@ -66,7 +65,6 @@ if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
                 await db.runP("ROLLBACK;");
                 break;
             }
-            */
 
             // Mark as purchased
             await db.runP("UPDATE recordings SET purchased=datetime('now') WHERE uid=@UID AND rid=@RID;", {
@@ -298,7 +296,7 @@ if (!recInfo.purchased) {
         if (recInfo.status < 0x30) {
             ?><p>Purchase options will be available when the recording is finished. You may download a sample even while recording.</p><?JS
 
-        } else if (recInfo.cost <= accountCredits.credits || true /* BETA */) {
+        } else if (recInfo.cost <= accountCredits.credits) {
             // They have enough to buy on credits
             ?>
             <p><?JS= credits.creditsMessage(accountCredits) ?></p>
