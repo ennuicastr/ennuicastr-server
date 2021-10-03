@@ -2,7 +2,7 @@
         <!-- Footer -->
             <footer id="footer">
                 <div class="copyright">
-                    &copy; Wereweasel. Design: <a href="http://templated.co/">TEMPLATED</a>.
+                    &copy; Wereweasel. Design: <a href="https://web.archive.org/web/20210331062024/https://templated.co/">TEMPLATED</a>.
                 </div>
 
                 <p class="align-center">
