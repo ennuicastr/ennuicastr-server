@@ -162,7 +162,7 @@ for (let lobby of lobbies) {
 
 // Put a blank if there were unassociated lobbies but there are also recordings
 if (unassoc && recs.length) {
-    ?><tr><td class="align-center" colspan=6>&nbsp;</td></tr><?JS
+    ?><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr><?JS
 }
 
 // Now show each of the recordings
