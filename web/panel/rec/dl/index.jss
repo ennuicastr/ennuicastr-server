@@ -280,7 +280,7 @@ function maybeSample() {
 }
 
 // Show the downloader
-await include("../../head.jss", {title: "Download", paypal: true});
+await include("../../head.jss", {title: "Download", paypal: !recInfo.purchased});
 
 if (!recInfo.purchased) {
     samplePost = "&s=1";
