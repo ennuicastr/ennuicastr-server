@@ -20,6 +20,25 @@ if (!params.QUERY_STRING) {
     writeHead(302, {"location": config.site});
     return;
 }
+
+const ua = params.HTTP_USER_AGENT || "";
+const isChrome = ua.indexOf("Chrome") >= 0;
+const isSafari = ua.indexOf("Safari") >= 0 && !isChrome;
+let warning = "";
+if (isSafari) {
+    const isIOS = ua.indexOf("iPhone") >= 0 || ua.indexOf("iPad") >= 0 || ua.indexOf("iOS") >= 0;
+
+    // Please only use Safari on iOS
+    if (isIOS) {
+        const isFake = ua.indexOf("CriOS") >= 0 || ua.indexOf("FxiOS") >= 0;
+        if (isFake)
+            warning = "Non-Safari browsers on iOS do not support microphone capture. Please switch to Safari.";
+
+    } else {
+        warning = "Chrome and Firefox are more well supported on Mac than Safari. Consider switching to one of them.";
+
+    }
+}
 ?>
 <!doctype html>
 <html>
@@ -37,13 +56,17 @@ if (!params.QUERY_STRING) {
         <script type="text/javascript" src="protocol.js?v=j"></script>
     </head>
     <body>
-        <div id="log"></div>
+        <div id="log"><?JS
+            if (warning) {
+                ?><div style="background-color: #933; color: #fff; text-align: center; border: 2px solid #fff; border-radius: 0.5em; padding: 0.5em; margin: 1em;"><?JS= warning ?></div><?JS
+            }
+        ?></div>
         <div id="pre-ec" style="display: none">
             <span id="login-ec"></span> 
             <br/><br/>
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=8o"></script>
+        <script type="text/javascript" src="ennuicastr.js?v=8v"></script>
     </body>
 </html>
