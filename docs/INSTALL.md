@@ -69,6 +69,17 @@ configuration:
     }
 ```
 
+You should also disable the channel web site on Jitsi. In the configuration
+file, there will be a section for the pseudo-location `@root_path`. Rewrite it
+to redirect to your home page, like so:
+
+```
+    location @root_path {
+        #rewrite ^/(.*)$ / break;
+        return 301 https://testbed.ecastr.com/;
+    }
+```
+
 
 ## 3: User configuration
 
@@ -108,11 +119,17 @@ server {
 	root /var/www/rec;
 	index index.html;
 
+	add_header 'Cross-Origin-Opener-Policy' 'same-origin';
+	add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
+
 	location / {
 		try_files $uri $uri/ =404;
 	}
 }
 ```
+
+The Cross-Origin headers are needed for [shared memory to work
+properly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer).
 
 The web server needs to run as the selected user. In `/etc/nginx/nginx.conf`,
 `user www-data` needs to be replaced:
