@@ -89,6 +89,7 @@ if ("cookie" in request.headers) {
                 }
             }
             window.addEventListener("resize", windowResize);
+            window.addEventListener("load", windowResize);
         //--></script>
 
         <div id="menu">
