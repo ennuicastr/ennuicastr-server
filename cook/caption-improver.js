@@ -206,6 +206,7 @@ fastPunct.on("data", text => {
     let curStream = null;
     let curId = -1;
     let tmpCtr = 0;
+    let voskOffset = 0;
 
     // First fix bad transcription
     for (let si = 0; si < out.length; si++) {
@@ -267,6 +268,7 @@ fastPunct.on("data", text => {
             );
             vosk.write(JSON.stringify({c: "reset"}) + "\n");
             await new Promise(res => { voskHandler = res; });
+            voskOffset = 0;
         }
 
         // Send this data to the daemon
@@ -293,11 +295,12 @@ fastPunct.on("data", text => {
             for (const word of inLine) {
                 if (word.conf === 1)
                     delete word.conf;
-                word.start = Math.round((word.start * 48000 + start + line.o + 4800) / 48);
-                word.end = Math.round((word.end * 48000 + start + line.o + 4800) / 48);
+                word.start = Math.round((word.start * 48000 + start + line.o + 4800 - voskOffset) / 48);
+                word.end = Math.round((word.end * 48000 + start + line.o + 4800 - voskOffset) / 48);
             }
             redata.caption = inLine;
         }
+        voskOffset += end - start;
 
         // Then replace this region with the newly-replaced spread
         out = out.slice(0, si).concat(spread).concat(out.slice(si + 1));
