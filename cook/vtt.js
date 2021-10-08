@@ -109,7 +109,7 @@ function toStamp(time) {
             ei--;
             while (ei > si) {
                 line.d.caption = line.d.caption.concat(meta[si+1].d.caption);
-                meta.splice(ei, 1);
+                meta.splice(si + 1, 1);
                 ei--;
             }
         }
