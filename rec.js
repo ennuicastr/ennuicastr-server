@@ -159,6 +159,8 @@ function hostUrl(rec, opts) {
         features |= 2;
     if (rec.videoRec)
         features |= 4;
+    if (rec.transcription)
+        features |= 8;
     if (rec.recordOnly)
         features |= 0x100;
     if (rec.format === "flac")
