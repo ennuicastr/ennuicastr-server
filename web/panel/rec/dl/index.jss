@@ -449,7 +449,7 @@ if (!recInfo.purchased) {
 
         <p><span style="display: inline-block; max-width: 50em">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC or uncompressed WAV, you can use this tool to do processing in your browser:</span></p>
 
-        <p><a class="button" href="/ez/?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= uriName ?>" target="_blank">Advanced processing</a></p>
+        <p><a class="button" href="<?JS= config.ennuizel ?>?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= uriName ?>" target="_blank">Advanced processing</a></p>
 
         <p>&nbsp;</p>
         <?JS
