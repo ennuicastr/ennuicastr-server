@@ -53,7 +53,7 @@ if (isSafari) {
         <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png" />
         <link rel="manifest" href="/img/site.webmanifest" />
-        <script type="text/javascript" src="protocol.js?v=j"></script>
+        <script type="text/javascript" src="protocol.js?v=k"></script>
     </head>
     <body>
         <div id="log"><?JS
@@ -67,6 +67,6 @@ if (isSafari) {
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=8v"></script>
+        <script type="text/javascript" src="ennuicastr.js?v=8x"></script>
     </body>
 </html>

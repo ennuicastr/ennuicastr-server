@@ -819,11 +819,12 @@ wss.on("connection", (ws, wsreq) => {
             }
 
             case prot.ids.rtc:
-                var p = prot.parts.rtc;
+            {
+                let p = prot.parts.rtc;
                 if (msg.length < p.length)
                     return die();
 
-                var target = msg.readUInt32LE(p.peer);
+                let target = msg.readUInt32LE(p.peer);
                 if (!connections[target])
                     break; // Just drop it
 
@@ -831,6 +832,22 @@ wss.on("connection", (ws, wsreq) => {
                 msg.writeUInt32LE(id, p.peer);
                 connections[target].send(msg);
                 break;
+            }
+
+            case prot.ids.ctcp:
+            {
+                let p = prot.parts.ctcp;
+                if (msg.length < p.length)
+                    return die();
+
+                let target = msg.readUInt32LE(p.peer);
+                if (!connections[target])
+                    break; // Just drop it
+
+                msg.writeUInt32LE(id, p.peer);
+                connections[target].send(msg);
+                break;
+            }
 
             case prot.ids.error:
                 // Error message
