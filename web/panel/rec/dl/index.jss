@@ -103,8 +103,6 @@ const safeName = dlName.replace(/[^A-Za-z0-9]/g, "_");
 function formatToName(format) {
     if (format === "aup")
         return "Audacity project";
-    else if (format === "heaac")
-        return "HE-AAC";
     else if (format === "opus")
         return "Opus";
     else if (format === "vorbis")
@@ -131,9 +129,6 @@ if (request.query.f) {
             break;
         case "aac":
             format = mext = "aac";
-            break;
-        case "heaac":
-            format = mext = "heaac";
             break;
         case "opus":
             format = mext = "opus";
@@ -252,7 +247,7 @@ const mobile = (/(android|iphone|ipad)/i.test(params.HTTP_USER_AGENT));
 const recommend = [];
 if (!mobile)
     recommend.push("aup");
-const recommendBasic = (mac?"heaac":"flac");
+const recommendBasic = (mac?"aac":"flac");
 recommend.push(recommendBasic);
 
 var samplePost = "";
@@ -461,7 +456,7 @@ if (!recInfo.purchased) {
     <p><?JS
     if (mobile)
         showDL("aup");
-    [(mac?"flac":"heaac"), "aac", "opus", "vorbis"].forEach(showDL);
+    [(mac?"flac":"aac"), "opus", "vorbis"].forEach(showDL);
     ?></p>
 
     <?JS
