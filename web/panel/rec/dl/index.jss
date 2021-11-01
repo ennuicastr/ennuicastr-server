@@ -287,6 +287,8 @@ if (!recInfo.purchased) {
 
         <p>This recording will cost $<?JS= credits.creditsToDollars(recInfo.cost) ?>.</p>
 
+        <p>Please bear in mind that Ennuicastr was in free beta until November 1st, and since the beta was free, the payment processing is the least-tested component of the system. If you have any concerns, and <em>certainly</em> if you encounter any problems, <a href="/contact/">contact us</a> and they will be resolved as soon as possible.</p>
+
         <?JS
         if (recInfo.status < 0x30) {
             ?><p>Purchase options will be available when the recording is finished. You may download a sample even while recording.</p><?JS

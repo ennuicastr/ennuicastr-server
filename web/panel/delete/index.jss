@@ -57,9 +57,7 @@ while (true) {
         haveSubscription = false;
         if (accountCredits.subscription) {
             // Check if it's canceled
-            if (!/^canceled:/.test(accountCredits.subscription_id) &&
-                // BETA
-                !/^beta:/.test(accountCredits.subscription_id)) {
+            if (!/^canceled:/.test(accountCredits.subscription_id)) {
                 canDelete = false;
                 haveSubscription = true;
             }

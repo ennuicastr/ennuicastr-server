@@ -124,7 +124,7 @@ const defaults = await (async function() {
         chk("videoRec", "v");
         alt("videoRec", "If checked, participants who enable their camera or share their screen will also have their video recorded by default, and sent to the host. This can be changed within the Ennuicastr recording application. Video recording is free.");
 
-        var showAdvanced = ((accountCredits.subscription >= 2 /* BETA: */ && accountCredits.subscription_id !== "beta:") ||
+        var showAdvanced = (accountCredits.subscription >= 2 ||
                             defaults.format === "flac" ||
                             defaults.continuous ||
                             !defaults.rtc ||

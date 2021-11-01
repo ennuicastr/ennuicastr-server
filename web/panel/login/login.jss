@@ -44,14 +44,14 @@ async function getUID(login) {
             // Not already registered
             uid = genUID();
             await db.runP("INSERT INTO users (uid, login) VALUES (@UID, @LOGIN);", {"@UID": uid, "@LOGIN": login});
-            await db.runP("COMMIT;");
             newUID = true;
 
-            // BETA
             await db.runP("INSERT INTO credits " +
                           "( uid,  credits,  purchased,  subscription,  subscription_expiry,  subscription_id) VALUES " +
-                          "(@UID,        0,          0,             2, '2021-11-01 14:00:00', 'beta:');",
+                          "(@UID,        0,          0,             0,                   '', '');",
                           {"@UID": uid});
+
+            await db.runP("COMMIT;");
             break;
         } catch (ex) {
             await db.runP("ROLLBACK;");
