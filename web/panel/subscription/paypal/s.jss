@@ -74,7 +74,8 @@ async function updateSubscription(uid, sid, sconfig) {
         level = 1;
     else if (subscription.plan_id === config.paypal.subscription.hq.id)
         level = 2;
-    else if (prevSubscription && subscription.plan_id === config.paypal.subscription.hqBasicUpgrade.id)
+    else if ((prevSubscription || sconfig.updateOnly) &&
+             subscription.plan_id === config.paypal.subscription.hqBasicUpgrade.id)
         level = 2;
 
     // Ignore it if it's not active

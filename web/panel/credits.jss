@@ -22,7 +22,7 @@ async function accountCredits(uid) {
     var c = await credits.accountCredits(uid);
     if (c.subscription_expired) {
         // Check if it's been updated
-        var ret = await s.updateSubscription(uid, c.subscription_id);
+        var ret = await s.updateSubscription(uid, c.subscription_id, {updateOnly: true});
         c = await credits.accountCredits(uid);
     }
     return c;
