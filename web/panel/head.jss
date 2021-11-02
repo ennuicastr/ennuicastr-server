@@ -6,7 +6,7 @@ await include("../head.jss", config);
 ?>
 
 <!--
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -52,7 +52,7 @@ PayPalLoader = (function() {
 </script>
 <?JS } ?>
 
-<section id="banner" class="small">
+<header id="banner" class="small">
     <p><?JS
         if (config.title)
             write('<a href="/panel/">Ennuicastr</a> → ' + config.title);
@@ -61,4 +61,4 @@ PayPalLoader = (function() {
     ?>
     <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="fas fa-sun"></i></a>
     </p>
-</section>
+</header>

@@ -71,8 +71,8 @@ const defaults = await (async function() {
 
         function l(forr, txt, alt) {
             write('<label for="r-' + forr + '">' + txt +
-                (alt?'<a href="javascript:toggle(\'' + forr + '\')"><i class="fas fa-question-circle"></i></a>':'') +
-                ':&nbsp;</label>');
+                ':&nbsp;</label>' +
+                (alt?'<a href="javascript:toggle(\'' + forr + '\')" aria-label="Help on this feature"><i class="fas fa-question-circle"></i></a>':''));
         }
 
         function txt(id, q, limit) {
@@ -107,7 +107,7 @@ const defaults = await (async function() {
         }
 
         function alt(id, text) {
-            write('<div id="alt-' + id + '" class="explainer" style="display: none">' + text + '</div>');
+            write('<div id="alt-' + id + '" class="explainer" style="display: none" role="alert">' + text + '</div>');
         }
 
         l("name", "Recording name");

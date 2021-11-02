@@ -62,7 +62,7 @@ if ("cookie" in request.headers) {
 
 <?JS if (config.menu) { ?>
         <div id="menushow">
-            <button onclick="toggleMenu();"><i class="fas fa-bars"></i></button>
+            <button onclick="toggleMenu();" aria-label="Menu"><i class="fas fa-bars"></i></button>
         </div>
         <script type="text/javascript"><!--
             function toggleMenu() {
@@ -92,7 +92,7 @@ if ("cookie" in request.headers) {
             window.addEventListener("load", windowResize);
         //--></script>
 
-        <div id="menu">
+        <div id="menu" role="navigation">
             <?JS await include(config.menu); ?>
         </div>
 
@@ -101,7 +101,7 @@ if ("cookie" in request.headers) {
                 windowResize();
             --></script>
 <?JS } else if (config.minimenu) { ?>
-        <div id="minimenu">
+        <div id="minimenu" role="navigation">
             <?JS await include(config.minimenu); ?>
         </div>
 
