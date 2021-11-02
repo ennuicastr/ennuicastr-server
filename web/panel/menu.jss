@@ -44,7 +44,6 @@ if (!config.nomain)
 b("/panel/rec/", "microphone", "Recordings", "recordings");
 b("/panel/subscription/", "calendar-alt", "Subscription", "subscription");
 b("/panel/sounds/", "music", "Soundboard", "sounds");
-//b("/panel/credits/", "dollar-sign", "Credit", "credit");
 if (!config.nomain)
     b(econfig.site, "home", "Home page", "home");
 b("/panel/logout/", "sign-out-alt", "Log out", "log-out");
