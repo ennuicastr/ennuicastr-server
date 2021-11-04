@@ -13,6 +13,6 @@
     </head>
     <body>
         Loading...
-        <script type="text/javascript" src="ennuizel.js?v=2s"></script>
+        <script type="text/javascript" src="ennuizel.js?v=2u"></script>
     </body>
 </html>
