@@ -32,6 +32,25 @@ const db = edb.db;
 const credits = require("../credits.js");
 const creditsj = await include("./credits.jss");
 
+const ua = params.HTTP_USER_AGENT || "";
+const isChrome = ua.indexOf("Chrome") >= 0;
+const isSafari = ua.indexOf("Safari") >= 0 && !isChrome;
+let warning = "";
+if (isSafari) {
+    const isIOS = ua.indexOf("iPhone") >= 0 || ua.indexOf("iPad") >= 0 || ua.indexOf("iOS") >= 0;
+
+    // Please only use Safari on iOS
+    if (isIOS) {
+        const isFake = ua.indexOf("CriOS") >= 0 || ua.indexOf("FxiOS") >= 0;
+        if (isFake)
+            warning = "Non-Safari browsers on iOS do not support microphone capture. Please switch to Safari.";
+
+    } else {
+        warning = "Chrome and Firefox are more well supported on Mac than Safari. Consider switching to one of them.";
+
+    }
+}
+
 // Get other info associated with this account
 const login = await session.get("login");
 const loginProvider = (function() {
@@ -95,9 +114,15 @@ if (uid === "8r0yhzg2bawwig7id2h6u0ip6wm2535us") {
     function showUID() { $("#uidbox")[0].style.display = ""; }
     //--></script>
 
-    <?JS if (accountCredits.credits) { ?><p><?JS= credits.creditsMessage(accountCredits) ?></p><?JS } ?>
+    <?JS
+    if (accountCredits.credits) { ?><p><?JS= credits.creditsMessage(accountCredits) ?></p><?JS }
 
-    <?JS await include("rec/interface.jss"); ?>
+    if (warning) {
+        ?><div style="background-color: #933; color: #fff; text-align: center; border: 2px solid #fff; border-radius: 0.5em; padding: 0.5em; margin: 1em;"><?JS= warning ?></div><?JS
+    }
+
+    await include("rec/interface.jss");
+    ?>
 
     <p>
     <?JS await include("menu.jss", {nomain: true}); ?>
