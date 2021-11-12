@@ -425,7 +425,7 @@ if (!recInfo.purchased) {
 
     <header><h3>Suggested formats</h3></header>
 
-    <p><span style="display: inline-block; max-width: 50em">
+    <p><span style="display: inline-block; max-width: 50em;">
     <?JS if (!mobile) { ?>
     If you use Audacity (a popular, free audio editor), download the Audacity project. Otherwise, the
     <?JS } else { ?>
@@ -444,7 +444,7 @@ if (!recInfo.purchased) {
         ?>
         <header><h3>Advanced processing</h3></header>
 
-        <p><span style="display: inline-block; max-width: 50em">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC or uncompressed WAV, you can use this tool to do processing in your browser:</span></p>
+        <p><span style="display: inline-block; max-width: 50em;">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC or uncompressed WAV, you can use this tool to do processing in your browser:</span></p>
 
         <p><a class="button" href="<?JS= config.ennuizel ?>?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= uriName ?>" target="_blank">Advanced processing</a></p>
 
@@ -452,6 +452,16 @@ if (!recInfo.purchased) {
         <?JS
     }
     ?>
+
+    <div id="video-box" style="display: none">
+    <header><h3>Video</h3></header>
+
+    <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
+
+    <p><button id="video-button">Fetch video</button></p>
+
+    <p>&nbsp;</p>
+    </div>
 
     <header><h3>Other formats</h3></header>
 
@@ -467,6 +477,53 @@ if (!recInfo.purchased) {
     }
     ?>
 </section>
+
+<script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>
+<script type="text/javascript">(function() {
+    var fs = new URL(<?JS= JSON.stringify(config.client + "fs/") ?>);
+    var ifr = document.createElement("iframe");
+    ifr.style.display = "none";
+    ifr.src = fs.toString();
+
+    var mp, key;
+
+    window.addEventListener("message", function(ev) {
+        if (ev.origin !== fs.origin)
+            return;
+        if (typeof ev.data !== "object" || ev.data === null || ev.data.c !== "ennuicastr-file-storage")
+            return;
+        mp = ev.data.port;
+        mp.onmessage = onmessage;
+        mp.postMessage({c: "ennuicastr-file-storage"});
+    });
+
+    function onmessage(ev) {
+        var msg = ev.data;
+        switch (msg.c) {
+            case "salt":
+                var hash = window["sha512-es"].default.hash;
+                key = hash(hash(
+                    <?= JSON.stringify(rid + ":" + recInfo.key + ":" + recInfo.master) ?> +
+                    ":" + msg.global) +
+                    ":" + msg.local);
+                mp.postMessage({c: "list", key: key});
+                break;
+
+            case "list":
+                var files = msg.files;
+                if (files.length) {
+                    document.getElementById("video-box").style.display = "";
+                    document.getElementById("video-button").onclick = function() {
+                        for (var i = 0; i < files.length; i++)
+                            mp.postMessage({c: "download", id: files[i].id, key: key});
+                    };
+                }
+                break;
+        }
+    }
+
+    document.body.appendChild(ifr);
+})();</script>
 
 <?JS
 await include("../../../tail.jss");

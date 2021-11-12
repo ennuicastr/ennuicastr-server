@@ -52,6 +52,49 @@ if (request.query.sure) {
 
     <a href="/panel/rec/">Return to recordings</a>
 </section>
+
+<script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>
+<script type="text/javascript">(function() {
+    var fs = new URL(<?JS= JSON.stringify(config.client + "fs/") ?>);
+    var ifr = document.createElement("iframe");
+    ifr.style.display = "none";
+    ifr.src = fs.toString();
+
+    var mp, key;
+
+    window.addEventListener("message", function(ev) {
+        if (ev.origin !== fs.origin)
+            return;
+        if (typeof ev.data !== "object" || ev.data === null || ev.data.c !== "ennuicastr-file-storage")
+            return;
+        mp = ev.data.port;
+        mp.onmessage = onmessage;
+        mp.postMessage({c: "ennuicastr-file-storage"});
+    });
+
+    function onmessage(ev) {
+        var msg = ev.data;
+        switch (msg.c) {
+            case "salt":
+                var hash = window["sha512-es"].default.hash;
+                key = hash(hash(
+                    <?= JSON.stringify(rid + ":" + rec.key + ":" + rec.master) ?> +
+                    ":" + msg.global) +
+                    ":" + msg.local);
+                mp.postMessage({c: "list", key: key});
+                break;
+
+            case "list":
+                var files = msg.files;
+                for (var i = 0; i < files.length; i++)
+                    mp.postMessage({c: "delete", id: files[i].id, key: key});
+                break;
+        }
+    }
+
+    document.body.appendChild(ifr);
+})();</script>
+
 <?JS
 
 } else {

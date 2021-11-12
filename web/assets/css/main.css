@@ -1987,6 +1987,7 @@
         border: 0;
         cursor: pointer;
         display: inline-block;
+        font-size: 1em;
         height: 2.85em;
         line-height: 2.95em;
         padding: 0 1.5em;
