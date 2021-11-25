@@ -34,6 +34,18 @@ https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart .
 Make sure you use the correct domain name. Just use the default self-signed
 certificate; we'll be installing a proper certificate in a moment.
 
+NOTE: The current version of Jitsi (as of the time that this paragraph was
+written) breaks compatibility with Safari on iOS. I recommend manually fetching
+the versions that were upload to the repository on 2021-06-10. Specifically:
+```
+22799076 Jun 10 18:28 jicofo_1.0-756-1_all.deb
+    3348 Jun 10 18:28 jitsi-meet_2.0.5963-1_all.deb
+   53388 Jun 10 18:28 jitsi-meet-prosody_1.0.5056-1_all.deb
+11383324 Jun 10 18:28 jitsi-meet-web_1.0.5056-1_all.deb
+   19252 Jun 10 18:28 jitsi-meet-web-config_1.0.5056-1_all.deb
+36064676 Jun 10 18:28 jitsi-videobridge2_2.1-508-gb24f756c-1_all.deb
+```
+
 The Jitsi installation will generate an nginx configuration file named
 something like `/etc/nginx/sites-enabled/jitsi.r.testbed.ecastr.com.conf` . In
 it, there is a subsection for `/http-bind`. It must be modified to allow
