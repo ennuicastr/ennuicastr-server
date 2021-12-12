@@ -2895,6 +2895,14 @@
         width: 33.33333%;
     }
 
+    .feature1 {
+        width: 100%;
+    }
+
+    .feature4 {
+        width: 25%;
+    }
+
         .feature .fa, .feature .fas, .feature .far {
             font-size: 2.8em;
             margin-bottom: 0.7em;
@@ -2904,6 +2912,10 @@
 
             .feature {
                 padding: 2em 1.5em 0.1em 1.5em;
+            }
+
+            .feature4 {
+                width: 50%;
             }
 
         }
@@ -2921,6 +2933,10 @@
 
             .feature {
                 padding: 2em 0.5em 0.1em 0.5em;
+                width: 100%;
+            }
+
+            .feature4 {
                 width: 100%;
             }
 
