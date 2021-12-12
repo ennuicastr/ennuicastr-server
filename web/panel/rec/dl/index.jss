@@ -277,8 +277,9 @@ function maybeSample() {
 // Show the downloader
 await include("../../head.jss", {title: "Download", paypal: !recInfo.purchased});
 
-if (!recInfo.purchased) {
+if (!recInfo.purchased)
     samplePost = "&s=1";
+if (!recInfo.purchased && !request.query.s) {
 ?>
     <section class="wrapper special style1" id="purchase-dialog">
         <?JS dlHeader(); ?>
