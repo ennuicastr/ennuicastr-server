@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -79,14 +79,20 @@ async function updateSubscription(uid, sid, sconfig) {
         level = 2;
 
     // Ignore it if it's not active
-    if (subscription.status !== "ACTIVE")
+    if (subscription.status !== "APPROVED" &&
+        subscription.status !== "ACTIVE")
         level = 0;
 
     // Figure out when it expires
-    var startTime = "0", expiry = "0";
+    let startTime = "0", expiry = "0", expiryAdd = "0 seconds";
     if (level) {
         startTime = subscription.start_time;
-        expiry = subscription.billing_info.next_billing_time;
+        if (subscription.billing_info) {
+            expiry = subscription.billing_info.next_billing_time;
+        } else {
+            expiry = startTime;
+            expiryAdd = "1 month";
+        }
     }
 
     if (level === 0) {
@@ -102,13 +108,14 @@ async function updateSubscription(uid, sid, sconfig) {
     } catch (ex) {}
 
     // Update the user's account
+    let prev = null;
     while (true) {
         try {
             await db.runP("BEGIN TRANSACTION;");
 
             // Make sure the user has defined credits
-            var row = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {"@UID": uid});
-            if (!row) {
+            prev = await db.getP("SELECT credits FROM credits WHERE uid=@UID;", {"@UID": uid});
+            if (!prev) {
                 await db.runP("INSERT INTO credits (uid, credits, purchased, subscription, subscription_expiry, subscription_id) VALUES " +
                               "(@UID, 0, 0, 0, '', '');", {"@UID": uid});
             }
@@ -117,11 +124,12 @@ async function updateSubscription(uid, sid, sconfig) {
             await db.runP("UPDATE credits SET " +
                 "subscription=@LEVEL, " +
                 //"subscription_expiry=max(datetime(@START, '1 month', '1 day'), datetime(@EXPIRY, '1 day')), " +
-                "subscription_expiry=datetime(@EXPIRY, '1 day'), " +
+                "subscription_expiry=datetime(@EXPIRY, @EXPIRY_ADD, '1 day'), " +
                 "subscription_id=@SID WHERE uid=@UID;", {
                 "@UID": uid,
                 "@LEVEL": level,
                 "@EXPIRY": expiry,
+                "@EXPIRY_ADD": expiryAdd,
                 "@SID": (sid ? ("paypal:" + sid) : "")
             });
 
@@ -137,6 +145,38 @@ async function updateSubscription(uid, sid, sconfig) {
         log("purchased-subscription", JSON.stringify({subscription, level}), {uid});
     else
         log("expired-subscription", JSON.stringify({level}), {uid});
+
+    // Activate it if needed
+    if (level > 0 && subscription.status !== "ACTIVE") {
+        let capture = await nrc.postPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid + "/activate", {
+            headers: {
+                authorization
+            }
+        });
+
+        if (capture.statusCode < 200 || capture.statusCode >= 300) {
+            // Something went wrong! Undo! Abort! Roll back!
+            while (true) {
+                try {
+                    await db.runP("BEGIN TRANSACTION;");
+                    await db.runP("UPDATE credits SET " +
+                        "subscription=@LEVEL, " +
+                        "subscription_expiry=@EXPIRY, " +
+                        "subscription_id=@SID WHERE uid=@UID;", {
+                        "@UID": uid,
+                        "@LEVEL": prev ? prev.subscription : 0,
+                        "@EXPIRY": prev ? prev.subscription_expiry : "",
+                        "@SID": prev ? prev.subscription_id : ""
+                    });
+                    await db.runP("COMMIT;");
+                    break;
+                } catch (ex) {
+                    await db.runP("ROLLBACK;");
+                }
+            }
+            return fail("Failed to finalize transaction");
+        }
+    }
 
     // And cancel any old subscription
     if (prevSubscription) {

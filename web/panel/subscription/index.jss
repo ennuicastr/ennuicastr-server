@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020 Yahweasel
+ * Copyright (c) 2020, 2021 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,7 +31,8 @@ async function genSub(level) {
     var sub = {
         plan_id: config.paypal.subscription[level].id,
         application_context: {
-            shipping_preference: "NO_SHIPPING"
+            shipping_preference: "NO_SHIPPING",
+            user_action: "CONTINUE"
         }
     };
 

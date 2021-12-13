@@ -23,7 +23,7 @@ const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + conf
     });
     product = product.data;
 
-    console.log(JSON.stringify(product));
+    //console.log(JSON.stringify(product));
 
     // Then make the two plans
     var plan = {
@@ -61,7 +61,7 @@ const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + conf
     });
     basicPlan = basicPlan.data;
 
-    console.log(JSON.stringify(basicPlan));
+    //console.log(JSON.stringify(basicPlan));
 
     plan.name = "Ennuicastr HQ subscription";
     plan.description = "Unlimited recordings with lossless FLAC";
@@ -79,7 +79,7 @@ const authorization = "Basic " + Buffer.from(config.paypal.clientId + ":" + conf
     });
     hqPlan = hqPlan.data;
 
-    console.log(JSON.stringify(hqPlan));
+    //console.log(JSON.stringify(hqPlan));
 
     plan.name += " (upgrade from basic)";
     plan.billing_cycles = [
