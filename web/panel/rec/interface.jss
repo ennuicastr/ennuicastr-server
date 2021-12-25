@@ -124,33 +124,25 @@ const defaults = await (async function() {
         chk("videoRec", "v");
         alt("videoRec", "If checked, participants who enable their camera or share their screen will also have their video recorded by default, and sent to the host. This can be changed within the Ennuicastr recording application. Video recording is free.");
 
-        var showAdvanced = (accountCredits.subscription >= 2 ||
-                            defaults.format === "flac" ||
-                            defaults.continuous ||
-                            !defaults.rtc ||
-                            defaults.recordOnly ||
-                            defaults.transcription ||
-                            !defaults.universal_monitor);
+        const showQual = (accountCredits.subscription >= 2 ||
+                          defaults.format === "flac" ||
+                          defaults.continuous);
+        const showAdvanced = (!defaults.rtc ||
+                              defaults.recordOnly ||
+                              defaults.transcription);
 
-        if (!showAdvanced) {
+        // Quality option button
         ?>
-
+        <br/>
         <div style="text-align: center">
-        <a id="advanced-b" class="button" href="javascript:showAdvanced();">
-        <i class="fas fa-sliders-h"></i> Advanced options
+        <a id="quality-b" class="button<?JS= showQual ? " disabled" : "" ?>" href="javascript:showQuality();">
+        <i class="fas fa-volume-up"></i> Quality options
         </a></div>
 
-        <div id="advanced" style="display: none">
-
+        <div id="quality"<?JS= showQual ? "" : ' style="display: none"' ?>>
         <?JS
-        } else {
-        ?>
-        <div>
 
-        <?JS
-        }
-
-        var priceAdvice = " ($2/hr)";
+        let priceAdvice = " ($2/hr)";
         if (accountCredits.subscription >= 2)
             priceAdvice = "";
 
@@ -162,6 +154,18 @@ const defaults = await (async function() {
         chk("continuous", "c");
         alt("continuous", "By default, Ennuicastr is only recording when you speak. This saves on recording space, but can also save on editing time. However, to do this, it uses a technique called voice activity detection (VAD), and VAD is not always perfect. It is possible to miss things. Check this to disable the VAD, and thus get a continuous and complete recording, but at an extra cost.");
 
+        ?></div><br/><?JS
+
+        // Advanced options button
+        ?>
+        <div style="text-align: center">
+        <a id="advanced-b" class="button<?JS= showAdvanced ? " disabled" : "" ?>" href="javascript:showAdvanced();">
+        <i class="fas fa-sliders-h"></i> Advanced options
+        </a></div>
+
+        <div id="advanced"<?JS= showAdvanced ? "" : ' style="display: none"' ?>>
+        <?JS
+
         l("transcription", "BETA: Live captions", true);
         chk("transcription", "t");
         alt("transcription", "Enable live captions. Currently only English is supported.");
@@ -172,16 +176,12 @@ const defaults = await (async function() {
         ?>
 
         <div id="rtc-hider" style="display: none">
-        <?JS
-        l("rtc", "Enable WebRTC");
-        chk("rtc", "r");
-        alt("rtc", "WebRTC is the technology used by Ennuicastr for live voice chat. Normally, even if you don't need live voice chat, WebRTC is still enabled so that you can use it to monitor the recording. If you really wish to disable WebRTC entirely, uncheck this. The only reason to do so is if it causes undue strain on your bandwidth.");
-        ?>
+            <?JS
+            l("rtc", "Enable WebRTC");
+            chk("rtc", "r");
+            alt("rtc", "WebRTC is the technology used by Ennuicastr for live voice chat. Normally, even if you don't need live voice chat, WebRTC is still enabled so that you can use it to monitor the recording. If you really wish to disable WebRTC entirely, uncheck this. The only reason to do so is if it causes undue strain on your bandwidth.");
+            ?>
         </div>
-
-        <script type="text/javascript">(function() {
-        })();
-        </script>
 
         </div><br/>
 
@@ -215,6 +215,11 @@ function createRecording() {
     $("#create-recording-b")[0].classList.add("disabled");
     $("#create-recording")[0].style.display = "block";
     $("#r-name")[0].select();
+}
+
+function showQuality() {
+    $("#quality-b")[0].classList.add("disabled");
+    $("#quality")[0].style.display = "block";
 }
 
 function showAdvanced() {
