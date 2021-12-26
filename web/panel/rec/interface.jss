@@ -230,6 +230,9 @@ function showAdvanced() {
 function launchRecording() {
     $("#launch-b")[0].classList.add("disabled");
     try {
+        $("#quality-b")[0].classList.add("disabled");
+    } catch (ex) {}
+    try {
         $("#advanced-b")[0].classList.add("disabled");
     } catch (ex) {}
 
