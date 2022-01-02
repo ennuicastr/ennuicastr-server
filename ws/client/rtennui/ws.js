@@ -31,8 +31,12 @@ rtes.acceptConnection(sock);
  * @param credentials  Login credentials
  */
 function acceptLogin(credentials) {
+    if (typeof credentials.id !== "number" ||
+        typeof credentials.key !== "number")
+        return Promise.resolve(null);
+
     return Promise.resolve({
-        room: credentials.id ? credentials.id.toString(36) : "RTEnnui",
+        room: credentials.id.toString(36) + ":" + credentials.key.toString(36),
         info: {uid: credentials.uid || 0}
     });
 }
