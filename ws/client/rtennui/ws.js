@@ -17,6 +17,8 @@
 const rte = await import(
     __dirname + "/../../../node_modules/rtennui-server/src/main.js");
 
+const db = require("../db.js").db;
+
 if (!module.rtes) {
     module.ondisconnect = () => process.exit(0);
     module.rtes = new rte.RTEnnuiServer(acceptLogin);
@@ -30,13 +32,24 @@ rtes.acceptConnection(sock);
  * are accepted.
  * @param credentials  Login credentials
  */
-function acceptLogin(credentials) {
-    if (typeof credentials.id !== "number" ||
-        typeof credentials.key !== "number")
-        return Promise.resolve(null);
+async function acceptLogin(credentials) {
+    const id = +credentials.id;
 
-    return Promise.resolve({
-        room: credentials.id.toString(36) + ":" + credentials.key.toString(36),
-        info: {uid: credentials.uid || 0}
+    // Get the recording
+    const rec = await db.getP(
+        "SELECT * FROM recordings WHERE rid=@RID;", {
+        "@RID": id
     });
+    if (!rec)
+        return null;
+
+    // Check the key
+    if (credentials.key !== rec.key)
+        return null;
+
+    // Accepted
+    return {
+        room: id.toString(36),
+        info: {uid: credentials.uid ? +credentials.uid : 0}
+    };
 }
