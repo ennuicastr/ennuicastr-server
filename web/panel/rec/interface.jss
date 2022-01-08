@@ -39,6 +39,7 @@ const defaults = await (async function() {
             continuous: false,
             rtc: true,
             recordOnly: false,
+            rtennuiAudio: false,
             videoRec: false,
             transcription: false,
             universal_monitor: true
@@ -127,7 +128,8 @@ const defaults = await (async function() {
         const showQual = (accountCredits.subscription >= 2 ||
                           defaults.format === "flac" ||
                           defaults.continuous);
-        const showAdvanced = (!defaults.rtc ||
+        const showAdvanced = (defaults.rtennuiAudio ||
+                              !defaults.rtc ||
                               defaults.recordOnly ||
                               defaults.transcription);
 
@@ -166,7 +168,11 @@ const defaults = await (async function() {
         <div id="advanced"<?JS= showAdvanced ? "" : ' style="display: none"' ?>>
         <?JS
 
-        l("transcription", "BETA: Live captions", true);
+        l("rtennuiAudio", "BETA: Low-latency audio", true);
+        chk("rtennuiAudio", "xra");
+        alt("rtennuiAudio", "Enable low-latency audio, at the cost of increased bandwidth. Note that only audio is affected, so video and audio will not be in sync during live chat. This option affects only live chat, and does not affect recording.");
+
+        l("transcription", "Live captions", true);
         chk("transcription", "t");
         alt("transcription", "Enable live captions. Currently only English is supported.");
 
@@ -276,6 +282,8 @@ function launchRecording() {
             features |= 2;
         if (res.videoRec)
             features |= 4;
+        if (res.rtennuiAudio)
+            features |= 0x200;
         if (res.transcription)
             features |= 8;
         if (res.recordOnly)
