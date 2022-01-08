@@ -1233,11 +1233,13 @@ async function recvRecInfo(r) {
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  hostname,  format," +
                           "  continuous,  rtc,  recordOnly,  videoRec," +
+                          "  rtennuiAudio," +
                           "  transcription,  key,  master,  wskey,  extra," +
                           "  status,  init,  expiry,  tracks,  cost, purchased)" +
                           " VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @HOSTNAME, @FORMAT," +
                           " @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC," +
+                          " @RTENNUIAUDIO," +
                           " @TRANSCRIPTION, @KEY, @MASTER, @WSKEY, @EXTRAS," +
                           " 0, datetime('now'), datetime('now', '1 month'), 0, 0, '');", {
                 "@UID": r.uid,
@@ -1250,6 +1252,7 @@ async function recvRecInfo(r) {
                 "@RTC": r.rtc,
                 "@RECORDONLY": r.recordOnly,
                 "@VIDEOREC": r.videoRec,
+                "@RTENNUIAUDIO": r.rtennuiAudio,
                 "@TRANSCRIPTION": r.transcription,
                 "@KEY": r.key,
                 "@MASTER": r.master,
