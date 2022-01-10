@@ -49,6 +49,7 @@ rec = {
     rtc: !!rec.r,
     recordOnly: !!rec.x,
     videoRec: !!rec.v,
+    rtennuiAudio: !!rec.xra,
     transcription: !!rec.t,
     universalMonitor: !!rec.r
 };
@@ -60,8 +61,8 @@ while (true) {
 
         await db.runP("DELETE FROM defaults WHERE uid=@UID;", {"@UID": uid});
         await db.runP("INSERT INTO defaults " +
-                      "( uid,  name,  dname,  format,  continuous,  rtc,  recordOnly,  videoRec,  transcription,  universal_monitor) VALUES " +
-                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @TRANSCRIPTION, @UNIVERSAL_MONITOR);", {
+                      "( uid,  name,  dname,  format,  continuous,  rtc,  recordOnly,  videoRec,  rtennuiAudio, transcription,  universal_monitor) VALUES " +
+                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @RTENNUIAUDIO, @TRANSCRIPTION, @UNIVERSAL_MONITOR);", {
             "@UID": uid,
             "@NAME": rec.name,
             "@DNAME": dname,
@@ -70,6 +71,7 @@ while (true) {
             "@RTC": rec.rtc,
             "@RECORDONLY": rec.recordOnly,
             "@VIDEOREC": rec.videoRec,
+            "@RTENNUIAUDIO": rec.rtennuiAudio,
             "@TRANSCRIPTION": rec.transcription,
             "@UNIVERSAL_MONITOR": rec.universalMonitor
         });

@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS recordings (
     rtc BOOLEAN,
     /* Recording-only mode? i.e., mute output by default */
     recordOnly BOOLEAN,
+    /* RTEnnui (low-latency) audio? */
+    rtennuiAudio BOOLEAN,
     /* Video recording by default? */
     videoRec BOOLEAN,
     /* Transcription? */
@@ -144,6 +146,7 @@ CREATE TABLE IF NOT EXISTS defaults (
     continuous BOOLEAN,
     rtc BOOLEAN,
     recordOnly BOOLEAN,
+    rtennuiAudio BOOLEAN,
     videoRec BOOLEAN,
     transcription BOOLEAN,
     universal_monitor BOOLEAN
