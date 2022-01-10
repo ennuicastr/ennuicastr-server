@@ -169,9 +169,6 @@ if (accountCredits.subscription) {
 
 <?JS } else { ?>
 
-        <p>Please bear in mind that Ennuicastr was in free beta until November 1st, and since the beta was free, the payment processing is the least-tested component of the system. If you have any concerns, and <em>certainly</em> if you encounter any problems, <a href="/contact/">contact us</a> and they will be resolved as soon as possible.</p>
-
-
         <h2>Basic subscription</h2>
         <p>$<?JS= config.subscription.basic/100 ?>/month, unlimited recordings in high quality (128kbit Opus)</p>
         <?JS await genSub("basic"); ?>
