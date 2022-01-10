@@ -38,7 +38,7 @@ await include("../../head.jss", {menu: false, title: "Log in"});
             <label for="otk">One-time key:&nbsp;</label>
             <input type="text" name="otk" id="otk" style="flex: auto; min-width: 10em;" />
             <span>&nbsp;</span>
-            <input type="submit" label="Log in" />
+            <input type="submit" value="Log in" />
         </div>
     </form>
 
