@@ -32,11 +32,12 @@ const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
 const reclib = await include("../lib.jss");
+const recM = require("../rec.js");
 const credits = require("../credits.js");
 const creditsj = await include("../../credits.jss");
 
-const recInfo = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
-if (!recInfo || recInfo.uid !== uid)
+const recInfo = await recM.get(rid, uid);
+if (!recInfo)
     return writeHead(302, {"location": "/panel/rec/"});
 
 const accountCredits = await creditsj.accountCredits(uid);
@@ -68,7 +69,7 @@ if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
 
             // Mark as purchased
             await db.runP("UPDATE recordings SET purchased=datetime('now') WHERE uid=@UID AND rid=@RID;", {
-                "@UID": uid,
+                "@UID": recInfo.uid,
                 "@RID": rid
             });
             accountCredits.credits -= recInfo.cost;

@@ -121,19 +121,13 @@ CREATE INDEX IF NOT EXISTS old_recordings_uid_rid_expiry ON old_recordings (uid,
 /* "Share" links between UIDs and recordings. Obviously anyone can access a
  * recording they own, but you can also share recordings with this */
 CREATE TABLE IF NOT EXISTS recording_share (
-    uid TEXT,
-    rid INTEGER
+    uid_from TEXT,
+    uid_to TEXT,
+    rid INTEGER PRIMARY KEY
 );
 
-CREATE INDEX IF NOT EXISTS recording_share_uid ON recording_share (uid);
-
-/* Tokens to share recordings */
-CREATE TABLE IF NOT EXISTS recording_share_tokens (
-    rid INTEGER,
-    token TEXT UNIQUE
-);
-
-CREATE INDEX IF NOT EXISTS recording_share_tokens_token ON recording_share_tokens (token);
+CREATE INDEX IF NOT EXISTS recording_share_uid_from ON recording_share (uid_from);
+CREATE INDEX IF NOT EXISTS recording_share_uid_to ON recording_share (uid_to);
 
 /* Default choices for recordings */
 CREATE TABLE IF NOT EXISTS defaults (

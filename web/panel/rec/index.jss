@@ -37,6 +37,23 @@ await include("../head.jss", {title: "Recordings"});
     <?JS await include("interface.jss"); ?>
 </section>
 
+<script type="text/javascript">
+function joinRecording(url) {
+    window.open(url, "", "width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
+}
+
+function toggleMore(rec) {
+    var el = document.getElementById("more-" + rec);
+    if (el.style.height === "auto") {
+        el.style.height = "0px";
+        el.style.margin = "";
+    } else {
+        el.style.height = "auto";
+        el.style.margin = "1em 0";
+    }
+}
+</script>
+
 <section>
     <header class="align-center"><h2>Available recordings</h2></header>
 
@@ -46,7 +63,7 @@ await include("../head.jss", {title: "Recordings"});
         <tr><th>Name</th><th>Start date<br/>Expiry date</th><th>Status</th>
         <th data-sort-method="none" class="no-sort">Join</th>
         <th data-sort-method="none" class="no-sort">Download</th>
-        <th data-sort-method="none" class="no-sort">Delete</th></tr>
+        <th data-sort-method="none" class="no-sort">More</th></tr>
         </thead><tbody>
 <?JS
 
@@ -100,6 +117,21 @@ for (let row of recs) {
     }
 }
 
+// Add any shared recordings
+{
+    const sharedRecs = await db.allP(
+        `SELECT * FROM recordings INNER JOIN recording_share ON recordings.rid = recording_share.rid
+        WHERE recording_share.uid_to=@UID
+        AND recordings.uid=recording_share.uid_from`, {
+        "@UID": uid
+    });
+    if (sharedRecs.length) {
+        recs = recs.concat(sharedRecs).sort((a, b) => {
+            return (a.init < b.init) ? 1 : -1
+        });
+    }
+}
+
 // Index the recordings by ID
 let recsById = Object.create(null);
 for (let row of recs)
@@ -124,16 +156,14 @@ for (let li = 0; li < lobbies.length; li++) {
 // Function for a join button
 function joinButton(rec, opts) {
     opts = opts || {};
-    let url = recM.hostUrl(rec, opts);
-    let rid = opts.rid || rec.rid;
+    let url = JSON.stringify(
+        recM.hostUrl(rec, opts)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;"));
 
-    write("<script type=\"text/javascript\"><!--\n" +
-          "function join" + rid.toString(36) + "() {\n" +
-          "window.open(" + JSON.stringify(url) + ", \"\", \"width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0\");\n" +
-          "}\n" +
-          "//--></script>\n" +
-          "<a href=\"javascript:join" + rid.toString(36) + "();\" class=\"button\">" +
-          "<i class=\"fas fa-door-open\"></i> Join</a>");
+    write(`<button onclick='joinRecording(${url});'>` +
+          `<i class="fas fa-door-open"></i> Join</button>`);
 }
 
 
@@ -187,6 +217,8 @@ for (let row of recs) {
                 }
                 if (row.lid)
                     write(" (room)");
+                if (row.uid !== uid)
+                    write("<br/>(Shared)");
             ?></td>
             <td><?JS
                 if (row.status < 0x30 /* finished */) {
@@ -214,13 +246,34 @@ for (let row of recs) {
                 }
                 ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>" class="button"><i class="fas fa-download"></i> Download</a><?JS
             ?></td>
-            <td><?JS
-                if (row.status < 0x30 /* finished */) {
-                    write("-");
-                } else {
-                    ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button"><i class="fas fa-trash-alt"></i> Delete</a><?JS
-                }
-            ?></td>
+            <td>
+                <button
+                    class="round"
+                    onclick='toggleMore("<?JS= row.rid.toString(36) ?>");'
+                    aria-label="More options">
+                <i class="fas fa-ellipsis-h"></i></button>
+                <div
+                    id="more-<?JS= row.rid.toString(36) ?>"
+                    style="height: 0px; overflow: clip;"><?JS
+
+                    // Deleting and sharing are only for the owner
+                    if (row.uid === uid) {
+                        if (row.status >= 0x30 /* finished */) {
+                            ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a><?JS
+                        }
+                        ?>
+                        <a href="share/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="fas fa-share-square"></i> Share</a>
+                        <?JS
+
+                    } else {
+                        // Shared recipient can only unshare
+                        ?>
+                        <a href="share/?i=<?JS= row.rid.toString(36) ?>&un=1" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
+                        <?JS
+
+                    }
+                ?></div>
+            </td>
         </tr>
 <?JS
 }

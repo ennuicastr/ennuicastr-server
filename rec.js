@@ -147,6 +147,33 @@ async function rec(rec, opts) {
     return rec;
 }
 
+// Get the information for this recording
+async function get(rid, uid, opts) {
+    opts = opts || {};
+
+    // Get the info
+    const recInfo = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
+    if (!recInfo)
+        return null;
+
+    // Check for permissions
+    if (recInfo.uid === uid || opts.noCheck)
+        return recInfo;
+
+    // Check for sharing
+    const share = await db.getP(
+        `SELECT * FROM recording_share WHERE
+            rid=@RID AND uid_from=@UIDF AND uid_to=@UIDT`,
+        {
+            "@RID": rid,
+            "@UIDF": recInfo.uid,
+            "@UIDT": uid
+        });
+    if (share)
+        return recInfo;
+    return null;
+}
+
 // Get a (host) URL for a recording
 function hostUrl(rec, opts) {
     opts = opts || {};
@@ -231,7 +258,6 @@ async function del(rid, uid, opts) {
             var wrid = {"@RID": rec.rid};
             await db.runP("DELETE FROM recordings WHERE rid=@RID;", wrid);
             await db.runP("DELETE FROM recording_share WHERE rid=@RID;", wrid);
-            await db.runP("DELETE FROM recording_share_tokens WHERE rid=@RID;", wrid);
 
             await db.runP("COMMIT;");
             break;
@@ -247,5 +273,5 @@ async function del(rid, uid, opts) {
 }
 
 module.exports = {
-    rec, hostUrl, del
+    rec, get, hostUrl, del
 };

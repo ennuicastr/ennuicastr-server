@@ -2039,6 +2039,15 @@
             font-size: 1.35em;
         }
 
+        input[type="submit"].round,
+        input[type="reset"].round,
+        input[type="button"].round,
+        button.round,
+        .button.round {
+            border-radius: 1.425em;
+            padding: 0 0.7125em;
+        }
+
         input[type="submit"].disabled, input[type="submit"]:disabled,
         input[type="reset"].disabled,
         input[type="reset"]:disabled,
