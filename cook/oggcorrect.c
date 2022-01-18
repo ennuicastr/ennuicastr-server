@@ -386,19 +386,40 @@ int main(int argc, char **argv)
                 if (begin->preSkip) {
                     begin->preSkip--;
                     expected -= packetTime;
-                    granulePos -= packetTime;
+                    if (granulePos > packetTime)
+                        granulePos -= packetTime;
+                    else
+                        granulePos = 0;
                 } else if (begin != end) {
                     begin->flags |= FLAG_DROP;
-                    begin = begin->next;
                     expected -= packetTime;
+                    begin = begin->next;
                 } else break;
             }
         }
 
         // Set the output granule positions
         for (mid = begin; mid != end->next; mid = mid->next) {
-            mid->outputGranulePos = granulePos;
-            granulePos += packetTime;
+            if (granulePos + packetTime * 25 <
+                mid->inputGranulePos) {
+                // Too little data, add a gap
+                int64_t diff = mid->inputGranulePos - granulePos;
+                mid->preSkip = diff / packetTime;
+                granulePos += mid->preSkip * packetTime;
+                mid->outputGranulePos = granulePos;
+                granulePos += packetTime;
+
+            } else if (granulePos >
+                mid->inputGranulePos + packetTime * 25) {
+                // Too much data, drop a packet
+                mid->flags |= FLAG_DROP;
+
+            } else {
+                // Just right!
+                mid->outputGranulePos = granulePos;
+                granulePos += packetTime;
+
+            }
         }
 
         // And adjust for any skip at the end
