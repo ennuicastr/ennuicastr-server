@@ -117,17 +117,29 @@ for (let row of recs) {
     }
 }
 
-// Add any shared recordings
+// Add any shared lobbies/recordings
 {
+    const sharedLobbies = await db.allP(
+        `SELECT * FROM lobbies2 INNER JOIN lobby_share ON lobbies2.lid = lobby_share.lid
+        WHERE lobby_share.uid_to=@UID
+        AND lobbies2.uid=lobby_share.uid_from;`, {
+        "@UID": uid
+    });
+    if (sharedLobbies.length) {
+        lobbies = lobbies.concat(sharedLobbies).sort((a, b) => {
+            return (a.name < b.name) ? -1 : 1;
+        });
+    }
+
     const sharedRecs = await db.allP(
         `SELECT * FROM recordings INNER JOIN recording_share ON recordings.rid = recording_share.rid
         WHERE recording_share.uid_to=@UID
-        AND recordings.uid=recording_share.uid_from`, {
+        AND recordings.uid=recording_share.uid_from;`, {
         "@UID": uid
     });
     if (sharedRecs.length) {
         recs = recs.concat(sharedRecs).sort((a, b) => {
-            return (a.init < b.init) ? 1 : -1
+            return (a.init < b.init) ? 1 : -1;
         });
     }
 }
@@ -176,7 +188,13 @@ for (let lobby of lobbies) {
         <tr>
             <td class="renamable" data-id="<?JS= lobby.lid.toString(36) ?>" data-endpoint="rename-room.jss"><?JS= lobby.name||"(Anonymous)" ?></td>
             <td>(Room)</td>
-            <td>Open</td>
+            <td>
+                Open
+                <?JS
+                if (lobby.uid !== uid)
+                    write("<br/>(Shared)");
+                ?>
+            </td>
             <td><?JS
                 joinButton(JSON.parse(lobby.config), {
                     rid: lobby.lid,
@@ -185,7 +203,33 @@ for (let lobby of lobbies) {
                 });
             ?></td>
             <td>-</td>
-            <td><a href="delete-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button"><i class="fas fa-trash-alt"></i> Delete</a></td>
+            <td>
+                <button
+                    class="round"
+                    onclick='toggleMore("l-<?JS= lobby.lid.toString(36) ?>");'
+                    aria-label="More options">
+                <i class="fas fa-ellipsis-h"></i></button>
+                <div
+                    id="more-l-<?JS= lobby.lid.toString(36) ?>"
+                    style="height: 0px; overflow: clip;"><?JS
+
+                    // Deleting and sharing are only for the owner
+                    if (lobby.uid === uid) {
+                        ?>
+                        <a href="delete-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a>
+                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-share-square"></i> Share</a>
+                        <?JS
+
+                    } else {
+                        // Shared recipient can only unshare
+                        ?>
+                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>&un=1" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
+                        <?JS
+
+                    }
+                ?></div>
+
+            </td>
         </tr>
 <?JS
 }
@@ -261,8 +305,20 @@ for (let row of recs) {
                         if (row.status >= 0x30 /* finished */) {
                             ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a><?JS
                         }
+
+                        if (row.lid) {
+                            // This is a lobby, so share in either
+                            ?>
+                            <a href="share-room/?i=<?JS= row.lid.toString(36) ?>" class="button fit" style="height: auto"><i class="fas fa-share-square"></i> Share<br/>(Room)</a>
+                            <?JS
+                        }
+
                         ?>
-                        <a href="share/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="fas fa-share-square"></i> Share</a>
+                        <a href="share/?i=<?JS= row.rid.toString(36) ?>" class="button fit" style="height: auto"><i class="fas fa-share-square"></i> Share<?JS=
+                            row.lid ?
+                                "<br/>(Recording)" :
+                                ""
+                        ?></a>
                         <?JS
 
                     } else {

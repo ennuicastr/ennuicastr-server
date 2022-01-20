@@ -21,7 +21,7 @@ if (!uid) return;
 if (!request.query.i)
     return writeHead(302, {"location": "/panel/rec/"});
 
-const rid = Number.parseInt(request.query.i, 36);
+const lid = Number.parseInt(request.query.i, 36);
 const mode = (() => {
     if (request.query.t) {
         // There's a token, so we're receiving a share
@@ -46,15 +46,16 @@ const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
 const id36 = require("../id36.js");
-const recM = require("../rec.js");
 
-const rec = await recM.get(rid, uid, {noCheck: true});
-if (!rec)
+const lobby = await db.getP("SELECT * FROM lobbies2 WHERE lid=@LID;", {
+    "@LID": lid
+});
+if (!lobby)
     return writeHead(302, {"location": "/panel/rec/"});
 
 if (mode === "share") {
     // This means we're sharing, so make sure only the owner can share
-    if (rec.uid !== uid)
+    if (lobby.uid !== uid)
         return writeHead(302, {"location": "/panel/rec/"});
 
 } else if (mode === "receiving") {
@@ -62,8 +63,8 @@ if (mode === "share") {
     const now = await db.getP("SELECT datetime('now') AS now;");
     let exp = null;
     try {
-        const extra = JSON.parse(rec.extra);
-        exp = extra.shareTokens[request.query.t];
+        const config = JSON.parse(lobby.config);
+        exp = config.shareTokens[request.query.t];
     } catch (ex) {}
     if (!exp || exp < now.now)
         return writeHead(302, {"location": "/panel/rec/"});
@@ -73,12 +74,12 @@ if (mode === "share") {
 } else if (mode === "unshare" || mode === "unshare-sure") {
     // Make sure it's currently shared with them
     const share = await db.getP(
-        `SELECT * FROM recording_share WHERE
-            rid=@RID AND
+        `SELECT * FROM lobby_share WHERE
+            lid=@LID AND
             uid_from=@UIDF AND
             uid_to=@UIDT;`, {
-        "@RID": rid,
-        "@UIDF": rec.uid,
+        "@LID": lid,
+        "@UIDF": lobby.uid,
         "@UIDT": uid
     });
     if (!share)
@@ -94,20 +95,20 @@ await include("../../head.jss", {title: "Share"});
 if (mode === "share") {
     // Show the sharing panel
     ?>
-    <header><h2>Sharing <?JS= rec.name || "(Anonymous)" ?></h2></header>
+    <header><h2>Sharing <?JS= lobby.name || "(Anonymous)" ?></h2></header>
 
-    <p>You may share this recording with other Ennuicastr users. They will be able to download the recording or host it if it's still active, but may not delete it.</p>
+    <p>You may share this room with other Ennuicastr users. They will be able to start recordings in the room and download any recordings made in the room (even if they didn't start them). They may not delete any recordings started in the room.</p>
 
     <script type="text/javascript">
-    function shareRecording() {
+    function shareLobby() {
         var btn = $("#share-button")[0];
         btn.classList.add("disabled");
         btn.disabled = true;
 
-        fetch("/panel/rec/share/share.jss", {
+        fetch("/panel/rec/share-room/share.jss", {
             method: "POST",
             headers: {"content-type": "application/json"},
-            body: JSON.stringify({i: <?JS= rid ?>})
+            body: JSON.stringify({i: <?JS= lid ?>})
 
         }).then(function(res) {
             return res.text();
@@ -133,7 +134,7 @@ if (mode === "share") {
     }
     </script>
 
-    <p><button id="share-button" onclick="shareRecording();"><i class="fas fa-share-square"></i> Share recording</button></p>
+    <p><button id="share-button" onclick="shareLobby();"><i class="fas fa-share-square"></i> Share room</button></p>
 
     <p id="share-hider" style="display: none">
         One-time use URL, expires in 24 hours:<br/>
@@ -144,12 +145,12 @@ if (mode === "share") {
 
 } else if (mode === "receiving") {
     // Receiving a sharing URL, so share
-    ?><header><h2>Sharing <?JS= rec.name || "(Anonymous)" ?></h2></header><?JS
+    ?><header><h2>Sharing <?JS= lobby.name || "(Anonymous)" ?></h2></header><?JS
 
     const token = request.query.t;
-    if (rec.uid === uid) {
+    if (lobby.uid === uid) {
         // ???
-        ?><p>You don't really need to share a recording with yourself, you know!</p><?JS
+        ?><p>You don't really need to share a room with yourself, you know!</p><?JS
 
     } else {
         // OK, share it
@@ -158,40 +159,40 @@ if (mode === "share") {
             try {
                 await db.runP("BEGIN TRANSACTION;");
 
-                // 1: Get the up-to-date recording info
-                const rec2 = await db.getP(
-                    "SELECT * FROM recordings WHERE rid=@RID AND uid=@UID;", {
-                    "@RID": rid,
-                    "@UID": rec.uid
+                // 1: Get the up-to-date lobby info
+                const lobby2 = await db.getP(
+                    "SELECT * FROM lobbies2 WHERE lid=@LID AND uid=@UID;", {
+                    "@LID": lid,
+                    "@UID": lobby.uid
                 });
-                if (!rec2) {
+                if (!lobby2) {
                     await db.runP("ROLLBACK;");
                     break;
                 }
 
                 // 2: Check that the token is still valid
                 const now = await db.runP("SELECT datetime('now') AS now;");
-                const extra = JSON.parse(rec2.extra);
-                if (extra.shareTokens[token] < now) {
+                const config = JSON.parse(lobby2.config);
+                if (config.shareTokens[token] < now) {
                     await db.runP("ROLLBACK;");
                     break;
                 }
 
                 // 3: Remove it
-                delete extra.shareTokens[token];
+                delete config.shareTokens[token];
                 await db.runP(
-                    "UPDATE recordings SET extra=@EXTRA WHERE rid=@RID AND uid=@UID;", {
-                    "@EXTRA": JSON.stringify(extra),
-                    "@RID": rid,
-                    "@UID": rec.uid
+                    "UPDATE lobbies2 SET config=@CONFIG WHERE lid=@LID AND uid=@UID;", {
+                    "@CONFIG": JSON.stringify(config),
+                    "@LID": lid,
+                    "@UID": lobby.uid
                 });
 
                 // 4: Check if this sharing is already done
                 const share = await db.getP(
-                    `SELECT * FROM recording_share WHERE
-                    rid=@RID AND uid_from=@UIDF AND uid_to=@UIDT;`, {
-                    "@RID": rid,
-                    "@UIDF": rec.uid,
+                    `SELECT * FROM lobby_share WHERE
+                    lid=@LID AND uid_from=@UIDF AND uid_to=@UIDT;`, {
+                    "@LID": lid,
+                    "@UIDF": lobby.uid,
                     "@UIDT": uid
                 });
                 if (share) {
@@ -203,12 +204,12 @@ if (mode === "share") {
 
                 // 5: Add the share
                 await db.runP(
-                    `INSERT INTO recording_share
-                        ( rid,  uid_from,  uid_to)
+                    `INSERT INTO lobby_share
+                        ( lid,  uid_from,  uid_to)
                     VALUES
-                        (@RID, @UIDF,     @UIDT);`, {
-                    "@RID": rid,
-                    "@UIDF": rec.uid,
+                        (@LID, @UIDF,     @UIDT);`, {
+                    "@LID": lid,
+                    "@UIDF": lobby.uid,
                     "@UIDT": uid
                 });
 
@@ -223,7 +224,7 @@ if (mode === "share") {
         }
 
         if (success) { ?>
-            <p>You now have access to the recording <?JS= rec.name || "(Anonymous)" ?>.</p>
+            <p>You now have access to the room <?JS= lobby.name || "(Anonymous)" ?>.</p>
         <?JS } else { ?>
             <p>Sharing failed!</p>
 
@@ -233,12 +234,12 @@ if (mode === "share") {
 
 } else if (mode === "unshare") {
     ?>
-    <header><h2>Unsharing <?JS= rec.name || "(Anonymous)" ?></h2></header>
+    <header><h2>Unsharing <?JS= lobby.name || "(Anonymous)" ?></h2></header>
 
-    <p>This will <em>remove</em> your access to the recording <?JS= rec.name || "(Anonymous)" ?>. Are you sure?</p>
+    <p>This will <em>remove</em> your access to the room <?JS= lobby.name || "(Anonymous)" ?>. Are you sure?</p>
 
     <p>
-    <a class="button" href="/panel/rec/share/?i=<?JS= rid.toString(36) ?>&amp;un=1&amp;sure=yes">Yes, remove it</a>
+    <a class="button" href="/panel/rec/share-room/?i=<?JS= lid.toString(36) ?>&amp;un=1&amp;sure=yes">Yes, remove it</a>
     <a class="button" href="/panel/rec/">No, cancel</a>
     </p>
     <?JS
@@ -248,12 +249,12 @@ if (mode === "share") {
     while (true) {
         try {
             await db.runP(
-                `DELETE FROM recording_share WHERE
-                    rid=@RID AND
+                `DELETE FROM lobby_share WHERE
+                    lid=@LID AND
                     uid_from=@UIDF AND
                     uid_to=@UIDT;`, {
-                "@RID": rid,
-                "@UIDF": rec.uid,
+                "@LID": lid,
+                "@UIDF": lobby.uid,
                 "@UIDT": uid
             });
             break;
@@ -261,9 +262,9 @@ if (mode === "share") {
     }
 
     ?>
-    <header><h2>Unsharing <?JS= rec.name || "(Anonymous)" ?></h2></header>
+    <header><h2>Unsharing <?JS= lobby.name || "(Anonymous)" ?></h2></header>
 
-    <p>Recording removed!</p>
+    <p>Room removed!</p>
     <?JS
 
 } else throw new Error();

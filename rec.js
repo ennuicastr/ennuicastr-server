@@ -142,6 +142,38 @@ async function rec(rec, opts) {
         rec.lid = opts.lid;
         rec.lkey = lobby.key;
         rec.lmaster = lobby.master;
+
+        // If the lobby was shared, share the recording
+        const lobbyShare = await db.allP(
+            "SELECT * FROM lobby_share WHERE lid=@LID AND uid_from=@UID;", {
+            "@LID": opts.lid,
+            "@UID": rec.uid
+        });
+        if (lobbyShare.length) {
+            while (true) {
+                try {
+                    await db.runP("BEGIN TRANSACTION;");
+
+                    for (const share of lobbyShare) {
+                        await db.runP(
+                            `INSERT INTO recording_share
+                            (rid, uid_from, uid_to)
+                            VALUES
+                            (@RID, @UIDF, @UIDT);`, {
+                            "@RID": rec.rid,
+                            "@UIDF": rec.uid,
+                            "@UIDT": share.uid_to
+                        });
+                    }
+
+                    await db.runP("COMMIT;");
+                    break;
+
+                } catch (ex) {
+                    await db.runP("ROLLBACK;");
+                }
+            }
+        }
     }
 
     return rec;

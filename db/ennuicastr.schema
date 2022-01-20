@@ -123,11 +123,12 @@ CREATE INDEX IF NOT EXISTS old_recordings_uid_rid_expiry ON old_recordings (uid,
 CREATE TABLE IF NOT EXISTS recording_share (
     uid_from TEXT,
     uid_to TEXT,
-    rid INTEGER PRIMARY KEY
+    rid INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS recording_share_uid_from ON recording_share (uid_from);
 CREATE INDEX IF NOT EXISTS recording_share_uid_to ON recording_share (uid_to);
+CREATE INDEX IF NOT EXISTS recording_share_rid ON recording_share (rid);
 
 /* Default choices for recordings */
 CREATE TABLE IF NOT EXISTS defaults (
@@ -171,6 +172,17 @@ CREATE TABLE IF NOT EXISTS lobbies2 (
 );
 
 CREATE INDEX IF NOT EXISTS lobbies2_uid ON lobbies2 (uid);
+
+/* Room sharing */
+CREATE TABLE IF NOT EXISTS lobby_share (
+    uid_from TEXT,
+    uid_to TEXT,
+    lid INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS lobby_share_uid_from ON lobby_share (uid_from);
+CREATE INDEX IF NOT EXISTS lobby_share_uid_to ON lobby_share (uid_to);
+CREATE INDEX IF NOT EXISTS lobby_share_lid ON lobby_share (lid);
 
 /* Soundboard */
 CREATE TABLE IF NOT EXISTS sounds (
