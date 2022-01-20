@@ -18,6 +18,26 @@
 const config = (arguments[1] || {});
 const econfig = require("../config.js");
 
+const uid = await include("uid.jss");
+const db = require("../db.js").db;
+
+// The sharing panel is only shown if anything is shared
+const showSharing = await (async function() {
+    if (!uid)
+        return false;
+
+    const shareR = await db.getP(
+        "SELECT * FROM recording_share WHERE uid_from=@UID;",
+        {"@UID": uid});
+    if (shareR)
+        return true;
+
+    const shareL = await db.getP(
+        "SELECT * FROM lobby_share WHERE uid_from=@UID;",
+        {"@UID": uid});
+    return !!shareL;
+})();
+
 if (!config.nomain) {
 ?>
 <div id="menuhide">
@@ -42,6 +62,8 @@ function b(target, icon, text, id) {
 if (!config.nomain)
     b("/panel/", "user", "Main panel", "main");
 b("/panel/rec/", "microphone", "Recordings", "recordings");
+if (showSharing)
+    b("/panel/share/", "share-alt", "Sharing", "sharing");
 b("/panel/subscription/", "calendar-alt", "Subscription", "subscription");
 b("/panel/sounds/", "music", "Soundboard", "sounds");
 if (!config.nomain)
