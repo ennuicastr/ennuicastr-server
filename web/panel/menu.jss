@@ -18,7 +18,7 @@
 const config = (arguments[1] || {});
 const econfig = require("../config.js");
 
-const uid = await include("uid.jss");
+const uid = await include("uid.jss", {noRedirect: true});
 const db = require("../db.js").db;
 
 // The sharing panel is only shown if anything is shared
