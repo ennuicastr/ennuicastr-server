@@ -38,6 +38,7 @@ const db = edb.db;
 const log = edb.log;
 const id36 = require("../id36.js");
 const recM = require("../rec.js");
+const unM = require("../username.js");
 
 const rec = isLobby ?
     await db.getP("SELECT * FROM lobbies2 WHERE lid=@LID AND uid=@UID;", {
@@ -70,7 +71,7 @@ if (!sure) {
     ?>
     <header><h2>Unsharing <?JS= rec.name || "(Anonymous)" ?></h2></header>
 
-    <p>This will <em>remove</em> <?JS= otherUid ?>'s access to the <?JS= typeNmPub ?> <?JS= rec.name || "(Anonymous)" ?>. Are you sure?</p>
+    <p>This will <em>remove</em> <?JS= await unM.getDisplay(otherUid) ?>'s access to the <?JS= typeNmPub ?> <?JS= rec.name || "(Anonymous)" ?>. Are you sure?</p>
 
     <p>
     <a class="button" href="/panel/share/unshare/?<?JS= typeId[0] ?>=<?JS= id.toString(36) ?>&amp;u=<?JS= otherUid ?>&amp;sure=yes">Yes, unshare it</a>

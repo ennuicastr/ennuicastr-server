@@ -19,6 +19,7 @@ const uid = await include("../uid.jss");
 if (!uid) return;
 
 const db = require("../db.js").db;
+const unM = require("../username.js");
 
 const recs = await db.allP(
     `SELECT * FROM
@@ -48,10 +49,7 @@ const lobbies = await db.allP(
 await include("../head.jss", {title: "Sharing"});
 ?>
 
-<script type="text/javascript">
-</script>
-
-<section>
+<section class="wrapper special">
     <header class="align-center"><h2>Shared rooms and recordings</h2></header>
 
     <div style="overflow: auto">
@@ -68,7 +66,7 @@ for (const lobby of lobbies) {
         <tr>
             <td><?JS= lobby.name || "(Anonymous)" ?></td>
             <td>(Room)</td>
-            <td><?JS= lobby.uid_to ?></td>
+            <td><?JS= await unM.getDisplay(lobby.uid_to) ?></td>
             <td>
                 <a href="unshare/?l=<?JS= lobby.lid.toString(36) ?>&u=<?JS= lobby.uid_to ?>" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
             </td>
@@ -87,7 +85,7 @@ for (const row of recs) {
         <tr>
             <td><?JS= row.name || "(Anonymous)" ?></td>
             <td><?JS= row.init ?><br/><?JS= row.expiry ?></td>
-            <td><?JS= row.uid_to ?></td>
+            <td><?JS= await unM.getDisplay(row.uid_to) ?></td>
             <td>
                 <a href="unshare/?r=<?JS= row.rid.toString(36) ?>&u=<?JS= row.uid_to ?>" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
             </td>

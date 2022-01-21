@@ -47,10 +47,13 @@ const db = edb.db;
 const log = edb.log;
 const id36 = require("../id36.js");
 const recM = require("../rec.js");
+const unM = require("../username.js");
 
 const rec = await recM.get(rid, uid, {noCheck: true});
 if (!rec)
     return writeHead(302, {"location": "/panel/rec/"});
+
+const username = await unM.getUsername(uid);
 
 if (mode === "share") {
     // This means we're sharing, so make sure only the owner can share
@@ -67,6 +70,14 @@ if (mode === "share") {
     } catch (ex) {}
     if (!exp || exp < now.now)
         return writeHead(302, {"location": "/panel/rec/"});
+
+    // Check if we have a username
+    if (!username) {
+        // Insist that we do first
+        return writeHead(302, {
+            "location": "/panel/username/?c=" + encodeURIComponent(params.REQUEST_URI)
+        });
+    }
 
     // The rest we do later
 

@@ -170,9 +170,9 @@ function joinButton(rec, opts) {
     opts = opts || {};
     let url = JSON.stringify(
         recM.hostUrl(rec, opts)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;"));
+        .replace(/\&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;"));
 
     write(`<button onclick='joinRecording(${url});'>` +
           `<i class="fas fa-door-open"></i> Join</button>`);
