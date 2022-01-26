@@ -46,6 +46,7 @@ if (mode === "logout") {
     return writeHead(302, {"location": "/panel/org/"});
 }
 
+const credits = require("../credits.js");
 const db = require("../db.js").db;
 const unM = require("../username.js");
 
@@ -247,7 +248,15 @@ if (mode === "info") {
             One-time use URL, expires in 24 hours:<br/>
             <input type="text" id="invite-box" readonly style="width: 100%" />
         </p>
+
         <?JS
+        const uCredits = await credits.accountCredits(uid);
+        const oCredits = await credits.accountCredits(euid);
+        if (uCredits.subscription && !oCredits.subscription) {
+            ?>
+            <p><a class="button" href="/panel/org/credits/?o=<?JS= euid ?>"><i class="fas fa-exchange-alt"></i> Transfer subscription to organization</a></p>
+            <?JS
+        }
     }
 
     if (level >= levels.owner) {
