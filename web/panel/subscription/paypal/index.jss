@@ -15,8 +15,9 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("../../uid.jss");
-if (!uid) return;
+const uidX = await include("../../uid.jss", {verbose: true});
+if (!uidX || uidX.level < 2) return;
+const uid = uidX.uid;
 
 const s = await include("./s.jss");
 

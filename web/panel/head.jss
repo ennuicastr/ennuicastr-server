@@ -1,12 +1,20 @@
 <?JS!
 const config = (arguments[1] || {});
 const econfig = require("../config.js");
+const uid = await include("uid.jss", {verbose: true});
+
+let org = "";
+if (uid && uid.euid && uid.euid !== uid.ruid) {
+    // Logged into an organization account
+    const unM = require("../username.js");
+    org = " (" + (await unM.getUsername(uid.euid)) + ")";
+}
 
 await include("../head.jss", config);
 ?>
 
 <!--
- * Copyright (c) 2020, 2021 Yahweasel
+ * Copyright (c) 2020-2022 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -55,9 +63,9 @@ PayPalLoader = (function() {
 <header id="banner" class="small">
     <p><?JS
         if (config.title)
-            write('<a href="/panel/">Ennuicastr</a> → ' + config.title);
+            write(`<a href="/panel/">Ennuicastr</a>${org} → ${config.title}`);
         else
-            write("Ennuicastr");
+            write(`Ennuicastr${org}`);
     ?>
     <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="fas fa-sun"></i></a>
     </p>

@@ -68,7 +68,7 @@ for (const lobby of lobbies) {
             <td>(Room)</td>
             <td><?JS= await unM.getDisplay(lobby.uid_to) ?></td>
             <td>
-                <a href="unshare/?l=<?JS= lobby.lid.toString(36) ?>&u=<?JS= lobby.uid_to ?>" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
+                <a href="unshare/?l=<?JS= lobby.lid.toString(36) ?>&u=<?JS= lobby.uid_to ?>" class="button"><i class="fas fa-minus-circle"></i> Unshare</a>
             </td>
         </tr>
 <?JS
@@ -87,14 +87,14 @@ for (const row of recs) {
             <td><?JS= row.init ?><br/><?JS= row.expiry ?></td>
             <td><?JS= await unM.getDisplay(row.uid_to) ?></td>
             <td>
-                <a href="unshare/?r=<?JS= row.rid.toString(36) ?>&u=<?JS= row.uid_to ?>" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
+                <a href="unshare/?r=<?JS= row.rid.toString(36) ?>&u=<?JS= row.uid_to ?>" class="button"><i class="fas fa-minus-circle"></i> Unshare</a>
             </td>
         </tr>
 <?JS
 }
 
 if (!lobbies.length && !recs.length) {
-    ?><tr><td class="align-center" colspan=6>(none)</td></tr><?JS
+    ?><tr><td class="align-center" colspan=4>(none)</td></tr><?JS
 }
 ?>
     </tbody></table>

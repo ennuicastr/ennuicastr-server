@@ -15,8 +15,9 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("../uid.jss");
-if (!uid) return;
+const uidX = await include("../uid.jss", {verbose: true});
+if (!uidX) return;
+const {uid, level} = uidX;
 
 const config = require("../config.js");
 const db = require("../db.js").db;
@@ -155,7 +156,7 @@ if (accountCredits.subscription) {
         <p>You have a<?JS= [""," basic","n ultra-high quality"][accountCredits.subscription] ?> subscription until <?JS= accountCredits.subscription_expiry ?> UTC. Thanks!</p>
 
 <?JS
-    if (accountCredits.subscription < 2) {
+    if (accountCredits.subscription < 2 && level >= 2) {
 ?>
         <p>You may upgrade your subscription to ultra-high quality for $<?JS= config.subscription.hq/100 ?>/month, with the first month at only $<?JS= (config.subscription.hq-config.subscription.basic)/100 ?>:</p>
         <?JS await genSub("hqBasicUpgrade"); ?>
@@ -167,7 +168,7 @@ if (accountCredits.subscription) {
 
         <p>(If you have canceled your subscription, you still get to keep the remainder of your subscription time, and so are still subscribed until the expiry date above.)</p>
 
-<?JS } else { ?>
+<?JS } else if (level >= 2) { ?>
 
         <h2>Basic subscription</h2>
         <p>$<?JS= config.subscription.basic/100 ?>/month, unlimited recordings in high quality (128kbit Opus)</p>
@@ -179,9 +180,10 @@ if (accountCredits.subscription) {
         <p>$<?JS= config.subscription.hq/100 ?>/month, unlimited recordings in ultra-high quality (lossless FLAC and/or continuous mode)</p>
         <?JS await genSub("hq"); ?>
 
-<?JS
-}
-?>
+<?JS } else { ?>
+        <p>Only an organization's admins may alter its subscription.</p>
+
+<?JS } ?>
     </section>
 
 <?JS await include("../../tail.jss"); ?>

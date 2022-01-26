@@ -18,7 +18,8 @@
 const config = (arguments[1] || {});
 const econfig = require("../config.js");
 
-const uid = await include("uid.jss", {noRedirect: true});
+const uidX = await include("uid.jss", {noRedirect: true, verbose: true});
+const {ruid, euid, uid} = uidX;
 const db = require("../db.js").db;
 
 // The sharing panel is only shown if anything is shared
@@ -36,6 +37,18 @@ const showSharing = await (async function() {
         "SELECT * FROM lobby_share WHERE uid_from=@UID;",
         {"@UID": uid});
     return !!shareL;
+})();
+
+/* The organization panel is always shown if the user is involved in
+ * organizations */
+const showOrg = await (async function() {
+    if (!ruid)
+        return false;
+
+    const share = await db.getP(
+        "SELECT * FROM user_share WHERE uid_target=@UID;",
+        {"@UID": ruid});
+    return !!share;
 })();
 
 if (!config.nomain) {
@@ -61,10 +74,14 @@ function b(target, icon, text, id) {
 
 if (!config.nomain)
     b("/panel/", "user", "Main panel", "main");
+if (config.all && config.username)
+    b("/panel/username/", "file-signature", "Username", "username");
 b("/panel/rec/", "microphone", "Recordings", "recordings");
 if (showSharing)
     b("/panel/share/", "share-alt", "Sharing", "sharing");
 b("/panel/subscription/", "calendar-alt", "Subscription", "subscription");
+if (config.all || showOrg)
+    b("/panel/org/", "building", "Organizations", "organizations");
 b("/panel/sounds/", "music", "Soundboard", "sounds");
 if (!config.nomain)
     b(econfig.site, "home", "Home page", "home");

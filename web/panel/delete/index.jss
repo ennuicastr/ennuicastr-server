@@ -15,8 +15,9 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("../uid.jss");
-if (!uid) return;
+const uidX = await include("../uid.jss", {verbose: true});
+if (!uidX) return;
+const {ruid, euid, uid} = uidX;
 
 const creditsj = await include("../credits.jss");
 const edb = require("../db.js");
@@ -28,7 +29,10 @@ let canDelete = true,
     deleted = false,
     haveRecordings = false,
     haveSounds = false,
-    haveSubscription = false;
+    haveSubscription = false,
+    isOrganization = false,
+    haveOrganizations = false;
+let isOwner = true;
 
 while (true) {
     try {
@@ -61,6 +65,36 @@ while (true) {
                 canDelete = false;
                 haveSubscription = true;
             }
+        }
+
+        // Check if they're the owner of an organization
+        if (euid && euid !== ruid) {
+            isOrganization = true;
+
+            // Only the organization's owner can delete it
+            const org = await db.getP(
+                `SELECT * FROM user_share WHERE
+                    uid_shared=@OID AND
+                    uid_target=@UID;`, {
+                "@OID": euid,
+                "@UID": ruid
+            });
+
+            if (!org || org.level < 3 /* owner */) {
+                canDelete = false;
+                isOwner = false;
+            }
+
+        } else {
+            const orgs = await db.allP(
+                "SELECT * FROM user_share WHERE uid_target=@UID AND level >= 3;", {
+                "@UID": uid
+            });
+            if (orgs.length) {
+                canDelete = false;
+                haveOrganizations = true;
+            }
+
         }
 
         if (canDelete && request.body && request.body.sure === "Yes") {
@@ -98,6 +132,10 @@ while (true) {
                 });
             }
 
+            await db.runP("DELETE FROM user_share WHERE uid_shared=@UID OR uid_target=@UID;", {
+                "@UID": uid
+            });
+
             await db.runP("COMMIT;");
             deleted = true;
             break;
@@ -112,8 +150,8 @@ while (true) {
     }
 }
 
-if (deleted) {
-    // OK, the account was deleted
+if (deleted && !isOrganization) {
+    // OK, the user account was deleted
     log("account-deleted", "", {uid});
     await include("../head.jss", {menu: false, title: "Delete"});
     ?>
@@ -129,6 +167,25 @@ if (deleted) {
     <?JS
     await include("../../tail.jss");
     return;
+
+} else if (deleted && isOrganization) {
+    // OK, the organization was deleted
+    log("organization-deleted", "", {uid});
+    await include("../head.jss", {title: "Delete"});
+    ?>
+
+    <section class="wrapper special">
+        <h2>Delete</h2>
+
+        <p>Organization deleted.</p>
+
+        <p><a href="/panel/">Return to main panel</a></p>
+    </section>
+
+    <?JS
+    await include("../../tail.jss");
+    return;
+
 }
 
 await include("../head.jss", {title: "Delete"});
@@ -137,9 +194,23 @@ await include("../head.jss", {title: "Delete"});
 <section class="wrapper special">
     <h2>Delete</h2>
 
-    <p>You may delete your account here if you wish. Note that deleting your account does <em>not</em> delete all personal information, but it does delete account information including your email address, so you will not be contacted. If you wish for us to expunge all personal information, consult the <a href="/privacy/">privacy policy</a>.</p>
+    <?JS if (isOrganization) { ?>
+    <p>
+        You are currently logged into an organization account. This information relates to the organization account, <em>not</em> your user account.
+        <?JS if (isOwner) { ?>
+        Deleting this organization will not delete your user account. If you wish to delete your user account, you must first delete all organizations you own (including this one), then return to the deletion panel.
+        <?JS } else { ?>
+        Only the owner of an organization may delete it.
+        <?JS } ?>
+    </p>
+    <?JS } ?>
 
+    <?JS if (isOwner) { ?>
+    <p>You may delete your <?JS= isOrganization?"organization":"account" ?> here if you wish. <?JS if (!isOrganization) { ?>Note that deleting your account does <em>not</em> delete all personal information, but it does delete account information including your email address, so you will not be contacted. If you wish for us to expunge all personal information, consult the <a href="/privacy/">privacy policy</a>.<?JS } ?></p>
+
+    <?JS if (!isOrganization) { ?>
     <p>Because accounts are created on demand whenever you newly log in with a login service, if you delete your account, you'll still be able to log in; a new account will be created if you do.</p>
+    <?JS } } ?>
 </section>
 
 <?JS
@@ -161,9 +232,15 @@ if (haveSubscription) { ?>
 </section>
 <?JS }
 
+if (haveOrganizations) { ?>
+<section class="wrapper special style1">
+    <p>Please delete all organizations that you own <em>before</em> deleting your account.</p>
+</section>
+<?JS }
+
 if (canDelete) { ?>
 <section class="wrapper special style1">
-    <p>Deleting your account is <em>permanent and irreversible</em>. If you have remaining credits or subscription time, <em>they will be lost</em>. Are you sure?</p>
+    <p>Deleting your <?JS= isOrganization?"organization":"account" ?> is <em>permanent and irreversible</em>. If you have remaining credits or subscription time, <em>they will be lost</em>. Are you sure?</p>
 
     <form action="?" method="POST">
         <input type="submit" name="sure" value="Yes" />

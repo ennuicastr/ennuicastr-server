@@ -29,6 +29,31 @@ CREATE TABLE IF NOT EXISTS usernames (
 
 CREATE INDEX IF NOT EXISTS usernames_uid ON usernames (uid);
 
+/* Sharing of organizational accounts */
+CREATE TABLE IF NOT EXISTS user_share (
+    uid_shared TEXT,
+    uid_target TEXT,
+    /*
+     * 1: Member
+     * 2: Admin
+     * 3: Owner
+     */
+    level NUMBER
+);
+
+CREATE INDEX IF NOT EXISTS user_share_uid_shared ON user_share (uid_shared);
+CREATE INDEX IF NOT EXISTS user_share_uid_target ON user_share (uid_target);
+
+/* Keys to share organizations */
+CREATE TABLE IF NOT EXISTS user_share_key (
+    key PRIMARY KEY,
+    uid_shared TEXT,
+    expiry TEXT
+);
+
+CREATE INDEX IF NOT EXISTS user_share_key_uid_shared ON user_share_key (uid_shared);
+CREATE INDEX IF NOT EXISTS user_share_key_expiry ON user_share_key (expiry);
+
 /* One-time keys */
 CREATE TABLE IF NOT EXISTS otk (
     uid TEXT PRIMARY KEY,
