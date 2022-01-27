@@ -28,6 +28,16 @@ let mode = "show";
 if (request.query.t) {
     mode = "invite";
 
+    // Check if we have a username
+    const username = await unM.getUsername(uid);
+    if (!username) {
+        // Insist that we do first
+        return writeHead(302, {
+            "location": "/panel/username/?c=" +
+            encodeURIComponent(params.REQUEST_URI)
+        });
+    }
+
 } else if (request.query.act) {
     switch (request.query.act) {
         case "create":
