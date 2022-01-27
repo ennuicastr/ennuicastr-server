@@ -34,7 +34,6 @@ const defaults = await (async function() {
     if (!row)
         row = {
             name: "",
-            dname: "",
             format: "opus",
             continuous: false,
             rtc: true,
@@ -113,9 +112,6 @@ const defaults = await (async function() {
 
         l("name", "Recording name");
         txt("name", "n", config.limits.recNameLength);
-
-        l("dname", "Your display name");
-        txt("dname", "m", config.limits.recUsernameLength);
 
         l("persist", "Persistent room", true);
         chk("persist", "persist");
@@ -307,7 +303,7 @@ function launchRecording() {
         }
         url +=
             "-f" + features.toString(36) +
-            "&nm=" + encodeURIComponent(q.m||"Host");
+            "&quick=1";
         clientWindow.location = url;
         document.location = "/panel/rec/";
 

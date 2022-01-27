@@ -236,7 +236,7 @@ function hostUrl(rec, opts) {
         url += "-p" + rec.port.toString(36);
     if (features)
         url += "-f" + features.toString(36);
-    url += "&nm=" + (rec.hostname||"Host");
+    url += "&quick=1";
 
     return url;
 }

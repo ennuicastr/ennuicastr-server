@@ -88,8 +88,6 @@ CREATE TABLE IF NOT EXISTS recordings (
     port INTEGER,
     /* Recording name (user set) */
     name TEXT,
-    /* Host username (user set) */
-    hostname TEXT,
     /* Recording format (user set, just a default) */
     format TEXT,
     /* Continuous mode? (user set, just a default) */
@@ -167,8 +165,6 @@ CREATE TABLE IF NOT EXISTS defaults (
     uid TEXT UNIQUE,
     /* Recording name */
     name TEXT,
-    /* Display name */
-    dname TEXT,
     format TEXT,
     continuous BOOLEAN,
     rtc BOOLEAN,
