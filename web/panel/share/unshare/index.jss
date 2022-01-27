@@ -98,6 +98,8 @@ if (!sure) {
         } catch (ex) {}
     }
 
+    log(`${typeNm}-unshared`, JSON.stringify({otherUid}), {uid, rid: id});
+
     ?>
     <header><h2>Unsharing <?JS= rec.name || "(Anonymous)" ?></h2></header>
 

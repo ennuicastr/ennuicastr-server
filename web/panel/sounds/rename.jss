@@ -19,8 +19,7 @@ const uid = await include("../uid.jss");
 if (!uid) return;
 
 const config = require("../config.js");
-const edb = require("../db.js");
-const db = edb.db;
+const db = require("../db.js").db;
 
 function fail(msg) {
     writeHead(500, {"content-type": "application/json"});

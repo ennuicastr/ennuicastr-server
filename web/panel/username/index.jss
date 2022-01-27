@@ -60,6 +60,9 @@ if (request.query.u && uidX.level >= 2 /* admin */) {
             });
 
             await db.runP("COMMIT;");
+
+            log("new-username", username, {uid});
+
             break;
 
         } catch (ex) {

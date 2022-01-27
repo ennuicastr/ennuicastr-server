@@ -19,7 +19,9 @@ const config = arguments[1];
 const uid = config.uid;
 if (!uid) return;
 
-const db = require("../db.js").db;
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
 const id36 = require("../id36.js");
 const unM = require("../username.js");
 
@@ -131,6 +133,9 @@ if (mode === "create" && request.query.n && orgs.length < 8) {
             throw ex;
         }
     }
+
+    // Log it
+    log("organization-created", JSON.stringify({by: uid}), {uid: oid});
 
     // 4: Log them in
     return writeHead(302, {

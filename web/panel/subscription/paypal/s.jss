@@ -140,12 +140,6 @@ async function updateSubscription(uid, sid, sconfig) {
         }
     }
 
-    // Log it
-    if (level > 0)
-        log("purchased-subscription", JSON.stringify({subscription, level}), {uid});
-    else
-        log("expired-subscription", JSON.stringify({level}), {uid});
-
     // Activate it if needed
     if (level > 0 && subscription.status !== "ACTIVE") {
         let capture = await nrc.postPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid + "/activate", {
@@ -177,6 +171,12 @@ async function updateSubscription(uid, sid, sconfig) {
             return fail("Failed to finalize transaction");
         }
     }
+
+    // Log it
+    if (level > 0)
+        log("purchased-subscription", JSON.stringify({subscription, level}), {uid});
+    else
+        log("expired-subscription", JSON.stringify({level}), {uid});
 
     // And cancel any old subscription
     if (prevSubscription) {

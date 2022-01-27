@@ -22,8 +22,10 @@ if (request.query.o !== uidX.euid || uidX.level < 2 /* admin */)
 const oid = uidX.euid;
 const uid = uidX.ruid;
 
-const db = require("../db.js").db;
 const credits = require("../credits.js");
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
 const unM = require("../username.js");
 
 // Perform the database tomfoolery
@@ -118,6 +120,11 @@ while (true) {
     } catch (ex) {
         await db.runP("ROLLBACK;");
     }
+}
+
+if (transferred) {
+    // Log it
+    log("credits-transferred", JSON.stringify({otherUid: oid}), {uid});
 }
 
 await include("../../head.jss", {title: "Transfer Ownership"});

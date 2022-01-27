@@ -75,10 +75,11 @@ if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
             accountCredits.credits -= recInfo.cost;
             recInfo.purchased = "1";
 
+            await db.runP("COMMIT;");
+
             // Log it
             log("recording-purchased", JSON.stringify(recInfo), {uid, rid});
 
-            await db.runP("COMMIT;");
             break;
 
         } catch (ex) {

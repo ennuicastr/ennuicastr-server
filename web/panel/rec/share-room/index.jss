@@ -226,7 +226,11 @@ if (mode === "share") {
             }
         }
 
-        if (success) { ?>
+        if (success) {
+            log("lobby-shared", JSON.stringify({otherUid: uid}),
+                {uid: lobby.uid, rid: lid});
+
+            ?>
             <p>You now have access to the room <?JS= lobby.name || "(Anonymous)" ?>.</p>
         <?JS } else { ?>
             <p>Sharing failed!</p>
@@ -263,6 +267,9 @@ if (mode === "share") {
             break;
         } catch (ex) {}
     }
+
+    log("lobby-unshared", JSON.stringify({otherUid: uid}),
+        {uid: lobby.uid, rid: lid});
 
     ?>
     <header><h2>Unsharing <?JS= lobby.name || "(Anonymous)" ?></h2></header>

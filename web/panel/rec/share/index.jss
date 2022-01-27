@@ -236,7 +236,11 @@ if (mode === "share") {
             }
         }
 
-        if (success) { ?>
+        if (success) {
+            log("recording-shared", JSON.stringify({otherUid: uid}),
+                {uid: rec.uid, rid});
+
+            ?>
             <p>You now have access to the recording <?JS= rec.name || "(Anonymous)" ?>.</p>
         <?JS } else { ?>
             <p>Sharing failed!</p>
@@ -273,6 +277,9 @@ if (mode === "share") {
             break;
         } catch (ex) {}
     }
+
+    log("recording-unshared", JSON.stringify({otherUid: uid}),
+        {uid: rec.uid, rid});
 
     ?>
     <header><h2>Unsharing <?JS= rec.name || "(Anonymous)" ?></h2></header>
