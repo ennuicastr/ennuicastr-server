@@ -15,8 +15,9 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("../uid.jss");
-if (!uid) return;
+const uidX = await include("../uid.jss", {verbose: true});
+if (!uidX) return;
+const uid = uidX.uid;
 
 const net = require("net");
 
@@ -217,10 +218,16 @@ for (let lobby of lobbies) {
                     if (lobby.uid === uid) {
                         ?>
                         <a href="delete-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a>
-                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-share-square"></i> Share</a>
                         <?JS
 
-                    } else {
+                        // Sharing requires admin
+                        if (uidX.level >= 2) {
+                        ?>
+                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-share-square"></i> Share</a>
+                        <?JS
+                        }
+
+                    } else if (uidX.level >= 2 /* admin */) {
                         // Shared recipient can only unshare
                         ?>
                         <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>&un=1" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
@@ -306,6 +313,7 @@ for (let row of recs) {
                             ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a><?JS
                         }
 
+                        if (uidX.level >= 2 /* admin */) {
                         if (row.lid) {
                             // This is a lobby, so share in either
                             ?>
@@ -320,8 +328,9 @@ for (let row of recs) {
                                 ""
                         ?></a>
                         <?JS
+                        }
 
-                    } else {
+                    } else if (uidX.level >= 2 /* admin */) {
                         // Shared recipient can only unshare
                         ?>
                         <a href="share/?i=<?JS= row.rid.toString(36) ?>&un=1" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>

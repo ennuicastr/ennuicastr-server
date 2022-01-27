@@ -22,8 +22,11 @@ function fail(msg) {
     }));
 }
 
-const uid = await include("../../uid.jss");
-if (!uid) return;
+const uidX = await include("../../uid.jss", {verbose: true});
+if (!uidX) return;
+if (uidX.level < 2 /* admin */)
+    return writeHead(302, {"location": "/panel/rec/"});
+const uid = uidX.uid;
 
 if (!request.body || !request.body.i)
     return fail();

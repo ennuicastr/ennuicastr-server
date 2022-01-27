@@ -15,8 +15,11 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("../../uid.jss");
-if (!uid) return;
+const uidX = await include("../../uid.jss", {verbose: true});
+if (!uidX) return;
+if (uidX.level < 2 /* admin */)
+    return writeHead(302, {"location": "/panel/rec/"});
+const uid = uidX.uid;
 
 if (!request.query.i)
     return writeHead(302, {"location": "/panel/rec/"});

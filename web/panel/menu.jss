@@ -24,7 +24,7 @@ const db = require("../db.js").db;
 
 // The sharing panel is only shown if anything is shared
 const showSharing = await (async function() {
-    if (!uid)
+    if (!uid || uidX.level < 2 /* admin */)
         return false;
 
     const shareR = await db.getP(

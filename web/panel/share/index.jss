@@ -15,8 +15,9 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("../uid.jss");
-if (!uid) return;
+const uidX = await include("../uid.jss", {verbose: true});
+if (!uidX || uidX.level < 2 /* admin */) return;
+const uid = uidX.uid;
 
 const db = require("../db.js").db;
 const unM = require("../username.js");
