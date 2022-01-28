@@ -15,8 +15,9 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const uid = await include("uid.jss");
-if (!uid) return;
+const uidX = await include("uid.jss", {verbose: true});
+if (!uidX) return;
+const {ruid, euid, uid} = uidX;
 
 const providerNames = {
     beta: "a beta account",
@@ -31,6 +32,7 @@ const edb = require("../db.js");
 const db = edb.db;
 const credits = require("../credits.js");
 const creditsj = await include("./credits.jss");
+const unM = require("../username.js");
 
 const ua = params.HTTP_USER_AGENT || "";
 const isChrome = ua.indexOf("Chrome") >= 0;
@@ -55,19 +57,19 @@ if (isSafari) {
 const login = await session.get("login");
 const loginProvider = (function() {
     if (login) {
-        var provider = login.split(":")[0];
+        let provider = login.split(":")[0];
         return providerNames[provider] || provider;
     }
     return null;
 })();
 const loginName = await (async function() {
-    var row = await db.getP("SELECT name FROM names WHERE uid=@UID;", {"@UID": uid});
+    var row = await db.getP("SELECT name FROM names WHERE uid=@UID;", {"@UID": ruid});
     if (row)
         return row.name;
     return null;
 })();
 const email = await (async function() {
-    var row = await db.getP("SELECT email FROM emails WHERE uid=@UID;", {"@UID": uid});
+    var row = await db.getP("SELECT email FROM emails WHERE uid=@UID;", {"@UID": ruid});
     if (row)
         return row.email;
     return null;
@@ -76,11 +78,25 @@ const email = await (async function() {
 const accountCredits = await creditsj.accountCredits(uid);
 
 // Make an "as" line based on what they're logged in as
-var asLine = "";
+let asMain = "";
+if (await unM.getUsername(ruid)) {
+    asMain = await unM.getDisplay(ruid);
+}
+
+let asDetail = "";
 if (email) {
-    asLine = " as " + email;
+    asDetail = email;
 } else if (loginName) {
-    asLine = " as " + loginName;
+    asDetail = loginName;
+}
+
+let asLine = "";
+if (asMain) {
+    asLine = " as " + asMain;
+    if (asDetail)
+        asLine += " (" + asDetail + ")";
+} else if (asDetail) {
+    asLine = " as " + asDetail;
 }
 
 await include("head.jss");
@@ -108,7 +124,16 @@ if (uid === "8r0yhzg2bawwig7id2h6u0ip6wm2535us") {
 <section class="wrapper special">
     <p onclick="showUID();">You are logged into Ennuicastr using <?JS= loginProvider + asLine ?>.</p>
 
-    <p style="display: none" id="uidbox">Your UID is <?JS= uid ?></p>
+    <?JS if (euid && euid !== ruid) { ?>
+    <p>You are currently logged into the <a href="/panel/org/">organization account</a> for <?JS= await unM.getDisplay(euid) ?>.</p>
+    <?JS } ?>
+
+    <p style="display: none" id="uidbox">
+        Your UID is <?JS= ruid ?>.
+        <?JS if (euid) { ?>
+        Your OID is <?JS= euid ?>.
+        <?JS } ?>
+    </p>
 
     <script type="text/javascript"><!--
     function showUID() { $("#uidbox")[0].style.display = ""; }
@@ -124,8 +149,12 @@ if (uid === "8r0yhzg2bawwig7id2h6u0ip6wm2535us") {
     await include("rec/interface.jss");
     ?>
 
-    <p>
-    <?JS await include("menu.jss", {nomain: true}); ?>
+    <p style="line-height: 3.25">
+    <?JS await include("menu.jss", {
+        nomain: true,
+        username: !!(await unM.getUsername(uid)),
+        all: true
+    }); ?>
     </p>
 
     <p><a class="button" href="/panel/logout/?all"><i class="fas fa-sign-out-alt"></i> Log out on <em>all</em> devices</a></p>

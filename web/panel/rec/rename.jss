@@ -21,6 +21,7 @@ if (!uid) return;
 const config = require("../config.js");
 const edb = require("../db.js");
 const db = edb.db;
+const recM = require("../rec.js");
 
 function fail(msg) {
     writeHead(500, {"content-type": "application/json"});
@@ -47,10 +48,7 @@ while (true) {
     try {
         await db.runP("BEGIN TRANSACTION;");
 
-        var rec = await db.getP("SELECT * FROM recordings WHERE uid=@UID AND rid=@RID;", {
-            "@UID": uid,
-            "@RID": rid
-        });
+        let rec = await recM.get(rid, uid);
         if (!rec) {
             // Illegal!
             await db.runP("ROLLBACK;");
@@ -58,7 +56,7 @@ while (true) {
         }
 
         await db.runP("UPDATE recordings SET name=@NAME WHERE uid=@UID AND rid=@RID;", {
-            "@UID": uid,
+            "@UID": rec.uid,
             "@RID": rid,
             "@NAME": name
         });

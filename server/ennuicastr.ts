@@ -1218,9 +1218,9 @@ async function recvRecInfo(r) {
     r.mode = prot.mode.init;
 
     // Make the recording key and master key
-    r.key = ~~(Math.random()*2000000000);
-    r.master = ~~(Math.random()*2000000000);
-    r.wskey = ~~(Math.random()*2000000000);
+    r.key = id36.genInt();
+    r.master = id36.genInt();
+    r.wskey = id36.genInt();
     r.extra = {
         assetKey: id36.genKey().toString("binary")
     };
@@ -1229,7 +1229,7 @@ async function recvRecInfo(r) {
     var rid;
     while (true) {
         try {
-            rid = ~~(Math.random()*2000000000);
+            rid = id36.genInt();
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  hostname,  format," +
                           "  continuous,  rtc,  recordOnly,  videoRec," +

@@ -46,18 +46,36 @@ while (true) {
     try {
         await db.runP("BEGIN TRANSACTION;");
 
-        let lobby = await db.getP("SELECT * FROM lobbies2 WHERE uid=@UID AND lid=@LID;", {
-            "@UID": uid,
+        let lobby = await db.getP("SELECT * FROM lobbies2 WHERE lid=@LID;", {
             "@LID": lid
         });
         if (!lobby) {
-            // Illegal!
+            // Lobby doesn't exist!
             await db.runP("ROLLBACK;");
             return fail({error: "Unowned room"});
         }
 
+        // Check if it's owned or shared
+        if (lobby.uid !== uid) {
+            // Look for sharing
+            const share = await db.getP(
+                `SELECT * FROM lobby_share WHERE
+                lid=@LID AND
+                uid_from=@UIDF AND
+                uid_to=@UIDT;`, {
+                "@LID": lid,
+                "@UIDF": lobby.uid,
+                "@UIDT": uid
+            });
+            if (!share) {
+                // Illegal!
+                await db.runP("ROLLBACK;");
+                return fail({error: "Unowned room"});
+            }
+        }
+
         await db.runP("UPDATE lobbies2 SET name=@NAME WHERE uid=@UID AND lid=@LID;", {
-            "@UID": uid,
+            "@UID": lobby.uid,
             "@LID": lid,
             "@NAME": name
         });

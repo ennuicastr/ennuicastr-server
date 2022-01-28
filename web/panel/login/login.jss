@@ -20,12 +20,10 @@ const util = require("util");
 const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
+const id36 = require("../id36.js");
 
 function genUID() {
-    function genPart() {
-        return Math.random().toString(36).slice(2);
-    }
-    return genPart() + genPart() + genPart();
+    return id36.genID(32);
 }
 
 async function getUID(login) {

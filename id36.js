@@ -16,16 +16,36 @@
 
 /* Base-36 ID generation and enc/decryption */
 
+const words = require("./words.js");
+
 const crypto = require("crypto");
 const algo = "aes-256-cbc";
 
+// Generate an ID of the desired length
 function genID(len) {
-    var ret = "";
-    while (ret.length < len)
-        ret += Math.random().toString(36).slice(2);
-    return ret.slice(0, len);
+    while (true) {
+        let ret = "";
+        while (ret.length < len) {
+            const part = crypto.randomInt(1679616, 60466176).toString(36);
+            if (!words.test(part))
+                ret += part;
+        }
+        ret = ret.slice(0, len);
+        if (!words.test(ret))
+            return ret;
+    }
 }
 
+// Generate a 31-bit integer
+function genInt() {
+    while (true) {
+        const ret = crypto.randomInt(0, 2147483648);
+        if (!words.test(ret.toString(36)))
+            return ret;
+    }
+}
+
+// Generate an encryption key
 function genKey() {
     return crypto.randomBytes(32);
 }
@@ -47,6 +67,7 @@ function dec(input, key) {
 
 module.exports = {
     genID,
+    genInt,
     genKey,
     enc,
     dec

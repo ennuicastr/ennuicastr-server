@@ -19,7 +19,9 @@ const uid = await include("../../uid.jss");
 if (!uid) return;
 
 const config = require("../config.js");
-const db = require("../db.js").db;
+const edb = require("../db.js");
+const db = edb.db;
+const log = edb.log;
 
 if (!request.query.i) {
     // Delete nothing?
@@ -48,6 +50,8 @@ if (request.query.sure) {
             break;
         } catch (ex) {}
     }
+
+    log("lobby-deleted", "", {uid, rid: lid});
 
 ?>
 <section class="wrapper special">

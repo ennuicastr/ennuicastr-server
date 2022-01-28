@@ -142,9 +142,68 @@ async function rec(rec, opts) {
         rec.lid = opts.lid;
         rec.lkey = lobby.key;
         rec.lmaster = lobby.master;
+
+        // If the lobby was shared, share the recording
+        const lobbyShare = await db.allP(
+            "SELECT * FROM lobby_share WHERE lid=@LID AND uid_from=@UID;", {
+            "@LID": opts.lid,
+            "@UID": rec.uid
+        });
+        if (lobbyShare.length) {
+            while (true) {
+                try {
+                    await db.runP("BEGIN TRANSACTION;");
+
+                    for (const share of lobbyShare) {
+                        await db.runP(
+                            `INSERT INTO recording_share
+                            (rid, uid_from, uid_to)
+                            VALUES
+                            (@RID, @UIDF, @UIDT);`, {
+                            "@RID": rec.rid,
+                            "@UIDF": rec.uid,
+                            "@UIDT": share.uid_to
+                        });
+                    }
+
+                    await db.runP("COMMIT;");
+                    break;
+
+                } catch (ex) {
+                    await db.runP("ROLLBACK;");
+                }
+            }
+        }
     }
 
     return rec;
+}
+
+// Get the information for this recording
+async function get(rid, uid, opts) {
+    opts = opts || {};
+
+    // Get the info
+    const recInfo = await db.getP("SELECT * FROM recordings WHERE rid=@RID;", {"@RID": rid});
+    if (!recInfo)
+        return null;
+
+    // Check for permissions
+    if (recInfo.uid === uid || opts.noCheck)
+        return recInfo;
+
+    // Check for sharing
+    const share = await db.getP(
+        `SELECT * FROM recording_share WHERE
+            rid=@RID AND uid_from=@UIDF AND uid_to=@UIDT`,
+        {
+            "@RID": rid,
+            "@UIDF": recInfo.uid,
+            "@UIDT": uid
+        });
+    if (share)
+        return recInfo;
+    return null;
 }
 
 // Get a (host) URL for a recording
@@ -177,7 +236,7 @@ function hostUrl(rec, opts) {
         url += "-p" + rec.port.toString(36);
     if (features)
         url += "-f" + features.toString(36);
-    url += "&nm=" + (rec.hostname||"Host");
+    url += "&quick=1";
 
     return url;
 }
@@ -231,7 +290,6 @@ async function del(rid, uid, opts) {
             var wrid = {"@RID": rec.rid};
             await db.runP("DELETE FROM recordings WHERE rid=@RID;", wrid);
             await db.runP("DELETE FROM recording_share WHERE rid=@RID;", wrid);
-            await db.runP("DELETE FROM recording_share_tokens WHERE rid=@RID;", wrid);
 
             await db.runP("COMMIT;");
             break;
@@ -247,5 +305,5 @@ async function del(rid, uid, opts) {
 }
 
 module.exports = {
-    rec, hostUrl, del
+    rec, get, hostUrl, del
 };

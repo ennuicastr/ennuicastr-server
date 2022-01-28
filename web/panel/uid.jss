@@ -17,13 +17,18 @@
 
 const config = (arguments[1] || {});
 
+/* UIDs are stored in the (server-side) session database. A user may have two
+ * UIDs, because they may be sharing an account. uid is the UID that they
+ * actually logged in with, while euid is their current effective UID. */
 await session.init();
-const uid = await session.get("uid");
+let uid = await session.get("uid");
+let euid = await session.get("euid");
+let level = 0;
 
 const db = require("../db.js").db;
 
 // Check that the UID is valid
-var row;
+let row;
 if (uid)
     row = await db.getP("SELECT * FROM users WHERE uid=@UID;", {"@UID": uid});
 
@@ -32,7 +37,49 @@ if ((!uid || !row) && !config.noRedirect) {
     writeHead(302, {"location": "/panel/login/"});
 }
 
-await session.set("uid", uid);
+/* If there's a secondary UID (organization login), check that it's valid and
+ * that this UID has access to it */
+if (euid) {
+    let org = null, share = null;
 
-module.exports = uid;
+    if (uid && row) {
+        org = await db.getP(
+            "SELECT * FROM users WHERE uid=@UID;", {"@UID": euid});
+        share = await db.getP(
+            `SELECT * FROM user_share WHERE
+                uid_shared=@UIDS AND
+                uid_target=@UIDT;`, {
+            "@UIDS": euid,
+            "@UIDT": uid
+        });
+    }
+
+    if (org && share) {
+        level = share.level;
+
+    } else {
+        await session.delete("euid");
+        euid = null;
+
+    }
+
+} else {
+    level = 3;
+
+}
+
+await session.set("uid", uid);
+if (euid)
+    await session.set("euid", euid);
+
+if (config.verbose) {
+    module.exports = {
+        ruid: uid,
+        euid,
+        uid: euid || uid,
+        level
+    };
+} else {
+    module.exports = euid || uid;
+}
 ?>

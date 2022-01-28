@@ -20,6 +20,7 @@ if (!uid) return;
 
 const config = require("../config.js");
 const db = require("../db.js").db;
+const id36 = require("../id36.js");
 const recM = require("../rec.js");
 
 function fail(msg) {
@@ -34,16 +35,13 @@ if (typeof request.body !== "object" ||
 // Get the request into the correct format
 let rec = request.body;
 if (typeof rec.n !== "string" ||
-    typeof rec.m !== "string" ||
     typeof rec.f !== "string")
     return fail();
 
-let dname = rec.m.slice(0, config.limits.recUsernameLength);
 let persist = !!rec.persist;
 rec = {
     uid,
     name: rec.n.slice(0, config.limits.recNameLength),
-    hostname: dname,
     format: (rec.f==="flac")?"flac":"opus",
     continuous: !!rec.c,
     rtc: !!rec.r,
@@ -61,11 +59,10 @@ while (true) {
 
         await db.runP("DELETE FROM defaults WHERE uid=@UID;", {"@UID": uid});
         await db.runP("INSERT INTO defaults " +
-                      "( uid,  name,  dname,  format,  continuous,  rtc,  recordOnly,  videoRec,  rtennuiAudio, transcription,  universal_monitor) VALUES " +
-                      "(@UID, @NAME, @DNAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @RTENNUIAUDIO, @TRANSCRIPTION, @UNIVERSAL_MONITOR);", {
+                      "( uid,  name,  format,  continuous,  rtc,  recordOnly,  videoRec,  rtennuiAudio, transcription,  universal_monitor) VALUES " +
+                      "(@UID, @NAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @RTENNUIAUDIO, @TRANSCRIPTION, @UNIVERSAL_MONITOR);", {
             "@UID": uid,
             "@NAME": rec.name,
-            "@DNAME": dname,
             "@FORMAT": rec.format,
             "@CONTINUOUS": rec.continuous,
             "@RTC": rec.rtc,
@@ -88,11 +85,11 @@ while (true) {
 // If we're creating a persistent link, create it
 let lid;
 if (persist) {
-    let lkey = ~~(Math.random()*2000000000);
-    let lmaster = ~~(Math.random()*2000000000);
+    let lkey = id36.genInt();
+    let lmaster = id36.genInt();
     while (true) {
         try {
-            lid = ~~(Math.random()*2000000000);
+            lid = id36.genInt();
             await db.runP("INSERT INTO lobbies2 " +
                           "( uid,  lid,  name,  key,  master,  config,  rid," +
                           " lock)" +
