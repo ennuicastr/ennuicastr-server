@@ -82,6 +82,16 @@ const orgs = await db.allP(
 
 // Possibly do the creation
 if (mode === "create" && request.query.n && orgs.length < 8) {
+    // Check if we have a username
+    const username = await unM.getUsername(uid);
+    if (!username) {
+        // Insist that we do first
+        return writeHead(302, {
+            "location": "/panel/username/?c=" +
+            encodeURIComponent(params.REQUEST_URI)
+        });
+    }
+
     let oid = null;
 
     // FIXME: Duplication
