@@ -72,14 +72,19 @@ await session.set("uid", uid);
 if (euid)
     await session.set("euid", euid);
 
-if (config.verbose) {
+if (!uid) {
+    module.exports = null;
+
+} else if (config.verbose) {
     module.exports = {
         ruid: uid,
         euid,
         uid: euid || uid,
         level
     };
+
 } else {
     module.exports = euid || uid;
+
 }
 ?>
