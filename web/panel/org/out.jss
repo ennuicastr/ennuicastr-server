@@ -94,10 +94,7 @@ if (mode === "create" && request.query.n && orgs.length < 8) {
 
     let oid = null;
 
-    // FIXME: Duplication
-    const oname = request.query.n
-        .replace(/[^\p{Letter}\p{Number}\p{Punctuation} _-]/gu, "_")
-        .trim() || "_";
+    const oname = unM.validate(request.query.n);
 
     while (true) {
         try {

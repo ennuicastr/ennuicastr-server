@@ -40,7 +40,9 @@
         "recNameLength": 512,
         "recUsernameLength": 32,
         "lobbyNameLength": 512,
-        "soundNameLength": 512
+        "soundNameLength": 512,
+        "soundSize": 1073741824,
+        "soundDurationTotal": 7200
     },
 
     "subscription": {

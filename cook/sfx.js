@@ -15,13 +15,19 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+const fs = require("fs");
+
 const config = require("../config.js");
 const db = require("../db.js").db;
 
 let duration = false;
 let trackNo = -1;
-process.argv.slice(2).forEach(arg => {
-    if (arg === "-d") {
+let infoFile = null;
+for (let ai = 2; ai < process.argv.length; ai++) {
+    const arg = process.argv[ai];
+    if (arg === "-i") {
+        infoFile = process.argv[++ai];
+    } else if (arg === "-d") {
         duration = true;
     } else if (arg[0] === "-") {
         console.error("Unrecognized argument " + arg);
@@ -29,7 +35,9 @@ process.argv.slice(2).forEach(arg => {
     } else {
         trackNo = ~~arg;
     }
-});
+}
+
+const info = JSON.parse(fs.readFileSync(infoFile, "utf8"));
 
 (async function() {
     // Get the metadata
@@ -63,8 +71,10 @@ process.argv.slice(2).forEach(arg => {
         if (c.sid in sounds) {
             sound = sounds[c.sid];
         } else {
-            sound = await db.getP("SELECT * FROM sounds WHERE sid=@SID;", {
-                "@SID": c.sid // FIXME: also uid
+            sound = await db.getP(
+                "SELECT * FROM sounds WHERE sid=@SID AND uid=@UID;", {
+                "@SID": c.sid,
+                "@UID": info.uid
             });
             if (!sound) sound = null;
             sounds[c.sid] = sound;

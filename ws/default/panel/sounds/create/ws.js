@@ -87,7 +87,7 @@ try {
 
             data = Buffer.concat([data, chunk]);
 
-            if (data.length > 1024*1024*1024 /* FIXME: configurable size */)
+            if (data.length > config.limits.soundSize)
                 rej();
         }
 
@@ -130,8 +130,9 @@ try {
             var curDuration = (await db.getP("SELECT SUM(duration) AS duration FROM sounds WHERE uid=@UID;", {
                 "@UID": uid
             })).duration;
-            if (curDuration + duration > 60*60*2 /* FIXME: configurable limit */) {
+            if (curDuration + duration > config.limits.soundDurationTotal) {
                 await db.runP("ROLLBACK;");
+                // FIXME: Generalize message for configurable limit
                 return fail({error: "You are not allowed more than 2 hours of sound files"});
             }
 
@@ -156,7 +157,7 @@ try {
     }
 
     // Perform the conversions
-    async function convert(step, steps, oext, fargs) {
+    async function convert(files, step, steps, oext, fargs) {
         var args;
         if (level) {
             var reduction;
@@ -176,11 +177,12 @@ try {
 
         }
 
+        let outFile = `${config.sounds}/${sid}.${oext}`;
+        files.push(outFile);
+
         args = args.concat([
             "-ar", "48000", "-ac", "2"
-        ]).concat(fargs).concat([
-            config.sounds + "/" + sid + "." + oext
-        ]);
+        ]).concat(fargs).concat([outFile]);
 
         tmpout.write(JSON.stringify(args) + "\n");
 
@@ -203,16 +205,24 @@ try {
         });
     }
 
+    let files = [];
     try {
-        await convert(1, 2, "webm", [
+        await convert(files, 1, 2, "webm", [
             "-f", "webm", "-c:a", "libopus", "-b:a", "128k"
         ]);
-        await convert(2, 2, "m4a", [
+        await convert(files, 2, 2, "m4a", [
             "-f", "ipod", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart"
         ]);
 
     } catch (ex) {
-        // FIXME: Delete the leftover bits
+        // Delete the leftover bits
+        for (const file of files) {
+            try {
+                fs.unlinkSync(file);
+            } catch (ex) {}
+        }
+
+        // Fail
         return fail({error: "Unrecognized audio file"});
 
     }
