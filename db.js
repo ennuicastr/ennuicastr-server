@@ -27,6 +27,9 @@ const logdb = new sqlite3.Database(config.db + "/log.db");
     logdb[x + "P"] = util.promisify(logdb[x].bind(logdb));
 });
 
+db.runP("PRAGMA journal_mode=WAL;");
+logdb.runP("PRAGMA journal_mode=WAL;");
+
 const logStmtA = logdb.prepare(
     "INSERT INTO log (time, type, uid, rid, details) " +
     "VALUES (strftime('%Y-%m-%d %H:%M:%f', @TIME), @TYPE, @UID, @RID, @DETAILS);"
