@@ -48,7 +48,7 @@ the versions that were upload to the repository on 2021-06-10. Specifically:
 
 The Jitsi installation will generate an nginx configuration file named
 something like `/etc/nginx/sites-enabled/jitsi.r.testbed.ecastr.com.conf` . In
-it, there is a subsection for `/http-bind`. It must be modified to allow
+it, there is a subsection for `/xmpp-websocket`. It must be modified to allow
 connections from the client, like so:
 
 ```
@@ -58,16 +58,19 @@ connections from the client, like so:
 ...
 ```
 
-A complete `/http-bind` configuration section looks like this:
+A complete `/xmpp-websocket` configuration section looks like this:
 
 ```
-    # BOSH
-    location = /http-bind {
-        proxy_pass http://127.0.0.1:5280/http-bind?prefix=$prefix&$args;
-        proxy_set_header X-Forwarded-For $remote_addr;
+    # xmpp websockets
+    location = /xmpp-websocket {
+        proxy_pass http://127.0.0.1:5280/xmpp-websocket?prefix=$prefix&$args;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $http_host;
-        add_header 'Access-Control-Allow-Origin' 'https://r.testbed.ecastr.com';
+        add_header 'Access-Control-Allow-Origin' 'https://weca.st';
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        tcp_nodelay on;
     }
 ```
 
@@ -93,7 +96,27 @@ to redirect to your home page, like so:
 ```
 
 
-## 3: User configuration
+## 3: Configure Prosody
+
+Jitsi relies on Prosody as its underlying comms server. We need to set up
+Prosody to use WebSockets. The configuration is done automatically for nginx,
+but still needs to be done in Prosody itself.
+
+The Jitsi installation will generate an nginx configuration file named
+something like `/etc/prosody/conf.d/jitsi.r.testbed.ecastr.com.cfg.lua` . In
+it, we need to do two things. First, at the global level, add these two
+directives:
+
+```
+cross_domain_websocket = true;
+consider_websocket_secure = true;
+```
+
+Second, in the subsection `modules_enabled` for the relevant host, you need to
+add the `"websocket"` module.
+
+
+## 4: User configuration
 
 A single user should run everything related to Ennuicastr. In this example,
 that user will be `ennuicastr`:
@@ -103,7 +126,7 @@ sudo adduser ennuicastr
 ```
 
 
-## 4: Web server configuration (basic)
+## 5: Web server configuration (basic)
 
 Ennuicastr requires two major domain names: one for the server panel and one
 for the client. On the canonical implementation, these are `ennuicastr.com` and
@@ -158,7 +181,7 @@ sudo service nginx restart
 ```
 
 
-## 5: SSL
+## 6: SSL
 
 Use `certbot` to install SSL certificates for the domain names. This is as
 simple as running `certbot` and following its instructions. Make sure you
@@ -170,7 +193,7 @@ You will need to configure a service to copy the certificates from
 the Ennuicastr user.
 
 
-## 6: Fetch and compile ennuicastr-server
+## 7: Fetch and compile ennuicastr-server
 
 As the `ennuicastr` user, fetch `ennuicastr-server`.
 
@@ -186,12 +209,12 @@ make
 ```
 
 
-## 7: Make config.json
+## 8: Make config.json
 
 Copy `config.json.example` to `config.json` and modify it as needed.
 
 
-## 8: Prepare the database
+## 9: Prepare the database
 
 ```
 cd ~/ennuicastr-server/db
@@ -200,7 +223,7 @@ sqlite3 log.db < log.schema
 ```
 
 
-## 9: Run the server components
+## 10: Run the server components
 
 You should set up the server components to run automatically. To run them manually:
 
@@ -212,7 +235,7 @@ nohup ./main.sh &
 ```
 
 
-## 10: Web server configuration (full)
+## 11: Web server configuration (full)
 
 The web server needs to be able to run NJSP scripts and NJSP WebSocket
 services. How to do so is documented at
@@ -244,7 +267,7 @@ https://github.com/Yahweasel/nodejs-server-pages , but in short, in
 Both vhosts will require these components. Make sure to `sudo service nginx reload`.
 
 
-## 11: Web content (server panel)
+## 12: Web content (server panel)
 
 The content of `~/ennuicastr-server/web` must be accessible from the web server:
 
@@ -257,7 +280,7 @@ At this point, e.g. `https://testbed.ecastr.com/panel/` should work, though the
 login services will only work if you configured them in `config.json`.
 
 
-## 12: Fetch and compile ennuicastr
+## 13: Fetch and compile ennuicastr
 
 As the `ennuicastr` user, fetch `ennuicastr`.
 
@@ -285,7 +308,7 @@ You'll also need to get FontAwesome (https://fontawesome.com) version 5 (though
 later versions should work) and extract it to `~/ennuicastr/fa`.
 
 
-## 13: Web content (client)
+## 14: Web content (client)
 
 The content of `~/ennuicastr` and `~/ennuicastr-server/web/rec` must be
 accessible from the web server. First, we'll need to create the `/var/www/rec`
@@ -296,18 +319,18 @@ sudo mkdir /var/www/rec
 sudo chown ennuicastr:ennuicastr /var/www/rec
 ```
 
-Then, link in the contents:
+`ennuicastr` can be installed with `make install`. The default install prefix
+is `inst` (in the `ennuicastr` directory). You can either `make install
+PREFIX=/var/www/rec` or simply link `/var/www/rec` to `inst`.
+
+Then, link in the server's components:
 
 ```
-lndir ~/ennuicastr /var/www/rec
 lndir ~/ennuicastr-server/web/rec /var/www/rec
 ```
 
-You may want to remove some pointless links that are made by this process, in
-particular `node_modules`.
 
-
-## 14: More components
+## 15: More components
 
 At this point, Ennuicastr should work. For improved captioning, you'll need
 ennuicastr-vosk-daemon and ennuicastr-fastpunct-daemon .
