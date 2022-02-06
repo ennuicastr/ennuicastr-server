@@ -219,9 +219,30 @@ wss.on("connection", (ws, wsreq) => {
     }
 
     // ID and flags for this client. id is 0 until the user is logged in
-    // FIXME: Document these...
-    var id = 0, mid = 0, setSampleRate = 0, flags = 0, nick = "", track = null;
-    var lastGranule = 0;
+
+    /* ID for this client. 0 until login has succeeded, remains 0 for non-data
+     * connections */
+    let id = 0;
+
+    /* Master "ID". Masters don't really have an ID, but having an index is
+     * always nice */
+    let mid = 0;
+
+    /* The sample rate set during connection. Retained in case they change
+     * their device and change it */
+    let setSampleRate = 0;
+
+    // Connection flags
+    let flags = 0;
+
+    // User's nick
+    let nick = "";
+
+    // Track metadata for this client (only if data)
+    let track = null;
+
+    // Last granule position received from this client
+    let lastGranule = 0;
 
     // Is this a non-Chrome user?
     let nonChrome: boolean = false;
@@ -691,7 +712,7 @@ wss.on("connection", (ws, wsreq) => {
                     (granulePos < lastResumed || recInfo.mode === prot.mode.paused))
                     break;
 
-                // Then write it out (FIXME: check for wonky/too much data)
+                // Then write it out
                 outData.write(granulePos, id, track.packetNo++, chunk);
 
                 // Are they actually speaking?
@@ -940,9 +961,8 @@ wss.on("connection", (ws, wsreq) => {
         ret.writeUInt32LE(config.creditCost.credits, p.value + 4);
         ws.send(ret);
 
-        /* Inform them of the credit situation (FIXME: Needlessly informs all
-         * masters) */
-        informMastersCredit();
+        // Inform them of the credit situation
+        informMastersCredit({only: mid});
 
         // Inform them of currently connected users
         p = prot.parts.user;
@@ -1492,7 +1512,7 @@ async function stopRec() {
     // Log it
     log("recording-end", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
 
-    // Postproc (FIXME: Only do this if we have captions)
+    // Postproc
     cproc.spawn(config.repo + "/cook/postproc.sh", [
         config.rec, recInfo.rid
     ]);
@@ -1542,27 +1562,41 @@ function calculateCredits(reset?: boolean) {
 }
 
 // Inform masters of the credit rate
-async function informMastersCredit(charge?: number) {
+async function informMastersCredit(opts: {
+    charge?: number,
+    only?: number
+} = {}) {
     // Get the total for the recording so far
     var row = await db.getP("SELECT cost FROM recordings WHERE rid=@RID;", {"@RID": recInfo.rid});
     var cost = (row?row.cost:0);
 
     // Determine the charge rate
+    let charge = opts.charge;
     if (typeof charge === "undefined")
         charge = calculateCredits();
 
     // Make the informational command
-    var op = prot.parts.info;
+    let op = prot.parts.info;
     let ret = Buffer.alloc(op.length + 4);
     ret.writeUInt32LE(prot.ids.info, 0);
     ret.writeUInt32LE(prot.info.creditRate, op.key);
     ret.writeUInt32LE(cost, op.value);
     ret.writeUInt32LE(charge, op.value + 4);
-    masters.forEach((master) => {
-        if (!master)
-            return;
-        master.send(ret);
-    });
+
+    // And inform them
+    if (opts.only) {
+        const master = masters[opts.only];
+        if (master)
+            master.send(ret);
+
+    } else {
+        for (const master of masters) {
+            if (!master)
+                return;
+            master.send(ret);
+        }
+
+    }
 }
 
 // Apply credits for a minute
@@ -1582,7 +1616,7 @@ async function chargeCredits() {
     }
 
     // Inform masters
-    informMastersCredit(charge);
+    informMastersCredit({charge});
 }
 
 // Apply credits automatically every minute

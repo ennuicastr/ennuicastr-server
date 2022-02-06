@@ -19,6 +19,13 @@ const db = require("./db.js").db;
 // Since this whole module is transient, keep a cache of seen usernames
 const usernames = {};
 
+// Validate this username (only legal characters)
+function validate(uname) {
+    return uname
+        .replace(/(#|[^\p{Letter}\p{Number}\p{Punctuation} _-])/gu, "_")
+        .trim() || "_";
+}
+
 // Get this user's username
 async function getUsername(uid) {
     if (usernames[uid])
@@ -41,5 +48,5 @@ async function getDisplay(uid) {
 }
 
 module.exports = {
-    getUsername, getDisplay
+    validate, getUsername, getDisplay
 };

@@ -182,7 +182,7 @@ NB_STREAMS=`echo "$CODECS" | wc -l`
 
 timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
     timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" > $tmpdir/meta
-NB_SFX=`timeout 10 "$SCRIPTBASE/sfx.js" < $tmpdir/meta`
+NB_SFX=`timeout 10 "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" < $tmpdir/meta`
 
 # Detect if we have captions
 CAPTIONS=no
@@ -358,8 +358,8 @@ for c in `seq -w 1 $NB_SFX`
 do
     O_FN="sfx-$c.$ext"
     O_FFN="$OUTDIR/$O_FN"
-    T_DURATION="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -d $((c-1)) < $tmpdir/meta)"
-    LFILTER="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" $((c-1)) < $tmpdir/meta)"
+    T_DURATION="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" -d $((c-1)) < $tmpdir/meta)"
+    LFILTER="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" $((c-1)) < $tmpdir/meta)"
     timeout $DEF_TIMEOUT $NICE ffmpeg -filter_complex "$LFILTER" -map '[aud]' -flags bitexact -f wav - |
         timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/wavduration" "$T_DURATION" |
         (

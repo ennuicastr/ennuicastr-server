@@ -27,9 +27,8 @@ const unM = require("../username.js");
 
 // Set it if asked
 if (request.query.u && uidX.level >= 2 /* admin */) {
-    const username = request.query.u
-        .replace(/[^\p{Letter}\p{Number}\p{Punctuation} _-]/gu, "_")
-        .trim() || "_";
+    const username = unM.validate(request.query.u);
+
     while (true) {
         try {
             await db.runP("BEGIN TRANSACTION;");
