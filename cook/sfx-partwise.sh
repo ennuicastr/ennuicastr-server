@@ -44,7 +44,7 @@ then
     # then just calculate how many we need
     timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
         timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" |
-        timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js"
+        timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info"
     exit 0
 fi
 
@@ -53,6 +53,6 @@ for c in $STREAMS
 do
     LFILTER="$(timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
                timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" |
-               timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" $((c-1)))"
+               timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" $((c-1)))"
     timeout $DEF_TIMEOUT $NICE ffmpeg -nostdin -filter_complex "$LFILTER" -map '[aud]' -f ogg -page_duration 20000 -c:a flac - < /dev/null
 done
