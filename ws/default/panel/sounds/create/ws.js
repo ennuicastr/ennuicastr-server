@@ -52,8 +52,23 @@ try {
 
     // Make sure they have a session
     await session.init();
-    var uid = await session.get("uid");
+    let uid = await session.get("uid");
     if (!uid) return fail({error: "You are not logged in"});
+    let euid = await session.get("euid");
+    if (euid) {
+        // Check it
+        let org = await db.getP(
+            "SELECT * FROM users WHERE uid=@UID;", {"@UID": euid});
+        let share = await db.getP(
+            `SELECT * FROM user_share WHERE
+            uid_shared=@UIDS AND
+            uid_target=@UIDT;`, {
+            "@UIDS": euid,
+            "@UIDT": uid
+        });
+        if (org && share)
+            uid = euid;
+    }
 
     // Get the request into the correct format
     if (typeof req !== "object" ||
