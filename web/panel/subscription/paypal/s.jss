@@ -144,11 +144,15 @@ async function updateSubscription(uid, sid, sconfig) {
     if (level > 0 && subscription.status !== "ACTIVE") {
         let capture = await nrc.postPromise("https://" + config.paypal.api + "/v1/billing/subscriptions/" + sid + "/activate", {
             headers: {
+                "content-type": "application/json",
                 authorization
-            }
+            },
+            data: JSON.stringify({
+                reason: "Activating subscription"
+            })
         });
 
-        if (capture.statusCode < 200 || capture.statusCode >= 300) {
+        if (capture.response.statusCode < 200 || capture.response.statusCode >= 300) {
             // Something went wrong! Undo! Abort! Roll back!
             while (true) {
                 try {
