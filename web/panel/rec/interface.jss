@@ -51,6 +51,7 @@ const defaults = await (async function() {
 <style type="text/css">
 .explainer {
     position: absolute;
+    z-index: 1;
     max-width: 30em;
     background-color: var(--bg-8);
     color: var(--fg-6);
