@@ -31,6 +31,9 @@ const db = require("../db.js").db;
 let row;
 if (uid)
     row = await db.getP("SELECT * FROM users WHERE uid=@UID;", {"@UID": uid});
+if (row && /^deleted:/.test(row.login)) {
+    uid = row = null;
+}
 
 if ((!uid || !row) && !config.noRedirect) {
     // Throw them to the login page
