@@ -18,7 +18,7 @@ do
     for ac in `seq 1 8`
     do
         ffmpeg -f s32le -ar $ar -ac $ac -i /dev/zero \
-            -f ogg -c:a flac -frame_size $(( ac * 20 / 1000 )) -page_duration 1 - 2> /dev/null |
+            -f ogg -c:a flac -frame_size $(( ar * 20 / 1000 )) -page_duration 1 - 2> /dev/null |
             ./get-flac-packet
     done
     echo '...'
