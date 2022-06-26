@@ -57,17 +57,29 @@ struct PacketList {
     uint64_t outputGranulePos;
 };
 
-// The encoding for a packet with only zeroes
-const unsigned char zeroPacket[] = { 0xF8, 0xFF, 0xFE };
+// The time (in 48k samples) per packet, which is always 20ms
 const uint32_t packetTime = 960;
+
+// The encoding for a packet with only zeroes
+const unsigned char zeroPacketOpus[] = { 0xF8, 0xFF, 0xFE };
 
 // The encoding for a FLAC packet with only zeroes, 48k
 const unsigned char zeroPacketFLAC48k[] = { 0xFF, 0xF8, 0x7A, 0x0C, 0x00, 0x03,
     0xBF, 0x94, 0x00, 0x00, 0x00, 0x00, 0xB1, 0xCA };
 
+// The encoding for a FLAC packet with only zeroes, 48k stereo
+const unsigned char zeroPacketFLAC48kStereo[] = { 0xFF, 0xF8, 0x7A, 0x1C, 0x32,
+    0x03, 0xBF, 0xC4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD5,
+    0x5D };
+
 // The encoding for a FLAC packet with only zeroes, 44.1k
 const unsigned char zeroPacketFLAC44k[] = { 0xFF, 0xF8, 0x79, 0x0C, 0x00, 0x03,
     0x71, 0x56, 0x00, 0x00, 0x00, 0x00, 0x63, 0xC5 };
+
+// The encoding for a FLAC packet with only zeros, 48k stereo
+const unsigned char zeroPacketFLAC44kStereo[] = { 0xFF, 0xF8, 0x79, 0x1C, 0x32,
+    0x03, 0x71, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3D,
+    0xB6 };
 
 ssize_t readAll(int fd, void *vbuf, size_t count)
 {
@@ -245,6 +257,13 @@ int main(int argc, char **argv)
     // Sample rate if we're doing FLAC
     uint32_t flacRate = 0;
 
+    // How many channels does the data actually have?
+    unsigned char channels = 1;
+
+    // Zero packet to use, based on format and # of channels
+    const unsigned char *zeroPacket = NULL;
+    uint32_t zeroPacketSz = 0;
+
     if (argc != 2) {
         fprintf(stderr, "Use: oggcorrect <track no>\n");
         exit(1);
@@ -293,6 +312,8 @@ int main(int argc, char **argv)
 
     // Now get the actual packet info
     do {
+        unsigned char packetCC = 1;
+
         if (oggHeader.granulePos == 0) {
             // We've come back to the header, so break out
             break;
@@ -311,6 +332,33 @@ int main(int argc, char **argv)
 
         if (oggHeader.streamNo != keepStreamNo)
             continue;
+
+        // Check channel count
+        if (flacRate) {
+            /*
+             * buf[0,1] = sync code = 0xFFF8 (ignore last 2 bits)
+             * buf[2] = irrelevant
+             * buf[3] high 4 bits = channel assignment
+             *  Channel assignments over 0x8 are joint stereo
+             */
+            if (packetSize > skip + 3 &&
+                buf[skip] == 0xFF &&
+                (buf[skip + 1] & 0xFC) == 0xF8) {
+                packetCC = buf[skip + 3] >> 4;
+                if (packetCC >= 0x8)
+                    packetCC = 2;
+            }
+
+        } else /* (Opus) */ {
+            /* buf[0] is the TOC, and bit 5 is stereo bit */
+            if (packetSize > skip) {
+                packetCC = (buf[skip] & 0x4) ? 2 : 1;
+            }
+
+        }
+
+        if (packetCC > channels)
+            channels = packetCC;
 
         // Add it to the list
         tail = pushPacket(tail);
@@ -360,7 +408,7 @@ int main(int argc, char **argv)
 
     // Adjust timestamps for the blocks
     cur = head.next;
-    granulePos = 0;
+    granulePos = packetTime;
     preSkip(cur, &granulePos);
     for (; cur; cur = cur->next) {
         struct PacketList *begin, *end, *mid;
@@ -379,7 +427,9 @@ int main(int argc, char **argv)
 
         // Check the difference between the expected range and the actual range
         double expected = granulePos + ct * packetTime;
-        double actual = end->inputGranulePos + packetTime;
+        /* + 2 packets: 1 for the length of the packet, 1 for the gap at the
+         * beginning */
+        double actual = end->inputGranulePos + packetTime * 2;
         if (actual < expected && (begin->flags & FLAG_SILENT)) {
             // Cut out silence from the beginning
             while (actual < expected) {
@@ -433,6 +483,32 @@ int main(int argc, char **argv)
             cur->outputGranulePos = cur->outputGranulePos * 147 / 160;
     }
 
+    // Choose a zero packet
+#define ZERO(nm) do { \
+    zeroPacket = zeroPacket ## nm; \
+    zeroPacketSz = sizeof(zeroPacket ## nm); \
+} while (0)
+    switch (flacRate) {
+        case 0: // Opus
+            ZERO(Opus);
+            break;
+
+        case 44100:
+            if (channels > 1)
+                ZERO(FLAC44kStereo);
+            else
+                ZERO(FLAC44k);
+            break;
+
+        default: // FLAC 48k
+            if (channels > 1)
+                ZERO(FLAC48kStereo);
+            else
+                ZERO(FLAC48k);
+            break;
+    }
+#undef ZERO
+
     // Now read and pass thru the header
     do {
         if (oggHeader.granulePos != 0) {
@@ -449,6 +525,43 @@ int main(int argc, char **argv)
             skip = 8 + *((unsigned short *) (buf + 6));
         }
 
+        // Possibly adjust channel count
+        if (channels > 1) {
+            if (flacRate) {
+                /*
+                 * buf[0-4] = Ogg FLAC header = 0x7f FLAC
+                 * buf[5-8] = irrelevant
+                 * buf[9-12] = FLAC stream marker = fLaC
+                 * buf[13] = metadata block type (ignore first bit) = 0
+                 * buf[14-28] = irrelevant
+                 * buf[29]
+                 *  bits 0-3 = last bits of sample rate (irrelevant)
+                 *  bits 4-6 = number of channels minus 1
+                 *  bit    7 = first bit of bits per sample (irrelevant)
+                 */
+                if (packetSize > skip + 29 &&
+                    !memcmp(buf + skip, "\x7f""FLAC", 5) &&
+                    !memcmp(buf + skip + 9, "fLaC", 4) &&
+                    (buf[skip + 13] & 0x7F) == 0) {
+                    buf[skip + 29] =
+                        (buf[skip + 29] & 0xF1) |
+                        ((channels - 1) << 1);
+                }
+
+            } else /* (Opus) */ {
+                /*
+                 * buf[0-7] = magic signature = OpusHead
+                 * buf[8] = irrelevant
+                 * buf[9] = channel count
+                 */
+                if (packetSize > skip + 9 &&
+                    !memcmp(buf + skip, "OpusHead", 8)) {
+                    buf[skip + 9] = channels;
+                }
+
+            }
+        }
+
         // Pass through the normal header
         oggHeader.sequenceNo = lastSequenceNo++;
         writeOgg(&oggHeader, buf + skip, packetSize - skip);
@@ -456,6 +569,15 @@ int main(int argc, char **argv)
     } while (readOgg(&preHeader, &oggHeader, &buf, &bufSz, &packetSize));
 
     skip = vadLevel ? 1 : 0;
+
+    // FLAC in ffmpeg is picky about channel counts, so throw in a zero packet right at the start
+    {
+        struct OggHeader zeroHeader = {0};
+        zeroHeader.granulePos = (flacRate == 44100) ? (packetTime * 147 / 160) : packetTime;
+        zeroHeader.streamNo = keepStreamNo;
+        zeroHeader.sequenceNo = lastSequenceNo++;
+        writeOgg(&zeroHeader, zeroPacket, zeroPacketSz);
+    }
 
     // And finally, pass thru the data with corrected timestamps
     cur = head.next;
@@ -473,16 +595,7 @@ int main(int argc, char **argv)
 
             for (int i = 0; i < cur->preSkip; i++) {
                 gapHeader.sequenceNo = lastSequenceNo++;
-                switch (flacRate) {
-                    case 0: // Opus
-                        writeOgg(&gapHeader, zeroPacket, sizeof(zeroPacket));
-                        break;
-                    case 44100:
-                        writeOgg(&gapHeader, zeroPacketFLAC44k, sizeof(zeroPacketFLAC44k));
-                        break;
-                    default:
-                        writeOgg(&gapHeader, zeroPacketFLAC48k, sizeof(zeroPacketFLAC48k));
-                }
+                writeOgg(&gapHeader, zeroPacket, zeroPacketSz);
                 gapHeader.granulePos += time;
             }
         }
@@ -503,16 +616,7 @@ int main(int argc, char **argv)
         struct OggHeader oggHeader = {0};
         oggHeader.streamNo = keepStreamNo;
         oggHeader.sequenceNo = lastSequenceNo++;
-        switch (flacRate) {
-            case 0: // Ogg
-                writeOgg(&oggHeader, zeroPacket, sizeof(zeroPacket));
-                break;
-            case 44100:
-                writeOgg(&oggHeader, zeroPacketFLAC44k, sizeof(zeroPacketFLAC44k));
-                break;
-            default:
-                writeOgg(&oggHeader, zeroPacketFLAC48k, sizeof(zeroPacketFLAC48k));
-        }
+        writeOgg(&oggHeader, zeroPacket, zeroPacketSz);
     }
 
     return 0;
