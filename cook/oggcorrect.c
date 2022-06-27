@@ -321,6 +321,8 @@ int main(int argc, char **argv)
         }
     }
 
+    skip = vadLevel ? 1 : 0;
+
     // Now get the actual packet info
     do {
         unsigned char packetCC = 1;
@@ -358,6 +360,8 @@ int main(int argc, char **argv)
                 packetCC = buf[skip + 3] >> 4;
                 if (packetCC >= 0x8)
                     packetCC = 2;
+                else
+                    packetCC++;
             }
 
         } else /* (Opus) */ {
