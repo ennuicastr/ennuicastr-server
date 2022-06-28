@@ -82,14 +82,6 @@ case "$FORMAT" in
     copy)
         ext=ogg
         ;;
-    wavpack)
-        ext=wv
-        ENCODE="ffmpeg -f wav -i - -c:a wavpack -f wv -"
-        ;;
-    oggflac)
-        ext=oga
-        ENCODE="flac --ogg --serial-number=1 - -c"
-        ;;
     vorbis)
         ext=ogg
         ENCODE="oggenc -q 6 -"
@@ -102,46 +94,6 @@ case "$FORMAT" in
     opus)
         ext=opus
         ENCODE="opusenc --bitrate 96 - -"
-        ;;
-    wav|adpcm)
-        ext=wav
-        ENCODE="ffmpeg -f wav -i - -c:a adpcm_ms -f wav -"
-        CONTAINER=zip
-        ZIPFLAGS=-9
-        ;;
-    wav8)
-        ext=wav
-        ENCODE="ffmpeg -f wav -i - -c:a pcm_u8 -f wav -"
-        CONTAINER=zip
-        ZIPFLAGS=-9
-        ;;
-    wavsfx)
-        ext=flac
-        ENCODE="flac - -c"
-        EXTRAFILES="RunMe.bat ffmpeg.exe"
-        ;;
-    powersfx)
-        ext=flac
-        ENCODE="flac - -c"
-        EXTRAFILES="ffmpeg.exe"
-        ;;
-    wavsfxm|powersfxm)
-        ext=flac
-        ENCODE="flac - -c"
-        EXTRAFILES="RunMe.command ffmpeg"
-        ;;
-    wavsfxu|powersfxu)
-        ext=flac
-        ENCODE="flac - -c"
-        EXTRAFILES="RunMe.sh"
-        ;;
-    mp3)
-        ext=mp3
-        ENCODE="lame -b 128 - -"
-        ;;
-    ra)
-        ext=ra
-        ENCODE="ffmpeg -f wav -i - -f rm -"
         ;;
     *)
         ext=flac
@@ -198,47 +150,7 @@ then
     fi
 fi
 
-# Prepare the self-extractor or project file
-if [ "$FORMAT" = "wavsfx" ]
-then
-    sed 's/^/@REM   / ; s/$/\r/g' "$SCRIPTBASE/cook/ffmpeg-lgpl21.txt" > "$OUTDIR/RunMe.bat"
-    mkfifo "$OUTDIR/ffmpeg.exe"
-    timeout $DEF_TIMEOUT cat "$SCRIPTBASE/cook/ffmpeg-wav.exe" > "$OUTDIR/ffmpeg.exe" &
-
-elif [ "$FORMAT" = "powersfx" ]
-then
-    mkfifo "$OUTDIR/ffmpeg.exe"
-    timeout $DEF_TIMEOUT cat "$SCRIPTBASE/cook/ffmpeg-fat.exe" > "$OUTDIR/ffmpeg.exe" &
-
-elif [ "$FORMAT" = "wavsfxm" -o "$FORMAT" = "wavsfxu" ]
-then
-    RUNMESUFFIX=sh
-    if [ "$FORMAT" = "wavsfxm" ]
-    then
-        cp "$SCRIPTBASE/cook/ffmpeg-wav.macosx" "$OUTDIR/ffmpeg"
-        chmod a+x "$OUTDIR/ffmpeg"
-        RUNMESUFFIX=command
-    fi
-
-    (
-        printf '#!/bin/sh\n'
-        sed 's/^/#   /' "$SCRIPTBASE/cook/ffmpeg-lgpl21.txt"
-        printf 'set -e\ncd "$(dirname "$0")"\n\n'
-    ) > "$OUTDIR/RunMe.$RUNMESUFFIX"
-    chmod a+x "$OUTDIR/RunMe.$RUNMESUFFIX"
-
-elif [ "$FORMAT" = "powersfxm" ]
-then
-    cp "$SCRIPTBASE/cook/ffmpeg-fat.macosx" "$OUTDIR/ffmpeg"
-    cp "$SCRIPTBASE/cook/powersfx.sh" "$OUTDIR/RunMe.command"
-    chmod a+x "$OUTDIR/ffmpeg" "$OUTDIR/RunMe.command"
-
-elif [ "$FORMAT" = "powersfxu" ]
-then
-    cp "$SCRIPTBASE/cook/powersfx.sh" "$OUTDIR/RunMe.sh"
-    chmod a+x "$OUTDIR/RunMe.sh"
-
-fi
+# Prepare the project file
 if [ "$CONTAINER" = "aupzip" ]
 then
     (
@@ -263,19 +175,7 @@ do
         mkfifo "$C_FFN"
     fi
 
-    # Make the extractor line for this file
-    if [ "$FORMAT" = "wavsfx" ]
-    then
-        printf 'ffmpeg -i %s %s\r\ndel %s\r\n\r\n' "$O_FN" "${O_FN%.flac}.wav" "$O_FN" >> "$OUTDIR/RunMe.bat"
-    elif [ "$FORMAT" = "wavsfxm" -o "$FORMAT" = "wavsfxu" ]
-    then
-        (
-            [ "$FORMAT" != "wavsfxm" ] || printf './'
-            printf 'ffmpeg -i %s %s\nrm %s\n\n' "$O_FN" "${O_FN%.flac}.wav" "$O_FN"
-        ) >> "$OUTDIR/RunMe.$RUNMESUFFIX"
-    fi
-
-    # Or the XML line
+    # Make the XML line
     if [ "$CONTAINER" = "aupzip" ]
     then
         printf '\t<import filename="%s" offset="0.00000000" mute="0" solo="0" height="150" minimized="0" gain="1.0" pan="0.0"/>\n' \
@@ -297,10 +197,6 @@ do
     fi
 done
 
-if [ "$FORMAT" = "wavsfxm" -o "$FORMAT" = "wavsfxu" ]
-then
-    printf "printf '\\\\n\\\\n===\\\\nProcessing complete.\\\\n===\\\\n\\\\n'\\n" >> "$OUTDIR/RunMe.$RUNMESUFFIX"
-fi
 if [ "$CONTAINER" = "aupzip" ]
 then
     printf '</project>\n' >> "$tmpdir/out/$FNAME.aup"
@@ -446,13 +342,6 @@ case "$CONTAINER" in
                 timeout $DEF_TIMEOUT $NICE $ENCODE;
                 cat > /dev/null
             )
-        ;;
-
-    exe)
-        SFX="$SCRIPTBASE/cook/sfx.exe"
-        [ "$FORMAT" != "powersfx" ] || SFX="$SCRIPTBASE/cook/powersfx.exe"
-        timeout $DEF_TIMEOUT $NICE zip $ZIPFLAGS -FI - *.$ext $EXTRAFILES info.txt |
-        cat "$SFX" -
         ;;
 
     aupzip)
