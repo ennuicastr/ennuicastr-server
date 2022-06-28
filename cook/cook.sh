@@ -236,7 +236,7 @@ do
             timeout $DEF_TIMEOUT $NICE ffmpeg -codec $CODEC -copyts -i - \
             -filter_complex '[0:a]'"$LFILTER"'[aud]' \
             -map '[aud]' \
-            -flags bitexact -f wav - |
+            -flags bitexact -f wav -c:a pcm_s24le - |
             timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/wavduration" "$T_DURATION" |
             (
                 timeout $DEF_TIMEOUT $NICE $ENCODE > "$O_FFN";

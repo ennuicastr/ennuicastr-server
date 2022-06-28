@@ -72,6 +72,8 @@ int main(int argc, char **argv)
     struct WavHeader wavHeader;
     struct WavSectHeader sectHeader;
     struct WavFmtHeader fmtHeader;
+    unsigned char fmtHeaderExtra[4096];
+    size_t fmtHeaderExtraSz = 0;
     struct WavDS64Header ds64Header;
     int needDS64Header = 0;
     uint64_t bytes;
@@ -101,8 +103,15 @@ int main(int argc, char **argv)
                 if (bufUsed < sizeof(fmtHeader))
                     return 1;
 
-                // Skip any remainder
-                sectHeader.sectSize -= sizeof(fmtHeader);
+                // Get any remainder into the extra buffer
+                fmtHeaderExtraSz = sectHeader.sectSize - sizeof(fmtHeader);
+                if (fmtHeaderExtraSz > sizeof(fmtHeaderExtra))
+                    fmtHeaderExtraSz = sizeof(fmtHeaderExtra);
+                bufUsed = readAll(0, fmtHeaderExtra, fmtHeaderExtraSz);
+                if (bufUsed < fmtHeaderExtraSz)
+                    return 1;
+
+                continue;
 
             } else if (!memcmp(sectHeader.magic, "data", 4)) {
                 // The data itself
@@ -124,8 +133,7 @@ int main(int argc, char **argv)
         uint32_t dataSize;
         if (argc > 1)
             duration = atof(argv[1]);
-        bytes = duration * fmtHeader.sampleRate;
-        bytes *= fmtHeader.channels * (fmtHeader.bitsPerSample/8);
+        bytes = duration * fmtHeader.sampleRate * fmtHeader.channels * fmtHeader.bitsPerSample / 8;
         if (bytes >= (((uint64_t) 1)<<32) - 36) {
             needDS64Header = 1;
             memcpy(wavHeader.magic, "RF64", 4);
@@ -155,9 +163,10 @@ int main(int argc, char **argv)
 
         // Write out the fmt header
         memcpy(sectHeader.magic, "fmt ", 4);
-        sectHeader.sectSize = sizeof(fmtHeader);
+        sectHeader.sectSize = sizeof(fmtHeader) + fmtHeaderExtraSz;
         write(1, &sectHeader, sizeof(sectHeader));
         write(1, &fmtHeader, sizeof(fmtHeader));
+        write(1, fmtHeaderExtra, fmtHeaderExtraSz);
 
         // And finally the data header
         memcpy(sectHeader.magic, "data", 4);
