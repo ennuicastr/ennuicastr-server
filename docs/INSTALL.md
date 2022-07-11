@@ -20,6 +20,10 @@ document. We'll need `git` to get Ennuicastr and such.  Finally, this example
 will use `lndir` as a convenience tool, which is for historical reasons in
 `xutils-dev` (but does not require X.org).
 
+You should probably consider installing the nodesource repository for Node.js
+LTS, instead of using the often outdated version in Debian:
+https://github.com/nodesource/distributions/blob/master/README.md
+
 ```
 sudo apt install nginx nodejs npm build-essential curl zip unzip sqlite3 at \
     certbot python3-certbot-nginx git xutils-dev ffmpeg flac vorbis-tools \
@@ -68,7 +72,7 @@ A complete `/xmpp-websocket` configuration section looks like this:
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $http_host;
-        add_header 'Access-Control-Allow-Origin' 'https://weca.st';
+        add_header 'Access-Control-Allow-Origin' 'https://r.testbed.ecastr.com';
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
         tcp_nodelay on;
     }
@@ -186,7 +190,8 @@ sudo service nginx restart
 Use `certbot` to install SSL certificates for the domain names. This is as
 simple as running `certbot` and following its instructions. Make sure you
 redirect the non-SSL server to the SSL server if `certbot` asks (this is
-presently the default).
+presently the default). `certbot` may also have small conflicts with the nginx
+configuration made by Jitsi; simply comment out any line(s) it complains about.
 
 You will need to configure a service to copy the certificates from
 `/etc/letsencrypt/live/*` to `~ennuicastr/cert` periodically and chown them to
@@ -198,7 +203,7 @@ the Ennuicastr user.
 As the `ennuicastr` user, fetch `ennuicastr-server`.
 
 ```
-git clone https://github.com/Yahweasel/ennuicastr-server.git
+git clone https://github.com/ennuicastr/ennuicastr-server.git
 ```
 
 Compile it.
@@ -285,7 +290,7 @@ login services will only work if you configured them in `config.json`.
 As the `ennuicastr` user, fetch `ennuicastr`.
 
 ```
-git clone https://github.com/Yahweasel/ennuicastr.git
+git clone https://github.com/ennuicastr/ennuicastr.git
 ```
 
 Compile it.
@@ -301,7 +306,7 @@ https://github.com/Yahweasel/libav.js/ , in the `libav` directory. This is
 process, and probably not something you should build on a server. Follow the
 instructions in `libav/README` and `libav.js`'s own README.
 
-Similarly, you'll need to install `noise-repellent.js`, from
+Similarly, you'll need to install `noise-repellent-m.js*`, from
 https://github.com/Yahweasel/noise-repellent.js , to `noise-repellent`.
 
 You'll also need to get FontAwesome (https://fontawesome.com) version 5 (though
