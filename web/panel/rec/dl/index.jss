@@ -122,6 +122,9 @@ if (request.query.f) {
         return;
     }
 
+    // No need for compression, as the download is already compressed
+    response.compress(null);
+
     var format = "flac", container = "zip", mext = "flac", ext = "zip",
         mime = "application/zip", thru = null;
     switch (request.query.f) {
