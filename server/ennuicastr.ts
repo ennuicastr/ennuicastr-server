@@ -1251,13 +1251,13 @@ async function recvRecInfo(r) {
         try {
             rid = id36.genInt();
             await db.runP("INSERT INTO recordings " +
-                          "( uid,  rid,  port,  name,  hostname,  format," +
+                          "( uid,  rid,  port,  name,  format," +
                           "  continuous,  rtc,  recordOnly,  videoRec," +
                           "  rtennuiAudio," +
                           "  transcription,  key,  master,  wskey,  extra," +
                           "  status,  init,  expiry,  tracks,  cost, purchased)" +
                           " VALUES " +
-                          "(@UID, @RID, @PORT, @NAME, @HOSTNAME, @FORMAT," +
+                          "(@UID, @RID, @PORT, @NAME, @FORMAT," +
                           " @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC," +
                           " @RTENNUIAUDIO," +
                           " @TRANSCRIPTION, @KEY, @MASTER, @WSKEY, @EXTRAS," +
@@ -1266,7 +1266,6 @@ async function recvRecInfo(r) {
                 "@RID": rid,
                 "@PORT": port,
                 "@NAME": r.name,
-                "@HOSTNAME": r.hostname||"Host",
                 "@FORMAT": r.format,
                 "@CONTINUOUS": r.continuous,
                 "@RTC": r.rtc,
