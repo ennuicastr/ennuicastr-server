@@ -53,7 +53,7 @@ if (isSafari) {
         <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png" />
         <link rel="manifest" href="/img/site.webmanifest" />
-        <script type="text/javascript" src="protocol.js?v=l"></script>
+        <script type="text/javascript" src="ecloader.min.js?v=1"></script>
     </head>
     <body>
         <div id="log"><?JS
@@ -67,6 +67,12 @@ if (isSafari) {
             <a href="https://ecastr.com/privacy/" target="_blank">Privacy policy</a> —
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
-        <script type="text/javascript" src="ennuicastr.js?v=9j"></script>
+        <script type="text/javascript">
+            ecLoadLibrary({file: "protocol.js?v=l", name: "Ennuicastr"})
+            .then(function() {
+            return ecLoadLibrary({file: "ennuicastr.js?v=9t",
+                name: "Ennuicastr"});
+            });
+        </script>
     </body>
 </html>
