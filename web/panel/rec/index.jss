@@ -53,6 +53,22 @@ function toggleMore(rec) {
         el.style.margin = "1em 0";
     }
 }
+
+function localDate(date) {
+    try {
+        var d = new Date(date.replace(" ", "T") + "Z");
+        date =
+            d.getFullYear() + "-" +
+            (d.getMonth() + 1).toString().padStart(2, "0") + "-" +
+            d.getDate().toString().padStart(2, "0") + " " +
+            d.getHours() + ":" +
+            d.getMinutes().toString().padStart(2, "0");
+        date += " " +
+            d.toLocaleTimeString([], {timeZoneName: "short"})
+            .replace(/^.* /, "");
+    } catch (ex) {}
+    return date;
+}
 </script>
 
 <section>
@@ -251,7 +267,14 @@ for (let row of recs) {
 ?>
         <tr>
             <td class="renamable" data-id="<?JS= row.rid.toString(36) ?>"><?JS= row.name||"(Anonymous)" ?></td>
-            <td><?JS= row.init ?><br/><?JS= row.expiry ?></td>
+            <td>
+                <script type="text/javascript">
+                    document.write(
+                        localDate(<?JS= JSON.stringify(row.init) ?>) +
+                        "<br/>" +
+                        localDate(<?JS= JSON.stringify(row.expiry) ?>));
+                </script>
+            </td>
             <td><?JS
                 switch (row.status) {
                     case 0:
