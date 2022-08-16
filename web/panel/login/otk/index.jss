@@ -22,7 +22,7 @@ const db = require("../db.js").db;
 const login = await include("../login.jss");
 
 // Make sure we're an actual login
-if (!request.body.otk) {
+if (!request.body || !request.body.otk) {
     writeHead(302, {"location": "/panel/login-client/"});
     return;
 }
