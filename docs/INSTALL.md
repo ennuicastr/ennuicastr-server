@@ -244,6 +244,7 @@ https://github.com/Yahweasel/nodejs-server-pages , but in short, in
 	location ~ \.jss$ {
 		fastcgi_pass unix:/tmp/nodejs-server-pages.sock;
 		include fastcgi_params;
+		fastcgi_buffering off;
 	}
 
 	location ~ /ws$ {

@@ -173,7 +173,7 @@ if (request.query.f) {
     });
 
     // Give plenty of time
-    response.setTimeLimit(1000*60*60*3);
+    response.setTimeLimit(1000*60*60*24);
 
     // Handler for raw parts
     async function sendPart(part, writer) {
