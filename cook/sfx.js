@@ -144,7 +144,7 @@ const info = JSON.parse(fs.readFileSync(infoFile, "utf8"));
         // Track no
         if (trackNo >= tracks.length) {
             // Huh?
-            process.stdout.write("anullsrc=cl=stereo:r=48000,atrim=0:2[aud]\n");
+            process.stdout.write("anullsrc=cl=stereo:r=48000,aformat=flt,atrim=0:2[aud]\n");
             return;
         }
 
@@ -157,15 +157,19 @@ const info = JSON.parse(fs.readFileSync(infoFile, "utf8"));
         for (let ti = 0; ti < track.length; ti++) {
             let step = track[ti];
             if (step.sid)
-                process.stdout.write("amovie=" + config.sounds + "/" + step.sid + ".webm,apad");
+                process.stdout.write("amovie=" + config.sounds + "/" + step.sid + ".webm,aformat=f=flt:r=48000:cl=stereo,apad");
             else
-                process.stdout.write("anullsrc=cl=stereo:r=48000");
+                process.stdout.write("anullsrc=cl=stereo:r=48000,aformat=flt");
             process.stdout.write(",atrim=0:" + step.duration);
 
             if (ti === 0)
                 process.stdout.write("[aud];\n");
-            else
-                process.stdout.write("[step];\n[aud][step]concat=v=0:a=1[aud];\n");
+            else {
+                process.stdout.write(
+                    "[step];\n" +
+                    "[aud]atrim=0:" + step.start + "[aud];\n" +
+                    "[aud][step]concat=v=0:a=1[aud];\n");
+            }
         }
         process.stdout.write("[aud]anull[aud]\n");
 
