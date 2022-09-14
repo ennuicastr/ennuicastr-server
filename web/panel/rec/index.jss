@@ -374,7 +374,7 @@ if (!unassoc && recs.length === 0) {
     </div>
 </section>
 
-<script type="text/javascript" src="/assets/js/utils.js?v=1" async defer></script>
+<script type="text/javascript" src="/assets/js/utils.js?v=2" async defer></script>
 <script type="text/javascript" src="/assets/js/tablesort.min.js"></script>
 <script type="text/javascript"><!--
 new Tablesort(document.getElementById("available-recordings"));

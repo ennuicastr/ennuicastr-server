@@ -18,7 +18,12 @@
     function renamable(el, cur, id, opts) {
         el.innerHTML = "";
         var span = document.createElement("span");
-        span.innerText = cur || "(Anonymous)";
+        span.innerText = (cur || "(Anonymous)") + " ";
+        var editable = document.createElement("i");
+        editable.classList.add("fas");
+        editable.classList.add("fa-edit");
+        editable.style.opacity = "0.5";
+        span.appendChild(editable);
         el.appendChild(span);
 
         span.onclick = function() {
