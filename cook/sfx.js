@@ -80,7 +80,7 @@ const info = JSON.parse(fs.readFileSync(infoFile, "utf8"));
             sounds[c.sid] = sound;
         }
 
-        if (c.status) {
+        if (c.status && sound) {
             // Find a track
             let ti;
             for (ti = 0; ti < tracks.length; ti++) {
