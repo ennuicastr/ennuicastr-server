@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Yahweasel
+ * Copyright (c) 2021, 2022 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -18,18 +18,29 @@ const rte = await import(
     __dirname + "/../../../node_modules/rtennui-server/src/main.js");
 
 const db = require("../db.js").db;
+const fs = require("fs");
 
 if (!module.rtes) {
     module.ondisconnect = () => process.exit(0);
     module.rtes = new rte.RTEnnuiServer(acceptLogin);
+
+    // Can't accept any crashes
+    process.on("uncaughtException", (err, origin) => {
+        fs.writeFileSync("tmp-uncaughtException",
+            `Uncaught: ${err}\nOrigin: ${origin}\n`);
+    });
+
+    process.on("unhandledRejection", (reason, promise) => {
+        fs.writeFileSync("tmp-unhandledRejection",
+            `Unhandled: ${promise}\nReason: ${reason}\n`);
+    });
 }
 const rtes = module.rtes;
 
 rtes.acceptConnection(sock);
 
 /**
- * Accept logins from the client. There is no verification here, so all logins
- * are accepted.
+ * Accept logins from the client.
  * @param credentials  Login credentials
  */
 async function acceptLogin(credentials) {

@@ -45,6 +45,7 @@ connections from the client, like so:
 
 ```
 ...
+        proxy_hide_header 'Access-Control-Allow-Origin';
         add_header 'Access-Control-Allow-Origin' 'https://r.testbed.ecastr.com';
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
 ...
@@ -60,6 +61,7 @@ A complete `/xmpp-websocket` configuration section looks like this:
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $http_host;
+        proxy_hide_header 'Access-Control-Allow-Origin';
         add_header 'Access-Control-Allow-Origin' 'https://r.testbed.ecastr.com';
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
         tcp_nodelay on;
