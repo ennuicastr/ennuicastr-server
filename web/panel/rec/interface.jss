@@ -38,11 +38,12 @@ const defaults = await (async function() {
             continuous: false,
             rtc: true,
             recordOnly: false,
-            rtennuiAudio: false,
+            rtennuiAudio: true,
             videoRec: false,
             transcription: false,
             universal_monitor: true
         };
+    row.jitsiAudio = !row.rtennuiAudio;
     row.universal_monitor = !!row.universal_monitor;
     return row;
 })();
@@ -125,7 +126,7 @@ const defaults = await (async function() {
         const showQual = (accountCredits.subscription >= 2 ||
                           defaults.format === "flac" ||
                           defaults.continuous);
-        const showAdvanced = (defaults.rtennuiAudio ||
+        const showAdvanced = (!defaults.rtennuiAudio ||
                               !defaults.rtc ||
                               defaults.recordOnly ||
                               defaults.transcription);
@@ -165,9 +166,9 @@ const defaults = await (async function() {
         <div id="advanced"<?JS= showAdvanced ? "" : ' style="display: none"' ?>>
         <?JS
 
-        l("rtennuiAudio", "BETA: Low-latency audio", true);
-        chk("rtennuiAudio", "xra");
-        alt("rtennuiAudio", "Enable low-latency audio, at the cost of increased bandwidth. Note that only audio is affected, so video and audio will not be in sync during live chat. This option affects only live chat, and does not affect recording.");
+        l("jitsiAudio", "Use Jitsi for audio", true);
+        chk("jitsiAudio", "xja");
+        alt("jitsiAudio", "Disable low-latency audio, and use Jitsi Meet for both audio and video. Jitsi is always used for video, so using it for both reduces resource consumption, but at the cost of higher audio latency and diminished portability.");
 
         l("transcription", "Live captions", true);
         chk("transcription", "t");
@@ -252,6 +253,12 @@ function launchRecording() {
             q[el[1]] = h.value;
         h.disabled = true;
     });
+
+    // Since defaults changed, RTEnnui is on if Jitsi is off
+    if ("xja" in q) {
+        q.xra = 1 - q.xja;
+        delete q.xja;
+    }
 
     fetch("/panel/rec/start.jss", {
         method: "POST",
