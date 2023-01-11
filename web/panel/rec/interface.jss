@@ -312,8 +312,25 @@ function launchRecording() {
         url +=
             "-f" + features.toString(36) +
             "&quick=1";
-        clientWindow.location = url;
-        document.location = "/panel/rec/";
+
+        // Wait for the window to change before redirecting ourselves
+        var oldLoc = clientWindow.location.href;
+        clientWindow.location.href = url;
+        var maxWait = 20;
+        var interval = setInterval(function() {
+            if (clientWindow.location.href !== oldLoc) {
+                clearInterval(interval);
+                document.location = "/panel/rec/";
+            } else if (--maxWait <= 0) {
+                clearInterval(interval);
+                try {
+                    clientWindow.close();
+                } catch (ex) {}
+                window.open(url, "",
+                    "width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
+                document.location = "/panel/rec/";
+            }
+        }, 250);
 
     }).catch(function(ex) {
         clientWindow.document.body.innerText = "Recording failed!\n\n" + ex + "\n\n" + ex.stack;
