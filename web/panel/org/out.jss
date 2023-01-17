@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2022 Yahweasel
+ * Copyright (c) 2022-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -324,8 +324,8 @@ if (mode === "invite") {
         ?>
         <tr>
             <td><?JS= await unM.getDisplay(org.uid_shared) ?></td>
-            <td><a href="?act=login&amp;i=<?JS= org.uid_shared ?>" class="button"><i class="fas fa-sign-in-alt"></i> Log in</a></td>
-            <td><a href="?act=leave&amp;i=<?JS= org.uid_shared ?>" class="button"><i class="fas fa-trash-alt"></i> Leave</td>
+            <td><a href="?act=login&amp;i=<?JS= org.uid_shared ?>" class="button"><i class="bx bx-log-in"></i> Log in</a></td>
+            <td><a href="?act=leave&amp;i=<?JS= org.uid_shared ?>" class="button"><i class="bx bxs-trash"></i> Leave</td>
         </tr>
         <?JS
     }
@@ -337,7 +337,7 @@ if (mode === "invite") {
     </tbody></table>
     </div>
 
-    <p><a href="?act=create" class="button"><i class="fas fa-building"></i> Create a new organization</a></p>
+    <p><a href="?act=create" class="button"><i class="bx bxs-buildings"></i> Create a new organization</a></p>
 <?JS
 
 } else throw new Error();

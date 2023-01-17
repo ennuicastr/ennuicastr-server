@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,5 +30,5 @@ const config = require("../config.js");
 </style>
 
 <span class="loginblock"><a href="/panel/login/firebase/" class="loginb firebaselogin">
-    <i class="fas fa-envelope"></i> Log in with email and password
+    <i class="bx bxs-envelope"></i> Log in with email and password
 </a></span>

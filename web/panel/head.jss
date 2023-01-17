@@ -67,6 +67,6 @@ PayPalLoader = (function() {
         else
             write(`Ennuicastr${org}`);
     ?>
-    <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="fas fa-sun"></i></a>
+    <a href="#" style="float: right; margin-right: 1em" id="theme-b"><i class="bx bxs-sun"></i></a>
     </p>
 </header>

@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -37,5 +37,5 @@ function discordUrl() {
 </style>
 
 <span class="loginblock"><a href="<?JS= discordUrl() ?>" class="loginb discordlogin">
-    <i class="fab fa-discord"></i> Log in with Discord
+    <i class="bx bxl-discord-alt"></i> Log in with Discord
 </a></span>

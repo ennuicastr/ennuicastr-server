@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2022 Yahweasel
+ * Copyright (c) 2022-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -69,7 +69,7 @@ for (const lobby of lobbies) {
             <td>(Room)</td>
             <td><?JS= await unM.getDisplay(lobby.uid_to) ?></td>
             <td>
-                <a href="unshare/?l=<?JS= lobby.lid.toString(36) ?>&u=<?JS= lobby.uid_to ?>" class="button"><i class="fas fa-minus-circle"></i> Unshare</a>
+                <a href="unshare/?l=<?JS= lobby.lid.toString(36) ?>&u=<?JS= lobby.uid_to ?>" class="button"><i class="bx bxs-minus-circle"></i> Unshare</a>
             </td>
         </tr>
 <?JS
@@ -88,7 +88,7 @@ for (const row of recs) {
             <td><?JS= row.init ?><br/><?JS= row.expiry ?></td>
             <td><?JS= await unM.getDisplay(row.uid_to) ?></td>
             <td>
-                <a href="unshare/?r=<?JS= row.rid.toString(36) ?>&u=<?JS= row.uid_to ?>" class="button"><i class="fas fa-minus-circle"></i> Unshare</a>
+                <a href="unshare/?r=<?JS= row.rid.toString(36) ?>&u=<?JS= row.uid_to ?>" class="button"><i class="bx bxs-minus-circle"></i> Unshare</a>
             </td>
         </tr>
 <?JS

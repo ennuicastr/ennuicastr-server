@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2022 Yahweasel
+ * Copyright (c) 2022-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -94,7 +94,7 @@ if (mode === "info") {
     ?>
     <p>You are logged into the organization account for <?JS= await unM.getDisplay(euid) ?>.</p>
 
-    <p><a href="?act=logout" class="button"><i class="fas fa-sign-out-alt"></i> Return to user account</a></p>
+    <p><a href="?act=logout" class="button"><i class="bx bx-log-out"></i> Return to user account</a></p>
 
     <?JS
     if (users) {
@@ -242,7 +242,7 @@ if (mode === "info") {
             </tbody>
         </table>
 
-        <p><button id="invite-button" onclick="orgInvite();"><i class="fas fa-share-square"></i> Invite a user to this organization</button></p>
+        <p><button id="invite-button" onclick="orgInvite();"><i class="bx bxs-share"></i> Invite a user to this organization</button></p>
 
         <p id="invite-hider" style="display: none">
             One-time use URL, expires in 24 hours:<br/>
@@ -254,14 +254,14 @@ if (mode === "info") {
         const oCredits = await credits.accountCredits(euid);
         if (uCredits.subscription && !oCredits.subscription) {
             ?>
-            <p><a class="button" href="/panel/org/credits/?o=<?JS= euid ?>"><i class="fas fa-exchange-alt"></i> Transfer subscription to organization</a></p>
+            <p><a class="button" href="/panel/org/credits/?o=<?JS= euid ?>"><i class="bx bx-sync"></i> Transfer subscription to organization</a></p>
             <?JS
         }
     }
 
     if (level >= levels.owner) {
         ?>
-        <p><a href="/panel/delete/" class="button"><i class="fas fa-trash-alt"></i> Delete this organization</a></p>
+        <p><a href="/panel/delete/" class="button"><i class="bx bxs-trash"></i> Delete this organization</a></p>
         <?JS
     }
 

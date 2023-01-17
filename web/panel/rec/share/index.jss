@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2022 Yahweasel
+ * Copyright (c) 2022-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -147,7 +147,7 @@ if (mode === "share") {
     }
     </script>
 
-    <p><button id="share-button" onclick="shareRecording();"><i class="fas fa-share-square"></i> Share recording</button></p>
+    <p><button id="share-button" onclick="shareRecording();"><i class="bx bxs-share"></i> Share recording</button></p>
 
     <p id="share-hider" style="display: none">
         One-time use URL, expires in 24 hours:<br/>

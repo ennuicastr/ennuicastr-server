@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -63,7 +63,7 @@ const defaults = await (async function() {
 </style>
 
 <a id="create-recording-b" class="button" href="javascript:createRecording();">
-<i class="fas fa-play-circle"></i> Create a new recording
+<i class="bx bx-play-circle"></i> Create a new recording
 </a>
 
 <div id="create-recording" class="wrapper style2 small" style="display: none">
@@ -74,7 +74,7 @@ const defaults = await (async function() {
         function l(forr, txt, alt) {
             write('<label for="r-' + forr + '">' + txt +
                 ':&nbsp;</label>' +
-                (alt?'<a href="javascript:toggle(\'' + forr + '\')" aria-label="Help on this feature"><i class="fas fa-question-circle"></i></a>':''));
+                (alt?'<a href="javascript:toggle(\'' + forr + '\')" aria-label="Help on this feature"><i class="bx bxs-help-circle"></i></a>':''));
         }
 
         function txt(id, q, limit) {
@@ -136,7 +136,7 @@ const defaults = await (async function() {
         <br/>
         <div style="text-align: center">
         <a id="quality-b" class="button<?JS= showQual ? " disabled" : "" ?>" href="javascript:showQuality();">
-        <i class="fas fa-volume-up"></i> Quality options
+        <i class="bx bxs-volume-full"></i> Quality options
         </a></div>
 
         <div id="quality"<?JS= showQual ? "" : ' style="display: none"' ?>>
@@ -160,7 +160,7 @@ const defaults = await (async function() {
         ?>
         <div style="text-align: center">
         <a id="advanced-b" class="button<?JS= showAdvanced ? " disabled" : "" ?>" href="javascript:showAdvanced();">
-        <i class="fas fa-sliders-h"></i> Advanced options
+        <i class="bx bx-slider"></i> Advanced options
         </a></div>
 
         <div id="advanced"<?JS= showAdvanced ? "" : ' style="display: none"' ?>>
@@ -190,7 +190,7 @@ const defaults = await (async function() {
         </div><br/>
 
         <a id="launch-b" class="button" href="javascript:launchRecording();" style="width: 100%">
-        <i class="fas fa-play-circle"></i> Create recording
+        <i class="bx bx-play-circle"></i> Create recording
         </a>
     </span>
 

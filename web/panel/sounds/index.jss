@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -57,7 +57,7 @@ for (var ri = 0; ri < rows.length; ri++) {
             </td>
             <td style="vertical-align: middle">
                 <a id="delete-sound-b-<?JS= row.sid ?>" href='javascript:deleteSound("<?JS= row.sid ?>");' class="button" style="width: 20em">
-                <i class="fas fa-trash-alt"></i> Delete
+                <i class="bx bxs-trash"></i> Delete
                 </a>
                 <span id="delete-sound-confirm-span-<?JS= row.sid ?>" style="display: none"><br/>
                 <a id="delete-sound-yes-b-<?JS= row.sid ?>" href='javascript:deleteSoundYes("<?JS= row.sid ?>");' class="button" style="width: 10em">
@@ -76,7 +76,7 @@ if (rows.length === 0) {
 ?>
         <tr><td class="align-center" colspan=4>
             <a id="create-sound-show-b" class="button" href="javascript:showCreateSound();">
-                <i class="fas fa-music"></i> Upload sound
+                <i class="bx bxs-music"></i> Upload sound
             </a>
 
             <div id="create-sound" class="wrapper style2 small" style="display: none">
@@ -98,7 +98,7 @@ if (rows.length === 0) {
 
                     <div style="margin-top: 0.5em">
                         <a id="create-sound-b" class="button" href="javascript:createSound();" style="width: 100%">
-                        <i class="fas fa-music"></i> Upload
+                        <i class="bx bxs-music"></i> Upload
                         </a>
                     </div>
                 </span>

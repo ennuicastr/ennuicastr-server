@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -192,7 +192,7 @@ function joinButton(rec, opts) {
         .replace(/>/g, "&gt;"));
 
     write(`<button onclick='joinRecording(${url});'>` +
-          `<i class="fas fa-door-open"></i> Join</button>`);
+          `<i class="bx bxs-door-open"></i> Join</button>`);
 }
 
 
@@ -225,7 +225,7 @@ for (let lobby of lobbies) {
                     class="round"
                     onclick='toggleMore("l-<?JS= lobby.lid.toString(36) ?>");'
                     aria-label="More options">
-                <i class="fas fa-ellipsis-h"></i></button>
+                <i class="bx bx-dots-horizontal-rounded"></i></button>
                 <div
                     id="more-l-<?JS= lobby.lid.toString(36) ?>"
                     style="height: 0px; overflow: clip;"><?JS
@@ -233,20 +233,20 @@ for (let lobby of lobbies) {
                     // Deleting and sharing are only for the owner
                     if (lobby.uid === uid) {
                         ?>
-                        <a href="delete-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a>
+                        <a href="delete-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="bx bxs-trash"></i> Delete</a>
                         <?JS
 
                         // Sharing requires admin
                         if (uidX.level >= 2) {
                         ?>
-                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="fas fa-share-square"></i> Share</a>
+                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>" class="button fit"><i class="bx bxs-share"></i> Share</a>
                         <?JS
                         }
 
                     } else if (uidX.level >= 2 /* admin */) {
                         // Shared recipient can only unshare
                         ?>
-                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>&un=1" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
+                        <a href="share-room/?i=<?JS= lobby.lid.toString(36) ?>&un=1" class="button fit"><i class="bx bxs-minus-circle"></i> Unshare</a>
                         <?JS
 
                     }
@@ -315,17 +315,17 @@ for (let row of recs) {
             ?></td>
             <td><?JS
                 if (!row.purchased && row.status >= 0x30 /* finished */) {
-                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>&s=1" class="button"><i class="fas fa-download"></i> Sample download</a><?JS
+                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>&s=1" class="button"><i class="bx bxs-download"></i> Sample download</a><?JS
                     write("<br/><br/>$" + credits.creditsToDollars(row.cost) + "<br/>");
                 }
-                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>" class="button"><i class="fas fa-download"></i> Download</a><?JS
+                ?><a href="dl/?i=<?JS= row.rid.toString(36) ?>" class="button"><i class="bx bxs-download"></i> Download</a><?JS
             ?></td>
             <td>
                 <button
                     class="round"
                     onclick='toggleMore("<?JS= row.rid.toString(36) ?>");'
                     aria-label="More options">
-                <i class="fas fa-ellipsis-h"></i></button>
+                <i class="bx bx-dots-horizontal-rounded"></i></button>
                 <div
                     id="more-<?JS= row.rid.toString(36) ?>"
                     style="height: 0px; overflow: clip;"><?JS
@@ -333,19 +333,19 @@ for (let row of recs) {
                     // Deleting and sharing are only for the owner
                     if (row.uid === uid) {
                         if (row.status >= 0x30 /* finished */) {
-                            ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="fas fa-trash-alt"></i> Delete</a><?JS
+                            ?><a href="delete/?i=<?JS= row.rid.toString(36) ?>" class="button fit"><i class="bx bxs-trash"></i> Delete</a><?JS
                         }
 
                         if (uidX.level >= 2 /* admin */) {
                         if (row.lid) {
                             // This is a lobby, so share in either
                             ?>
-                            <a href="share-room/?i=<?JS= row.lid.toString(36) ?>" class="button fit" style="height: auto"><i class="fas fa-share-square"></i> Share<br/>(Room)</a>
+                            <a href="share-room/?i=<?JS= row.lid.toString(36) ?>" class="button fit" style="height: auto"><i class="bx bxs-share"></i> Share<br/>(Room)</a>
                             <?JS
                         }
 
                         ?>
-                        <a href="share/?i=<?JS= row.rid.toString(36) ?>" class="button fit" style="height: auto"><i class="fas fa-share-square"></i> Share<?JS=
+                        <a href="share/?i=<?JS= row.rid.toString(36) ?>" class="button fit" style="height: auto"><i class="bx bxs-share"></i> Share<?JS=
                             row.lid ?
                                 "<br/>(Recording)" :
                                 ""
@@ -356,7 +356,7 @@ for (let row of recs) {
                     } else if (uidX.level >= 2 /* admin */) {
                         // Shared recipient can only unshare
                         ?>
-                        <a href="share/?i=<?JS= row.rid.toString(36) ?>&un=1" class="button fit"><i class="fas fa-minus-circle"></i> Unshare</a>
+                        <a href="share/?i=<?JS= row.rid.toString(36) ?>&un=1" class="button fit"><i class="bx bxs-minus-circle"></i> Unshare</a>
                         <?JS
 
                     }

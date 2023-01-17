@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -37,5 +37,5 @@ function facebookUrl() {
 </style>
 
 <span class="loginblock"><a href="<?JS= facebookUrl() ?>" class="loginb fblogin">
-    <i class="fab fa-facebook"></i> Log in with Facebook
+    <i class="bx bxl-facebook-square"></i> Log in with Facebook
 </a></span>

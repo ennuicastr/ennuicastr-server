@@ -13,7 +13,7 @@
 
     function setButton() {
         if (themeB)
-            themeB.innerHTML = '<i class="fas fa-' + (dark?"moon":"sun") + '"></i>';
+            themeB.innerHTML = '<i class="bx bxs-' + (dark?"moon":"sun") + '"></i>';
     }
 
     if (themeB) {

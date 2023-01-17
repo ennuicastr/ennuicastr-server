@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -54,7 +54,7 @@ const showOrg = await (async function() {
 if (!config.nomain) {
 ?>
 <div id="menuhide">
-    <button onclick="toggleMenu();"><i class="fas fa-bars"></i></button>
+    <button onclick="toggleMenu();"><i class="bx bx-menu"></i></button>
 </div>
 
 <?JS
@@ -65,7 +65,7 @@ function b(target, icon, text, id) {
     if (target === params.REQUEST_URI)
         cl += " recurrent";
     if (icon)
-        text = '<i class="fas fa-' + icon + '"></i> ' + text;
+        text = '<i class="bx bx' + icon + '"></i> ' + text;
     id = "ec-menu-" + id;
     if (config.nomain)
         id += "-mini";
@@ -73,17 +73,17 @@ function b(target, icon, text, id) {
 }
 
 if (!config.nomain)
-    b("/panel/", "user", "Main panel", "main");
+    b("/panel/", "s-user", "Main panel", "main");
 if (config.all && config.username)
-    b("/panel/username/", "file-signature", "Username", "username");
-b("/panel/rec/", "microphone", "Recordings", "recordings");
+    b("/panel/username/", "s-rename", "Username", "username");
+b("/panel/rec/", "s-microphone", "Recordings", "recordings");
 if (showSharing)
-    b("/panel/share/", "share-alt", "Sharing", "sharing");
-b("/panel/subscription/", "calendar-alt", "Subscription", "subscription");
+    b("/panel/share/", "s-share", "Sharing", "sharing");
+b("/panel/subscription/", "s-calendar", "Subscription", "subscription");
 if (config.all || showOrg)
-    b("/panel/org/", "building", "Organizations", "organizations");
-b("/panel/sounds/", "music", "Soundboard", "sounds");
+    b("/panel/org/", "s-buildings", "Organizations", "organizations");
+b("/panel/sounds/", "s-music", "Soundboard", "sounds");
 if (!config.nomain)
-    b(econfig.site, "home", "Home page", "home");
-b("/panel/logout/", "sign-out-alt", "Log out", "log-out");
+    b(econfig.site, "s-home", "Home page", "home");
+b("/panel/logout/", "-log-out", "Log out", "log-out");
 ?>
