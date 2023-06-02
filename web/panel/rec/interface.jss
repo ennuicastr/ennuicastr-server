@@ -241,7 +241,7 @@ function launchRecording() {
     } catch (ex) {}
 
     clientWindow = window.open("/panel/rec/loading.jss", "",
-        "width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
+        "width=800,height=600,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
 
     var els = <?JS= JSON.stringify(els) ?>;
     var q = {};

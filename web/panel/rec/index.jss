@@ -40,7 +40,7 @@ await include("../head.jss", {title: "Recordings"});
 
 <script type="text/javascript">
 function joinRecording(url) {
-    window.open(url, "", "width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
+    window.open(url, "", "width=800,height=600,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
 }
 
 function toggleMore(rec) {
