@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,13 +22,36 @@ const {uid, level} = uidX;
 const config = require("../config.js");
 const db = require("../db.js").db;
 const creditsj = await include("../credits.jss");
+const payment = require("../payment.js");
+
+// Possibly finish a Stripe purchase
+if (request.query.ps) {
+    let ps = request.query.ps;
+    if (ps instanceof Array)
+        ps = ps[ps.length - 1];
+    const stripeFinalizeCheckout = await include("stripe/finalize-checkout.jss");
+    const res = await stripeFinalizeCheckout.finalizeCheckout(uid, ps);
+    if (!res.success) {
+        // This is not a clean way to inform them, but we need some way
+        ?>
+        <script type="text/javascript">
+            alert(<?JS= JSON.stringify(res.reason) ?>);
+        </script>
+        <?JS
+    } else {
+        // Get rid of that ps= in the header
+        writeHead(302, {location: "?"});
+        return;
+    }
+}
 
 const accountCredits = await creditsj.accountCredits(uid);
+const preferredGateway = await payment.preferredGateway(uid);
 
 await include("../head.jss", {title: "Subscription", paypal: true, paypalArgs: "&vault=true"});
 
-// General function for generating subscription buttons
-async function genSub(level) {
+// General function for generating subscription buttons (PayPal)
+async function genSubPayPal(level) {
     var sub = {
         plan_id: config.paypal.subscription[level].id,
         application_context: {
@@ -38,7 +61,7 @@ async function genSub(level) {
     };
 
     ?>
-    <div id="paypal-button-container-<?JS= level ?>"></div>
+    <p><span id="paypal-button-container-<?JS= level ?>"></span></p>
 
     <script type="text/javascript">
     PayPalLoader.load().then(function() {
@@ -77,13 +100,63 @@ async function genSub(level) {
     <?JS
 }
 
+// General function for generating subscription buttons (Stripe)
+async function genSubStripe(level) {
+    ?>
+    <p><button id="stripe-checkout-<?JS= level ?>">
+        <i class="bx bxl-stripe"></i>
+        Subscribe
+    </button></p>
+
+    <script type="text/javascript">
+    (function() {
+        const btn = document.getElementById("stripe-checkout-<?JS= level ?>");
+        btn.onclick = function() {
+            btn.disabled = true;
+
+            fetch("/panel/subscription/stripe/checkout-session.jss", {
+                method: "POST",
+                headers: {"content-type": "application/json"},
+                body: JSON.stringify({
+                    type: <?JS= JSON.stringify(level) ?>,
+                    success_url: document.location.href,
+                    cancel_url: document.location.href
+                })
+
+            }).then(function(res) {
+                return res.json();
+
+            }).then(function(res) {
+                if (!res.success) {
+                    alert("Subscription failed! You have not been charged. Details: " + res.reason);
+                    return;
+                }
+
+                document.location.href = res.url;
+
+            }).catch(console.error);
+        };
+    })();
+    </script>
+    <?JS
+}
+
+async function genSub(level) {
+    if (preferredGateway === "stripe") {
+        return await genSubStripe(level);
+    } else {
+        return await genSubPayPal(level);
+    }
+}
+
 // Generate a cancel button
 async function genCancel(id) {
     var parts = /^([^:]*):.*$/.exec(id);
     if (!parts || parts[1] === "canceled") return;
 
-    if (parts[1] !== "paypal") {
-        // Non-PayPal subscription. Something special, can't be canceled here.
+    const gateway = parts[1];
+    if (gateway !== "paypal" && gateway !== "stripe") {
+        // Something special, can't be canceled here.
         ?>
         <p>If you wish to cancel your subscription, please <a href="/contact/">contact us</a>.</p>
         <?JS
@@ -113,7 +186,7 @@ async function genCancel(id) {
     };
     cby.onclick = function() {
         cs.style.display = "none";
-        return fetch("/panel/subscription/paypal/", {
+        return fetch("/panel/subscription/<?JS= gateway ?>/", {
             method: "POST",
             headers: {"content-type": "application/json"},
             body: JSON.stringify({cancel: true})
@@ -184,6 +257,8 @@ if (accountCredits.subscription) {
         <p>Only an organization's admins may alter its subscription.</p>
 
 <?JS } ?>
+
+        <p>If you would like to use a different payment gateway, you can <a href="/panel/gateway/?r=/panel/subscription/">change it at any time</a>.</p>
     </section>
 
 <?JS await include("../../tail.jss"); ?>

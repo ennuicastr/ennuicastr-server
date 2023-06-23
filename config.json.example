@@ -79,9 +79,17 @@
     },
 
     "paypal": {
+        "minimum": 200,
         "api": "api.paypal.com",
         "clientId": "",
         "secret": "",
-        "subscription": "... replace this string with the output from create.js ..."
+        "subscription": "... replace this string with the output from subscription/create-paypal.js ..."
+    },
+
+    "stripe": {
+        "minimum": 1000,
+        "public": "",
+        "secret": "",
+        "subscription": "... replace this string with the output from subscription/create-stripe.js ..."
     }
 }

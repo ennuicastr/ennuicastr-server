@@ -1,6 +1,5 @@
-<?JS!
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,25 +14,25 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const credits = require("../credits.js");
-const s = {
-    "paypal": await include("subscription/paypal/s.jss"),
-    "stripe": await include("subscription/paypal/s.jss")
-};
+const edb = require("./db.js");
+const db = edb.db;
 
-async function accountCredits(uid) {
-    let c = await credits.accountCredits(uid);
-    if (c.subscription_expired) {
-        // Check if it's been updated
-        const parts = /^(^:)*:(.*)/.exec(c.subscription_id);
-        if (parts && parts[1] && s[parts[1]]) {
-            await s[parts[1]].updateSubscription(
-                uid, c.subscription_id, {updateOnly: true});
-            c = await credits.accountCredits(uid);
-        }
-    }
-    return c;
+const gateways = {
+    paypal: true,
+    stripe: true
+};
+const defaultGateway = "paypal";
+
+async function preferredGateway(uid) {
+    // Check if they already have a preferred gateway
+    const row = await db.getP("SELECT * FROM preferred_payment_gateways WHERE uid=@UID", {
+        "@UID": uid
+    });
+    if (row && gateways[row.gateway])
+        return row.gateway;
+    return defaultGateway;
 }
 
-module.exports = {accountCredits};
-?>
+module.exports = {
+    preferredGateway
+};
