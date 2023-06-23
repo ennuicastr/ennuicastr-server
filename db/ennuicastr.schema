@@ -79,6 +79,12 @@ CREATE TABLE IF NOT EXISTS credits (
     subscription_id TEXT
 );
 
+/* Preferred payment gateway per account */
+CREATE TABLE IF NOT EXISTS preferred_payment_gateways (
+    uid TEXT PRIMARY KEY,
+    gateway TEXT
+);
+
 /* Recordings that are either active or at least not expired */
 CREATE TABLE IF NOT EXISTS recordings (
     uid TEXT,
@@ -224,3 +230,10 @@ CREATE TABLE IF NOT EXISTS sounds (
 );
 
 CREATE INDEX IF NOT EXISTS sounds_uid ON sounds (uid);
+
+/* Stripe-specific: The log of all successful checkouts, since we don't have a
+ * way of lock-and-key finalizing a checkout ourselves. */
+CREATE TABLE IF NOT EXISTS stripe_checkouts (
+    uid TEXT,
+    checkout_id TEXT PRIMARY KEY
+);
