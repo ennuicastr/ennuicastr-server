@@ -33,10 +33,6 @@ if (isSafari) {
         const isFake = ua.indexOf("CriOS") >= 0 || ua.indexOf("FxiOS") >= 0;
         if (isFake)
             warning = "Non-Safari browsers on iOS do not support microphone capture. Please switch to Safari.";
-
-    } else {
-        warning = "Chrome and Firefox are more well supported on Mac than Safari. Consider switching to one of them.";
-
     }
 }
 ?>
