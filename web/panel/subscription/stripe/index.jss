@@ -1,6 +1,6 @@
-<?JS!
+<?JS
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,25 +15,27 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-const credits = require("../credits.js");
-const s = {
-    "paypal": await include("subscription/paypal/s.jss"),
-    "stripe": await include("subscription/paypal/s.jss")
-};
+const uidX = await include("../../uid.jss", {verbose: true});
+if (!uidX || uidX.level < 2) return;
+const uid = uidX.uid;
 
-async function accountCredits(uid) {
-    let c = await credits.accountCredits(uid);
-    if (c.subscription_expired) {
-        // Check if it's been updated
-        const parts = /^(^:)*:(.*)/.exec(c.subscription_id);
-        if (parts && parts[1] && s[parts[1]]) {
-            await s[parts[1]].updateSubscription(
-                uid, c.subscription_id, {updateOnly: true});
-            c = await credits.accountCredits(uid);
-        }
-    }
-    return c;
+const s = await include("./s.jss");
+
+if (!request.body || !request.body.cancel) {
+    writeHead(500);
+    write("{\"success\":false}");
+    return;
 }
 
-module.exports = {accountCredits};
+var ret;
+try {
+    ret = await s.cancelSubscription(uid);
+} catch (ex) {
+    writeHead(500, {"content-type": "application/json"});
+    write(JSON.stringify({success: false, reason: ex+""}));
+    return;
+}
+
+writeHead(ret.success?200:500, {"content-type": "application/json"});
+write(JSON.stringify(ret));
 ?>

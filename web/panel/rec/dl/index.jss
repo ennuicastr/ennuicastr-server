@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,6 +31,7 @@ const config = require("../config.js");
 const edb = require("../db.js");
 const db = edb.db;
 const log = edb.log;
+const payment = require("../payment.js");
 const reclib = await include("../lib.jss");
 const recM = require("../rec.js");
 const credits = require("../credits.js");
@@ -41,11 +42,32 @@ if (!recInfo)
     return writeHead(302, {"location": "/panel/rec/"});
 
 const accountCredits = await creditsj.accountCredits(uid);
+const preferredGateway = await payment.preferredGateway(uid);
 
 /* Account for the weird case of free recordings (shouldn't happen, but bug in
  * their favor) */
 if (recInfo.cost === 0 && !recInfo.purchased && recInfo.status >= 0x30)
     recInfo.purchased = "1";
+
+// Possibly finish a Stripe purchase
+if (request.query.ps) {
+    let ps = request.query.ps;
+    if (ps instanceof Array)
+        ps = ps[ps.length - 1];
+    const stripeFinalizeCheckout = await include("../../credits/stripe/finalize-checkout.jss");
+    const res = await stripeFinalizeCheckout.finalizeCheckout(uid, ps);
+    if (!res.success) {
+        // This is not a clean way to inform them, but we need some way
+        ?>
+        <script type="text/javascript">
+            alert(<?JS= JSON.stringify(res.reason) ?>);
+        </script>
+        <?JS
+    } else {
+        // Purchase the recording
+        request.query.p = "1";
+    }
+}
 
 // Possibly purchase it now
 if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
@@ -307,13 +329,15 @@ if (!recInfo.purchased && !request.query.s) {
 
         } else {
             // They need some credits. Calculate how many.
-            var needed = recInfo.cost - accountCredits.credits;
-            var excess = false;
-            var needD = credits.creditsToDollars(needed);
-            var needDF = Number(needD);
-            if (needDF < 2) {
-                needD = "2.00";
-                needDF = 2;
+            let needed = recInfo.cost - accountCredits.credits;
+            let excess = false;
+            let needD = credits.creditsToDollars(needed);
+            let needC = Number(needD) * 100;
+            const minC = config[preferredGateway].minimum;
+            const minD = minC / 100;
+            if (needC < minC) {
+                needC = minC;
+                needD = (needC / 100).toFixed(2);
                 excess = true;
             }
 
@@ -322,75 +346,121 @@ if (!recInfo.purchased && !request.query.s) {
             }
 
             if (excess) {
-                ?><p>Because the minimum transaction is $2, you will be charged $2. The excess will be availble as credit towards future recordings.</p><?JS
+                ?><p>Because the minimum transaction is $<?JS= minD ?>, you will be charged $<?JS= minD ?>. The excess will be availble as credit towards future recordings.</p><?JS
             } else if (accountCredits.credits) {
                 ?><p>Your previous credit counts towards this transaction, so you will be charged $<?JS= needD ?>.</p><?JS
             }
 
-            // Finally, the PayPal transaction
-            ?>
-            <div id="paypal-button-container"></div>
+            // Finally, the transaction
+            if (preferredGateway === "paypal") {
+                ?>
+                <div id="paypal-button-container"></div>
+    
+                <script type="text/javascript">
+                (function() {
+                    PayPalLoader.load().then(function() {
+                    paypal.Buttons({
+                        createOrder: function(data, actions) {
+                            var value = <?JS= JSON.stringify(needD) ?>;
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        currency_code: "USD",
+                                        value: value
+                                    },
+                                    description: "Ennuicastr credit",
+                                    soft_descriptor: "Ennuicastr",
+    
+                                }],
+                                application_context: {
+                                    shipping_preference: "NO_SHIPPING"
+                                }
+                            });
+                        },
+    
+                        onApprove: function(data, actions) {
+                            // To avoid confusion, don't show the main pane while transacting
+                            $("#purchase-dialog")[0].innerText = "Loading...";
+    
+                            return fetch("/panel/credits/paypal/", {
+                                method: "POST",
+                                headers: {"content-type": "application/json"},
+                                body: JSON.stringify({id:data.orderID})
+    
+                            }).then(function(res) {
+                                return res.text();
+    
+                            }).then(function(res) {
+                                try {
+                                    res = JSON.parse(res);
+                                } catch (ex) {
+                                    alert("Order failed! You have not been charged. Details: " + res);
+                                    return;
+                                }
+                                if (!res.success) {
+                                    alert("Order failed! You have not been charged. Details: " + res.reason);
+                                    return;
+                                }
+    
+                            }).catch(function(ex) {
+                                alert("Order failed! You have not been charged. " + ex.stack);
+                            }).then(function() {
+                                document.location = "?i=<?JS= recInfo.rid.toString(36) ?>&p=1";
+                            });
+                        }
+                    }).render("#paypal-button-container");
+                    });
+                })();
+                </script>
+                <?JS
 
-            <script type="text/javascript">
-            (function() {
-                PayPalLoader.load().then(function() {
-                paypal.Buttons({
-                    createOrder: function(data, actions) {
-                        var value = <?JS= JSON.stringify(needD) ?>;
-                        return actions.order.create({
-                            purchase_units: [{
-                                amount: {
-                                    currency_code: "USD",
-                                    value: value
-                                },
-                                description: "Ennuicastr credit",
-                                soft_descriptor: "Ennuicastr",
+            } else if (preferredGateway === "stripe") {
+                ?>
+                <p>
+                <button id="stripe-checkout">
+                    <i class="bx bxl-stripe"></i>
+                    Check out $<?JS= needD ?>
+                </button>
+                </p>
 
-                            }],
-                            application_context: {
-                                shipping_preference: "NO_SHIPPING"
-                            }
-                        });
-                    },
+                <script type="text/javascript">
+                (function() {
+                    const btn = document.getElementById("stripe-checkout");
+                    btn.onclick = function() {
+                        btn.disabled = true;
 
-                    onApprove: function(data, actions) {
-                        // To avoid confusion, don't show the main pane while transacting
-                        $("#purchase-dialog")[0].innerText = "Loading...";
-
-                        return fetch("/panel/credits/paypal/", {
+                        fetch("/panel/credits/stripe/checkout-session.jss", {
                             method: "POST",
                             headers: {"content-type": "application/json"},
-                            body: JSON.stringify({id:data.orderID})
+                            body: JSON.stringify({
+                                value: <?JS= needed ?>,
+                                success_url: document.location.href,
+                                cancel_url: document.location.href
+                            })
 
                         }).then(function(res) {
-                            return res.text();
+                            return res.json();
 
                         }).then(function(res) {
-                            try {
-                                res = JSON.parse(res);
-                            } catch (ex) {
-                                alert("Order failed! You have not been charged. Details: " + res);
-                                return;
-                            }
                             if (!res.success) {
-                                alert("Order failed! You have not been charged. Details: " + res.reason);
+                                alert("Checkout failed! You have not been charged. Details: " + res.reason);
                                 return;
                             }
 
-                        }).catch(function(ex) {
-                            alert("Order failed! You have not been charged. " + ex.stack);
-                        }).then(function() {
-                            document.location = "?i=<?JS= recInfo.rid.toString(36) ?>&p=1";
-                        });
-                    }
-                }).render("#paypal-button-container");
-                });
-            })();
-            </script>
-            <?JS
+                            document.location.href = res.url;
+
+                        }).catch(console.error);
+                    };
+                })();
+                </script>
+                <?JS
+
+            }
 
         }
         ?>
+
+        <p>If you would like to use a different payment gateway, you can <a href="/panel/gateway/?r=/panel/rec/dl/%3Fi=<?JS= rid.toString(36) ?>">change it at any time</a>.</p>
     </section>
 <?JS
 
