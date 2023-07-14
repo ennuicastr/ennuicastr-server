@@ -327,7 +327,7 @@ function launchRecording() {
                     clientWindow.close();
                 } catch (ex) {}
                 window.open(url, "",
-                    "width=640,height=480,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
+                    "width=800,height=600,menubar=0,toolbar=0,location=0,personalbar=0,status=0");
                 document.location = "/panel/rec/";
             }
         }, 250);
