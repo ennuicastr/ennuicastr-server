@@ -25,7 +25,7 @@ async function accountCredits(uid) {
     let c = await credits.accountCredits(uid);
     if (c.subscription_expired) {
         // Check if it's been updated
-        const parts = /^(^:)*:(.*)/.exec(c.subscription_id);
+        const parts = /^([^:]*):(.*)/.exec(c.subscription_id);
         if (parts && parts[1] && s[parts[1]]) {
             await s[parts[1]].updateSubscription(
                 uid, c.subscription_id, {updateOnly: true});
