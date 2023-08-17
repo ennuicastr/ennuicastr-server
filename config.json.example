@@ -50,6 +50,16 @@
         "hq": 1500
     },
 
+    "apiShare": {
+        "dir": "/var/www/html/...",
+        "url": "https://your.url.here/..."
+    },
+
+    "runpodWhisper": {
+        "url": "https://api.runpod.ai/v2/...",
+        "key": "..."
+    },
+
     "google": {
         "clientId": "",
         "secret": ""
