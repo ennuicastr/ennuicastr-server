@@ -18,7 +18,7 @@
 const credits = require("../credits.js");
 const s = {
     "paypal": await include("subscription/paypal/s.jss"),
-    "stripe": await include("subscription/paypal/s.jss")
+    "stripe": await include("subscription/stripe/s.jss")
 };
 
 async function accountCredits(uid) {
