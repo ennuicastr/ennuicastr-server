@@ -47,14 +47,18 @@ async function main() {
     formats = formats.trim().split("\n");
 
     // Collect the jobs
+    const files = [];
     const jobs = [];
 
     // For each track...
     for (let si = 0; si < formats.length; si++) {
-        const format = formats[si];
+        let format = formats[si];
+        if (format === "opus")
+            format = "libopus";
 
         // Make a temporary file for the track
         const name = `${inRec}-${si}-${Math.random().toString(36)}${Math.random().toString(36)}${Math.random().toString(36)}.opus`;
+        files.push(name);
 
         // Set it to delete
         {
@@ -74,7 +78,7 @@ async function main() {
                 "-c",
                 `cat ${inBase}header1 ${inBase}header2 ${inBase}data ${inBase}header1 ${inBase}header2 ${inBase}data | ` +
                 `${config.repo}/cook/oggcorrect ${si + 1} | ` +
-                `ffmpeg -c:a ${format} -i - -f ogg -c:a libopus -ac 1 -ar 16000 -b:a 32k ` +
+                `ffmpeg -c:a ${format} -i - -f ogg -c:a libopus -ac 1 -ar 16000 -b:a 32k -application lowdelay ` +
                 `${config.apiShare.dir}/${name}`
             ], {
                 stdio: ["ignore", "ignore", "inherit"]
@@ -145,6 +149,20 @@ async function main() {
                 continue;
             }
 
+            // Delete the file
+            try {
+                fs.unlinkSync(`${config.apiShare.dir}/${files[si]}`);
+            } catch (ex) {}
+
+            results.push({
+                t: 0,
+                d: {
+                    c: "runpod-whisper-raw-result",
+                    result: status.data,
+                    caption: [{start: 0}]
+                }
+            });
+
             if (status.data.status !== "COMPLETED") {
                 // Failed!
                 return;
@@ -154,7 +172,7 @@ async function main() {
             for (const segment of status.data.output.words) {
                 if (!segment.length)
                     continue;
-                const start = Math.round(segment[0].start * 48000);
+                const start = Math.round(segment[0].start * 1000);
                 results.push({
                     t: Math.round(segment[0].start * 48000),
                     d: {
@@ -162,8 +180,8 @@ async function main() {
                         id: si + 1,
                         caption: segment.map(word => {
                             return {
-                                start: Math.round(word.start * 48000),
-                                end: Math.round(word.end * 48000),
+                                start: Math.round(word.start * 1000),
+                                end: Math.round(word.end * 1000),
                                 word: word.word
                             }
                         })
