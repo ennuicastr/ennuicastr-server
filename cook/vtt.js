@@ -88,7 +88,7 @@ function toStamp(time) {
             continue;
 
         // Adjust the times
-        const offset = line.o / 48;
+        const offset = (line.o / 48) || 0;
         for (const word of data.caption) {
             word.start = (word.start - offset) / 1000;
             word.end = (word.end - offset) / 1000;
@@ -149,8 +149,11 @@ function toStamp(time) {
         // And body
         for (let i = 0; i < caption.length; i++) {
             const word = caption[i];
+            if (i === 0 && word.word[0] === " ")
+                word.word = word.word.trim();
             if (i !== 0) {
-                process.stdout.write(" ");
+                if (word.word[0] !== " ")
+                    process.stdout.write(" ");
                 if (!transcriptOnly)
                     process.stdout.write("</c><" + toStamp(word.start) + "><c>");
             }
