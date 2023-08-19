@@ -487,7 +487,31 @@ if (!recInfo.purchased && !request.query.s) {
 <section class="wrapper special">
     <?JS maybeSample(); ?>
 
-    <p>Please choose a format to download <?JS= reclib.recordingName(recInfo) ?></p>
+    <p><?JS= reclib.recordingName(recInfo) ?></p>
+
+    <?JS if (recInfo.end) { ?>
+    <p>Recording duration: <?JS {
+        const start = new Date(recInfo.start);
+        const end = new Date(recInfo.end);
+        const dur = end.getTime() - start.getTime();
+        let m = Math.round(dur / 60000);
+        let h = Math.floor(m / 60);
+        m -= h * 60;
+        if (h) {
+            write(`${h} hour`);
+            if (h !== 1)
+                write("s");
+        }
+        write(` ${m} minute`);
+        if (m !== 1)
+            write("s");
+    } ?><br/>
+    <span style="font-size: 0.8em">
+    (NOTE: This duration will be incorrect if you paused during recording)
+    </span></p>
+    <?JS } ?>
+
+    <p>Please choose a format</p>
 
     <script type="text/javascript"><!--
     function disableDownloads() {
