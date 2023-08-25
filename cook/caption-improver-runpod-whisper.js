@@ -87,45 +87,41 @@ async function main() {
             if (ret !== 0)
                 break;
         }
-
-        // Make the request
-        const run = await nrc.postPromise(config.runpodWhisper.url + "/run", {
-            headers: {
-                accept: "application/json",
-                authorization: config.runpodWhisper.key,
-                "content-type": "application/json"
-            },
-            data: JSON.stringify({
-                input: {
-                    audio: `${config.apiShare.url}/${name}`,
-                    model: "large-v2",
-                    word_timestamps: true
-                }
-            })
-        });
-        if (!run.data || !run.data.id)
-            break;
-        jobs.push(run.data.id);
     }
 
-    if (jobs.length !== formats.length) {
-        // Failed to submit a job, bail!
-        for (const id of jobs) {
-            await nrc.getPromise(config.runpodWhisper.url + "/cancel/" + id, {
-                headers: {
-                    accept: "application/json",
-                    authorization: config.runpodWhisper.key
-                }
-            });
+    if (files.length !== formats.length) {
+        // Failed to generate some file(s)!
+        for (const file of files) {
+            try {
+                fs.unlinkSync(`${config.apiShare.dir}/${file}`);
+            } catch (ex) {}
         }
         return;
     }
 
-    // Now collect all the results
-    const maxWait = performance.now() + 24 * 60 * 60 * 1000;
+    // Make the request
+    const run = await nrc.postPromise(config.runpodWhisper.url + "/run", {
+        headers: {
+            accept: "application/json",
+            authorization: config.runpodWhisper.key,
+            "content-type": "application/json"
+        },
+        data: JSON.stringify({
+            input: {
+                audios: files.map(x => `${config.apiShare.url}/${x}`),
+                model: "large-v2",
+                word_timestamps: true
+            }
+        })
+    });
+    if (!run.data || !run.data.id)
+        return;
+    const id = run.data.id;
+
+    // Now collect the results
     let results = [];
-    for (let si = 0; si < jobs.length; si++) {
-        const id = jobs[si];
+    {
+        const maxWait = performance.now() + 24 * 60 * 60 * 1000;
         let waitTime = 2500;
         while (true) {
             // Check the status
@@ -138,7 +134,8 @@ async function main() {
             if (!status.data)
                 return;
 
-            if (status.data.status === "IN_QUEUE" || status.data.status === "IN_PROGRESS") {
+            if (status.data.status === "IN_QUEUE" ||
+                status.data.status === "IN_PROGRESS") {
                 // Still going, wait!
                 if (performance.now() > maxWait)
                     return;
@@ -149,11 +146,7 @@ async function main() {
                 continue;
             }
 
-            // Delete the file
-            try {
-                fs.unlinkSync(`${config.apiShare.dir}/${files[si]}`);
-            } catch (ex) {}
-
+            // Keep the raw result
             results.push({
                 t: 0,
                 d: {
@@ -165,30 +158,35 @@ async function main() {
 
             if (status.data.status !== "COMPLETED") {
                 // Failed!
-                return;
+                break;
             }
 
-            // Should have the data in place
-            for (const segment of status.data.output.words) {
-                if (!segment.length)
-                    continue;
-                const start = Math.round(segment[0].start * 1000);
-                results.push({
-                    t: Math.round(segment[0].start * 48000),
-                    d: {
-                        c: "caption",
-                        id: si + 1,
-                        caption: segment.map(word => {
-                            return {
-                                start: Math.round(word.start * 1000),
-                                end: Math.round(word.end * 1000),
-                                word: word.word
-                            }
-                        })
-                    }
-                });
-            }
+            // For each track...
+            for (let ti = 0; ti < status.data.output.length; ti++) {
+                const track = status.data.output[ti];
 
+                // Should have the data in place
+                for (const segment of track.words) {
+                    if (!segment.length)
+                        continue;
+                    const start = Math.round(segment[0].start * 1000);
+                    results.push({
+                        t: Math.round(segment[0].start * 48000),
+                        d: {
+                            c: "caption",
+                            id: ti + 1,
+                            caption: segment.map(word => {
+                                return {
+                                    start: Math.round(word.start * 1000),
+                                    end: Math.round(word.end * 1000),
+                                    word: word.word,
+                                    probability: word.probability
+                                }
+                            })
+                        }
+                    });
+                }
+            }
             break;
         }
     }
@@ -197,6 +195,39 @@ async function main() {
     results = results.sort((l, r) => {
         return l.d.caption[0].start - r.d.caption[0].start;
     });
+
+    // Use VAD to correct timing
+    for (let si = 0; si < formats.length; si++) {
+        const p = cproc.spawn("./vadify-timings.js", [
+            "" + (si + 1), `${config.apiShare.dir}/${files[si]}`
+        ], {
+            stdio: ["pipe", "pipe", "inherit"]
+        });
+
+        // Pass in the current results
+        for (const result of results)
+            p.stdin.write(JSON.stringify(result) + "\n");
+        p.stdin.end();
+
+        // Read out the new results
+        let newResults = "";
+        try {
+            p.stdout.on("data", chunk => newResults += chunk.toString("utf8"));
+            await new Promise(res => p.stdout.on("end", res));
+            newResults = newResults.trim().split("\n").map(JSON.parse);
+        } catch (ex) {
+            newResults = results;
+        }
+        if (newResults.length)
+            results = newResults;
+    }
+
+    // Delete the files
+    for (const file of files) {
+        try {
+            fs.unlinkSync(`${config.apiShare.dir}/${file}`);
+        } catch (ex) {}
+    }
 
     // Output it
     const outS = fs.createWriteStream(outFile + ".tmp", "utf8");
