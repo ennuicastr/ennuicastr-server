@@ -1,0 +1,9 @@
+ISC.
+
+The actual text of the license is in the header of each file. License text is
+kept there instead of here because it's very easy for a LICENSE file to become
+out of sync with the actual licensed code (in fact, almost inevitable). It is
+poor practice to keep license information for code in a separate file from the
+code it licenses.
+
+This LICENSE file is here because some people are comforted by its presence.
