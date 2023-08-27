@@ -318,7 +318,13 @@ function launchRecording() {
         clientWindow.location.href = url;
         var maxWait = 20;
         var interval = setInterval(function() {
-            if (clientWindow.location.href !== oldLoc) {
+            let changed = false;
+            try {
+                changed = (clientWindow.location.href !== oldLoc);
+            } catch (ex) {
+                changed = true;
+            }
+            if (changed) {
                 clearInterval(interval);
                 document.location = "/panel/rec/";
             } else if (--maxWait <= 0) {
