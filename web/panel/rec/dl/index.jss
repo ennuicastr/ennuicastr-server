@@ -40,6 +40,10 @@ const creditsj = await include("../../credits.jss");
 const recInfo = await recM.get(rid, uid);
 if (!recInfo)
     return writeHead(302, {"location": "/panel/rec/"});
+let recInfoExtra = null;
+try {
+    recInfoExtra = JSON.parse(recInfo.extra);
+} catch (ex) {}
 
 const accountCredits = await creditsj.accountCredits(uid);
 const preferredGateway = await payment.preferredGateway(uid);
@@ -114,6 +118,64 @@ if (request.query.p && !recInfo.purchased && recInfo.status >= 0x30) {
     return;
 }
 
+// If they requested captioning, perform it
+if (request.query.captionImprover && recInfo.purchased &&
+    (!recInfoExtra || !recInfoExtra.captionImprover)) {
+    // Start the process
+    const p = cp.spawn("./caption-improver-runpod-whisper.js", [
+        `${config.rec}/${rid}.ogg.captions`, `${rid}`
+    ], {
+        cwd: `${config.repo}/cook`,
+        stdio: "ignore",
+        detached: true
+    });
+    recInfoExtra = recInfoExtra || {};
+    recInfoExtra.captionImprover = p.pid || true;
+
+    // And mark it as in progress
+    while (true) {
+        try {
+            await db.runP("BEGIN TRANSACTION;");
+
+            // Get the current status
+            let row = await db.getP("SELECT extra FROM recordings WHERE uid=@UID AND rid=@RID;", {
+                "@UID": recInfo.uid,
+                "@RID": rid
+            });
+            if (!row) {
+                await db.runP("ROLLBACK;");
+                break;
+            }
+
+            // Add the captionImprover pid
+            let extra = {};
+            try {
+                extra = JSON.parse(row.extra);
+            } catch (ex) {}
+            extra.captionImprover = p.pid || true;
+            extra = JSON.stringify(extra);
+
+            // And put it back
+            await db.runP("UPDATE recordings SET extra=@EXTRA WHERE uid=@UID AND rid=@RID;", {
+                "@EXTRA": extra,
+                "@UID": uid,
+                "@RID": rid
+            });
+
+            await db.runP("COMMIT;");
+
+            break;
+
+        } catch (ex) {
+            await db.runP("ROLLBACK;");
+        }
+    }
+
+    // Redirect to the normal download site
+    writeHead(302, {"location": "?i=" + recInfo.rid.toString(36)});
+    return;
+}
+
 const dlName = (function() {
     if (recInfo.name)
         return recInfo.name;
@@ -131,6 +193,8 @@ function formatToName(format) {
         return "Opus";
     else if (format === "vorbis")
         return "Ogg Vorbis";
+    else if (format === "vtt")
+        return "WebVTT captions";
     else
         return format.toUpperCase();
 }
@@ -163,6 +227,12 @@ if (request.query.f) {
         case "vorbis":
             format = "vorbis";
             mext = "ogg";
+            break;
+        case "wav":
+            format = mext = "wav";
+            break;
+        case "vtt":
+            format = mext = "vtt";
             break;
         case "raw":
             format = "raw";
@@ -251,11 +321,20 @@ if (request.query.f) {
     } else {
         // Jump through to the actual downloader
         await new Promise(function(resolve) {
-            var args = [config.rec, safeName, rid, format, container];
+            const args = [
+                "--id", `${rid}`,
+                "--rec-base", config.rec,
+                "--file-name", safeName,
+                "--format", format,
+                "--container", container
+            ];
             if (request.query.s)
-                args.push("sample");
+                args.push("--sample");
 
-            var p = cp.spawn(config.repo + "/cook/cook.sh", args, {
+            if (format === "vtt")
+                args.push("--exclude", "audio");
+
+            const p = cp.spawn(config.repo + "/cook/cook2.sh", args, {
                 stdio: ["ignore", "pipe", "ignore"]
             });
 
@@ -303,6 +382,8 @@ function maybeSample() {
 
 // Show the downloader
 await include("../../head.jss", {title: "Download", paypal: !recInfo.purchased});
+
+let hasCaptionsFile = false;
 
 if (!recInfo.purchased)
     samplePost = "&s=1";
@@ -464,9 +545,8 @@ if (!recInfo.purchased && !request.query.s) {
     </section>
 <?JS
 
-// Check for transcription with no finished post-processing
-} else if (recInfo.transcription) {
-    let hasCaptionsFile = false;
+// Check for captioning in progress
+} else if (recInfoExtra && recInfoExtra.captionImprover) {
     try {
         fs.accessSync(config.rec + "/" + rid + ".ogg.captions", fs.constants.R_OK);
         hasCaptionsFile = true;
@@ -477,7 +557,11 @@ if (!recInfo.purchased && !request.query.s) {
         <section class="wrapper special style1" id="captions-dialog">
             <header><h2>Note</h2></header>
 
-            <p>Your recording used live captioning. Post-processing is currently running to improve the quality of the captions. That post-processing has not yet finished; check back later for improved captions. You may download with the original (live) captions now.</p>
+            <p>Transcription is currently in progress. The transcript is not yet available.</p>
+
+            <?JS if (recInfo.transcription) { ?>
+                <p>The captions generated live while recording are available until the improved captions have been generated.</p>
+            <?JS } ?>
         </section>
 <?JS
     }
@@ -537,6 +621,44 @@ if (!recInfo.purchased && !request.query.s) {
 
     <p>&nbsp;</p>
 
+    <div id="video-box" style="display: none">
+    <header><h3>Video</h3></header>
+
+    <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
+
+    <p><button id="video-button">Fetch video</button></p>
+
+    <p>&nbsp;</p>
+    </div>
+
+    <?JS
+    if (recInfo.purchased) {
+        ?>
+        <header><h3>Transcript</h3></header>
+
+        <?JS
+        if (hasCaptionsFile) {
+        ?>
+            <p><?JS showDL("vtt"); ?></p>
+        <?JS
+        } else if (recInfo.transcription) {
+        ?>
+        <p>Transcript generated while recording:<br/><?JS showDL("vtt"); ?></p>
+        <?JS } ?>
+
+        <?JS
+        if (!recInfoExtra || !recInfoExtra.captionImprover) {
+        ?>
+        <p><a class="button" href="<?JS= `?i=${recInfo.rid.toString(36)}&amp;captionImprover=1` ?>">Transcribe speech</a></p>
+
+        <p><span style="display: inline-block; max-width: 50em;">NOTE: Transcriptions are inferred by OpenAI Whisper. If you choose to generate a transcription, your audio data will be sent to a server operated by <a href="https://www.runpod.io/">RunPod</a>. Consult <a href="https://www.runpod.io/legal/privacy-policy">their privacy policy</a> for further information.</p>
+        <?JS } ?>
+
+        <p>&nbsp;</p>
+        <?JS
+    }
+    ?>
+
     <?JS
     if (recInfo.purchased) {
         ?>
@@ -551,22 +673,12 @@ if (!recInfo.purchased && !request.query.s) {
     }
     ?>
 
-    <div id="video-box" style="display: none">
-    <header><h3>Video</h3></header>
-
-    <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
-
-    <p><button id="video-button">Fetch video</button></p>
-
-    <p>&nbsp;</p>
-    </div>
-
     <header><h3>Other formats</h3></header>
 
     <p><?JS
     if (mobile)
         showDL("aup");
-    [(mac?"flac":"aac"), "opus", "vorbis"].forEach(showDL);
+    ["wav", (mac?"flac":"aac"), "opus", "vorbis"].forEach(showDL);
     ?></p>
 
     <?JS

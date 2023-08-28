@@ -1510,11 +1510,6 @@ async function stopRec() {
 
     // Log it
     log("recording-end", JSON.stringify(recInfo), {uid: recInfo.uid, rid: recInfo.rid});
-
-    // Postproc
-    cproc.spawn(config.repo + "/cook/postproc.sh", [
-        config.rec, recInfo.rid
-    ]);
 }
 
 // Calculate the credit rate currently in use
