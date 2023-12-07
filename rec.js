@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -218,12 +218,22 @@ function hostUrl(rec, opts) {
         features |= 2;
     if (rec.videoRec)
         features |= 4;
-    if (rec.rtennuiAudio)
-        features |= 0x200;
     if (rec.transcription)
         features |= 8;
     if (rec.recordOnly)
         features |= 0x100;
+    let extra = rec.extra || {};
+    if (typeof extra === "string") {
+        try {
+            extra = JSON.parse(extra);
+        } catch (ex) {
+            extra = {};
+        }
+    }
+    if (extra.jitsiAudio)
+        features |= 0x800;
+    if (extra.jitsiVideo)
+        features |= 0x1000;
     if (rec.format === "flac")
         features |= 0x10;
 

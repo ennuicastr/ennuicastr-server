@@ -47,9 +47,12 @@ rec = {
     rtc: !!rec.r,
     recordOnly: !!rec.x,
     videoRec: !!rec.v,
-    rtennuiAudio: !!rec.xra,
     transcription: !!rec.t,
-    universalMonitor: !!rec.r
+    universalMonitor: !!rec.r,
+    extra: {
+        jitsiVideo: !!rec.xjv,
+        jitsiAudio: !!rec.xjv && !!rec.xja
+    }
 };
 
 // Add these defaults to the database
@@ -59,8 +62,8 @@ while (true) {
 
         await db.runP("DELETE FROM defaults WHERE uid=@UID;", {"@UID": uid});
         await db.runP("INSERT INTO defaults " +
-                      "( uid,  name,  format,  continuous,  rtc,  recordOnly,  videoRec,  rtennuiAudio, transcription,  universal_monitor) VALUES " +
-                      "(@UID, @NAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @RTENNUIAUDIO, @TRANSCRIPTION, @UNIVERSAL_MONITOR);", {
+                      "( uid,  name,  format,  continuous,  rtc,  recordOnly,  videoRec, transcription,  universal_monitor,  extra) VALUES " +
+                      "(@UID, @NAME, @FORMAT, @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC, @TRANSCRIPTION, @UNIVERSAL_MONITOR, @EXTRA);", {
             "@UID": uid,
             "@NAME": rec.name,
             "@FORMAT": rec.format,
@@ -68,9 +71,9 @@ while (true) {
             "@RTC": rec.rtc,
             "@RECORDONLY": rec.recordOnly,
             "@VIDEOREC": rec.videoRec,
-            "@RTENNUIAUDIO": rec.rtennuiAudio,
             "@TRANSCRIPTION": rec.transcription,
-            "@UNIVERSAL_MONITOR": rec.universalMonitor
+            "@UNIVERSAL_MONITOR": rec.universalMonitor,
+            "@EXTRA": JSON.stringify(rec.extra)
         });
 
         await db.runP("COMMIT;");

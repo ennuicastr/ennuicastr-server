@@ -38,13 +38,21 @@ const defaults = await (async function() {
             continuous: false,
             rtc: true,
             recordOnly: false,
-            rtennuiAudio: true,
             videoRec: false,
             transcription: false,
-            universal_monitor: true
+            universal_monitor: true,
+            extra: "{}"
         };
-    row.jitsiAudio = !row.rtennuiAudio;
     row.universal_monitor = !!row.universal_monitor;
+    try {
+        row.extra = JSON.parse(row.extra);
+        if (!row.extra)
+            row.extra = {};
+    } catch (ex) {
+        row.extra = {};
+    }
+    row.jitsiVideo = row.extra.jitsiVideo;
+    row.jitsiAudio = row.extra.jitsiAudio;
     return row;
 })();
 ?>
@@ -126,7 +134,8 @@ const defaults = await (async function() {
         const showQual = (accountCredits.subscription >= 2 ||
                           defaults.format === "flac" ||
                           defaults.continuous);
-        const showAdvanced = (!defaults.rtennuiAudio ||
+        const showAdvanced = (defaults.extra.jitsiAudio ||
+                              defaults.extra.jitsiVideo ||
                               !defaults.rtc ||
                               defaults.recordOnly ||
                               defaults.transcription);
@@ -166,9 +175,19 @@ const defaults = await (async function() {
         <div id="advanced"<?JS= showAdvanced ? "" : ' style="display: none"' ?>>
         <?JS
 
-        l("jitsiAudio", "Use Jitsi for audio", true);
-        chk("jitsiAudio", "xja");
-        alt("jitsiAudio", "Disable low-latency audio, and use Jitsi Meet for both audio and video. Jitsi is always used for video, so using it for both reduces resource consumption, but at the cost of higher audio latency and diminished portability.");
+        l("jitsiVideo", "Use <a href='https://jitsi.meet/'>Jitsi</a> for video", true);
+        chk("jitsiVideo", "xjv");
+        alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
+        ?>
+
+        <div id="jitsi-audio-hider" style="display: none">
+            <?JS
+            l("jitsiAudio", "Use Jitsi for audio", true);
+            chk("jitsiAudio", "xja");
+            alt("jitsiAudio", "Use Jitsi Meet for both video and audio.");
+            ?>
+        </div>
+        <?JS
 
         l("transcription", "Live captions", true);
         chk("transcription", "t");
@@ -201,6 +220,14 @@ const defaults = await (async function() {
 
 <script type="text/javascript">
 var clientUrl, clientWindow;
+
+function updateJitsiVideo() {
+    var v = $("#r-jitsiVideo")[0].checked;
+    $("#jitsi-audio-hider")[0].style.display = v ? "" : "none";
+}
+
+$("#r-jitsiVideo")[0].onchange = updateJitsiVideo;
+updateJitsiVideo();
 
 function updateRecordOnly() {
     var v = $("#r-recordOnly")[0].checked;
@@ -254,12 +281,6 @@ function launchRecording() {
         h.disabled = true;
     });
 
-    // Since defaults changed, RTEnnui is on if Jitsi is off
-    if ("xja" in q) {
-        q.xra = 1 - q.xja;
-        delete q.xja;
-    }
-
     fetch("/panel/rec/start.jss", {
         method: "POST",
         headers: {"content-type": "application/json"},
@@ -286,12 +307,14 @@ function launchRecording() {
             features |= 2;
         if (res.videoRec)
             features |= 4;
-        if (res.rtennuiAudio)
-            features |= 0x200;
         if (res.transcription)
             features |= 8;
         if (res.recordOnly)
             features |= 0x100;
+        if (res.extra && res.extra.jitsiAudio)
+            features |= 0x800;
+        if (res.extra && res.extra.jitsiVideo)
+            features |= 0x1000;
         if (res.format === "flac")
             features |= 0x10;
 

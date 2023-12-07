@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Yahweasel
+ * Copyright (c) 2018-2023 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -1241,9 +1241,9 @@ async function recvRecInfo(r) {
     r.key = id36.genInt();
     r.master = id36.genInt();
     r.wskey = id36.genInt();
-    r.extra = {
-        assetKey: id36.genKey().toString("binary")
-    };
+    if (!r.extra)
+        r.extra = {};
+    r.extra.assetKey = id36.genKey().toString("binary");
 
     // Make a recording ID
     var rid;
@@ -1253,14 +1253,12 @@ async function recvRecInfo(r) {
             await db.runP("INSERT INTO recordings " +
                           "( uid,  rid,  port,  name,  format," +
                           "  continuous,  rtc,  recordOnly,  videoRec," +
-                          "  rtennuiAudio," +
                           "  transcription,  key,  master,  wskey,  extra," +
                           "  status,  init,  expiry,  tracks,  cost, purchased)" +
                           " VALUES " +
                           "(@UID, @RID, @PORT, @NAME, @FORMAT," +
                           " @CONTINUOUS, @RTC, @RECORDONLY, @VIDEOREC," +
-                          " @RTENNUIAUDIO," +
-                          " @TRANSCRIPTION, @KEY, @MASTER, @WSKEY, @EXTRAS," +
+                          " @TRANSCRIPTION, @KEY, @MASTER, @WSKEY, @EXTRA," +
                           " 0, datetime('now'), datetime('now', '1 month'), 0, 0, '');", {
                 "@UID": r.uid,
                 "@RID": rid,
@@ -1271,12 +1269,11 @@ async function recvRecInfo(r) {
                 "@RTC": r.rtc,
                 "@RECORDONLY": r.recordOnly,
                 "@VIDEOREC": r.videoRec,
-                "@RTENNUIAUDIO": r.rtennuiAudio,
                 "@TRANSCRIPTION": r.transcription,
                 "@KEY": r.key,
                 "@MASTER": r.master,
                 "@WSKEY": r.wskey,
-                "@EXTRAS": JSON.stringify(r.extra)
+                "@EXTRA": JSON.stringify(r.extra)
             });
             break;
 
