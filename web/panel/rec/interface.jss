@@ -175,6 +175,10 @@ const defaults = await (async function() {
         <div id="advanced"<?JS= showAdvanced ? "" : ' style="display: none"' ?>>
         <?JS
 
+        l("transcription", "Live captions", true);
+        chk("transcription", "t");
+        alt("transcription", "Enable live captions. Currently only English is supported.");
+
         l("jitsiVideo", "Use <a href='https://jitsi.meet/'>Jitsi</a> for video", true);
         chk("jitsiVideo", "xjv");
         alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
@@ -188,10 +192,6 @@ const defaults = await (async function() {
             ?>
         </div>
         <?JS
-
-        l("transcription", "Live captions", true);
-        chk("transcription", "t");
-        alt("transcription", "Enable live captions. Currently only English is supported.");
 
         l("recordOnly", "Mute live voice chat", true);
         chk("recordOnly", "x");
