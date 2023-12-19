@@ -51,7 +51,9 @@ const defaults = await (async function() {
     } catch (ex) {
         row.extra = {};
     }
-    row.jitsiVideo = row.extra.jitsiVideo;
+    row.jitsiVideo = (typeof row.extra.jitsiVideo === "boolean")
+        ? row.extra.jitsiVideo
+        : true;
     row.jitsiAudio = row.extra.jitsiAudio;
     return row;
 })();
@@ -134,8 +136,8 @@ const defaults = await (async function() {
         const showQual = (accountCredits.subscription >= 2 ||
                           defaults.format === "flac" ||
                           defaults.continuous);
-        const showAdvanced = (defaults.extra.jitsiAudio ||
-                              defaults.extra.jitsiVideo ||
+        const showAdvanced = (defaults.jitsiAudio ||
+                              !defaults.jitsiVideo ||
                               !defaults.rtc ||
                               defaults.recordOnly ||
                               defaults.transcription);
@@ -181,7 +183,8 @@ const defaults = await (async function() {
 
         l("jitsiVideo", "Use <a href='https://jitsi.meet/'>Jitsi</a> for video", true);
         chk("jitsiVideo", "xjv");
-        alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
+        alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. This is currently the default, but the default will change soon. Currently, you must turn this option OFF to support live video chat on Firefox.");
+        //alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
         ?>
 
         <div id="jitsi-audio-hider" style="display: none">
