@@ -232,8 +232,8 @@ function hostUrl(rec, opts) {
     }
     if (extra.jitsiAudio)
         features |= 0x800;
-    if (extra.jitsiVideo)
-        features |= 0x1000;
+    if (extra.rtennuiVideo)
+        features |= 0x400;
     if (rec.format === "flac")
         features |= 0x10;
 

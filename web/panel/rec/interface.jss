@@ -51,9 +51,7 @@ const defaults = await (async function() {
     } catch (ex) {
         row.extra = {};
     }
-    row.jitsiVideo = (typeof row.extra.jitsiVideo === "boolean")
-        ? row.extra.jitsiVideo
-        : true;
+    row.rtennuiVideo = row.extra.rtennuiVideo;
     row.jitsiAudio = row.extra.jitsiAudio;
     return row;
 })();
@@ -137,7 +135,7 @@ const defaults = await (async function() {
                           defaults.format === "flac" ||
                           defaults.continuous);
         const showAdvanced = (defaults.jitsiAudio ||
-                              !defaults.jitsiVideo ||
+                              defaults.rtennuiVideo ||
                               !defaults.rtc ||
                               defaults.recordOnly ||
                               defaults.transcription);
@@ -181,9 +179,9 @@ const defaults = await (async function() {
         chk("transcription", "t");
         alt("transcription", "Enable live captions. Currently only English is supported.");
 
-        l("jitsiVideo", "Use <a href='https://jitsi.meet/'>Jitsi</a> for video", true);
-        chk("jitsiVideo", "xjv");
-        alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. This is currently the default, but the default will change soon. Currently, you must turn this option OFF to support live video chat on Firefox.");
+        l("rtennuiVideo", "Use experimental video", true);
+        chk("rtennuiVideo", "xrv");
+        alt("rtennuiVideo", "Ennable Ennuicastr's new, experimental system for live video chat. This will become the default once it's considered sufficiently stable. Currently, you must enable this option to support live video chat on Firefox.");
         //alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
         ?>
 
@@ -224,13 +222,13 @@ const defaults = await (async function() {
 <script type="text/javascript">
 var clientUrl, clientWindow;
 
-function updateJitsiVideo() {
-    var v = $("#r-jitsiVideo")[0].checked;
-    $("#jitsi-audio-hider")[0].style.display = v ? "" : "none";
+function updateRTEnnuiVideo() {
+    var v = $("#r-rtennuiVideo")[0].checked;
+    $("#jitsi-audio-hider")[0].style.display = v ? "none" : "";
 }
 
-$("#r-jitsiVideo")[0].onchange = updateJitsiVideo;
-updateJitsiVideo();
+$("#r-rtennuiVideo")[0].onchange = updateRTEnnuiVideo;
+updateRTEnnuiVideo();
 
 function updateRecordOnly() {
     var v = $("#r-recordOnly")[0].checked;
@@ -316,8 +314,8 @@ function launchRecording() {
             features |= 0x100;
         if (res.extra && res.extra.jitsiAudio)
             features |= 0x800;
-        if (res.extra && res.extra.jitsiVideo)
-            features |= 0x1000;
+        if (res.extra && res.extra.rtennuiVideo)
+            features |= 0x400;
         if (res.format === "flac")
             features |= 0x10;
 

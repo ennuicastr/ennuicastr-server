@@ -50,8 +50,8 @@ rec = {
     transcription: !!rec.t,
     universalMonitor: !!rec.r,
     extra: {
-        jitsiVideo: !!rec.xjv,
-        jitsiAudio: !!rec.xjv && !!rec.xja
+        rtennuiVideo: !!rec.xrv,
+        jitsiAudio: !!!rec.xrv && !!rec.xja
     }
 };
 
