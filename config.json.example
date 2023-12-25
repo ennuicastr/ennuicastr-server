@@ -1,4 +1,5 @@
 {
+    "//urls": "URLs and paths for Ennuicastr and associated tools",
     "site": "https://ennuicastr.com/",
     "panel": "https://ennuicastr.com/panel/",
     "client": "https://r.ennuicastr.com/",
@@ -13,12 +14,14 @@
     "sock": "/tmp/ennuicastr-server.sock",
     "lobbysock": "/tmp/ennuicastr-lobby-server.sock",
 
+    "//creditCost": "Cost of credits. Each credit is typically second, and each currency unit is 1 cent. Actual value of credits is given by recCost below.",
     "creditCost": {
         "currency": 100,
         "credits": 3600
     },
     "maxCredits": 86400,
 
+    "//recCost": "Cost of a recording, in terms of credits. 'upton' is how much it costs for up to n users, where n is given by 'n'. 'plus' is for each additional user. Costs are credits per minute.",
     "recCost": {
         "basic": {
             "upton": 60,
@@ -32,6 +35,7 @@
         }
     },
 
+    "//limits": "Various limits on use",
     "limits": {
         "simultaneous": 4,
         "lobbies": 64,
@@ -45,26 +49,31 @@
         "soundDurationTotal": 7200
     },
 
+    "//subscription": "Cost, in cents per month, of subscriptions.",
     "subscription": {
         "basic": 1000,
         "hq": 1500
     },
 
+    "//apiShare": "Location both locally and online to share files for use in remote API services (in particular, runpod.ai for Whisper transcription)",
     "apiShare": {
-        "dir": "/var/www/html/...",
-        "url": "https://your.url.here/..."
+        "dir": "/var/www/html/sharedfiles",
+        "url": "https://ennuicastr.com/sharedfiles"
     },
 
+    "//runpodWhisper": "Server information for Whisper API running on RunPod. Note that you cannot use the default RunPod Whisper or faster-whisper client. You must use https://hub.docker.com/r/yahweasel/runpod-worker-configurable-faster_whisper",
     "runpodWhisper": {
-        "url": "https://api.runpod.ai/v2/...",
-        "key": "..."
+        "url": "https://api.runpod.ai/v2/",
+        "key": ""
     },
 
+    "//google": "API key for Google login",
     "google": {
         "clientId": "",
         "secret": ""
     },
 
+    "//firebase": "API key and config info for Firebase login",
     "firebase": {
         "config": {
             "apiKey": "",
@@ -78,16 +87,19 @@
         "serviceAccountKey": "~/firebase-adminsdk.json"
     },
 
+    "//facebook": "API key for Facebook login",
     "facebook": {
         "appId": "",
         "secret": ""
     },
 
+    "//discord": "API key for Discord login",
     "discord": {
         "clientId": "",
         "secret": ""
     },
 
+    "//paypal": "API key and configuration info for PayPal login, payments, subscriptions, etc. Use subscription/create-paypal.js to create the subscription metadata. Note that 'minimum' is the minimum payment allowed from PayPal; 200 is reasonable if you've negotiated fees optimized for small transactions.",
     "paypal": {
         "minimum": 200,
         "api": "api.paypal.com",
@@ -96,6 +108,7 @@
         "subscription": "... replace this string with the output from subscription/create-paypal.js ..."
     },
 
+    "//stripe": "API key and configuration info for Stripe payments and subscriptions",
     "stripe": {
         "minimum": 1000,
         "public": "",
