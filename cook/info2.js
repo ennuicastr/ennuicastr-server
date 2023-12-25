@@ -81,7 +81,7 @@ async function main() {
         if (info.chat)
             process.stdout.write("\r\n\r\nChat:\r\n");
 
-        for (const line of info.chat) {
+        for (const line of (info.chat||[])) {
             process.stdout.write("\t" +
                 timeStr(line.time) +
                 ": " +
