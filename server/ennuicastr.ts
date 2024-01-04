@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 Yahweasel
+ * Copyright (c) 2018-2024 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -681,7 +681,11 @@ wss.on("connection", (ws, wsreq) => {
 
         switch (cmd) {
             case prot.ids.data:
-                var p = prot.parts.data;
+            case prot.ids.datax:
+            {
+                let p = (cmd === prot.ids.datax)
+                    ? prot.parts.datax
+                    : prot.parts.data;
                 if (msg.length < p.length)
                     return die();
 
@@ -691,17 +695,40 @@ wss.on("connection", (ws, wsreq) => {
                     break;
 
                 // Get the granule position
-                var granulePos = msg.readUIntLE(p.granulePos, 6);
+                let granulePos = msg.readUIntLE(p.granulePos, 6);
 
                 // Fix any weirdness
-                var latestAcceptable = curGranule() + 30*48000;
+                let latestAcceptable = curGranule() + 30*48000;
                 if (granulePos < lastGranule)
                     granulePos = lastGranule;
                 else if (granulePos > latestAcceptable)
                     granulePos = latestAcceptable;
                 lastGranule = granulePos;
 
-                var chunk = msg.slice(p.length);
+                let chunk = msg.slice(p.length);
+
+                // Handle datax
+                let localTrack = track;
+                let localId = id;
+                if (cmd === prot.ids.datax) {
+                    localId |= 0x80000000;
+
+                    /* Our extended data is given with the high bit set in the
+                     * ID and a 32-bit value at the beginning of the data block */
+                    let subId = msg.readInt32LE(p.track);
+                    let chunkPrefix = new Buffer(4);
+                    chunkPrefix.writeInt32LE(subId);
+                    chunk = Buffer.concat([chunkPrefix, chunk]);
+
+                    // Get the sub-track for this
+                    if (!track.subTracks)
+                        track.subTracks = {};
+                    if (!track.subTracks[subId]) {
+                        recMeta({c:"subtrack", id, subId});
+                        track.subTracks[subId] = {packetNo: 0};
+                    }
+                    localTrack = track.subTracks[subId];
+                }
 
                 // Check for abuse
                 if (floodDetect({p: granulePos, l: chunk.length}))
@@ -713,12 +740,12 @@ wss.on("connection", (ws, wsreq) => {
                     break;
 
                 // Then write it out
-                outData.write(granulePos, id, track.packetNo++, chunk);
+                outData.write(granulePos, localId, localTrack.packetNo++, chunk);
 
                 // Are they actually speaking?
-                var speaking = true;
-                var continuous = !!(flags & prot.flags.features.continuous);
-                var flac = (flags & prot.flags.dataTypeMask) === prot.flags.dataType.flac;
+                let speaking = true;
+                let continuous = !!(flags & prot.flags.features.continuous);
+                let flac = (flags & prot.flags.dataTypeMask) === prot.flags.dataType.flac;
                 if (continuous)
                     speaking = !!(chunk[0]);
                 else if (flac)
@@ -734,6 +761,7 @@ wss.on("connection", (ws, wsreq) => {
                     awaitBuffering();
 
                 break;
+            }
 
             case prot.ids.text:
                 var p = prot.parts.text;
@@ -901,7 +929,7 @@ wss.on("connection", (ws, wsreq) => {
         }
 
         // And make sure we're not being flooded
-        if (floodLogSz > 48000*128)
+        if (floodLogSz > 48000*256)
             return true;
         return false;
     }

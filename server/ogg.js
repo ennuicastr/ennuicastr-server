@@ -58,10 +58,10 @@ OggEncoder.prototype.write = function(granulePos, streamNo, packetNo, chunk, fla
     header.writeUIntLE(granulePos, 6, 6);
 
     // Byte 14: Stream number
-    header.writeUInt32LE(streamNo, 14);
+    header.writeInt32LE(~~streamNo, 14);
 
     // Byte 18: Sequence number
-    header.writeUInt32LE(packetNo, 18);
+    header.writeInt32LE(~~packetNo, 18);
 
     // Byte 22: CRC-32, filled in later
 
