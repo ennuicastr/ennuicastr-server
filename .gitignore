@@ -13,3 +13,10 @@ cook/oggtracks
 cook/wavduration
 server/ennuicastr.js
 server/ennuicastr-beta.js
+web/assets/js/localforage.min.js
+web/assets/libav/libav*
+web/assets/libs/libspecbleach*
+web/assets/libs/yalap*
+web-js/download-processor/dist/
+web/ecdssw.min.js
+web/panel/rec/dlx/ennuicastr-download-processor*

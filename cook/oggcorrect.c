@@ -231,6 +231,12 @@ int main(int argc, char **argv)
     // Which stream are we keeping?
     uint32_t keepStreamNo;
 
+    // Which stream are we keeping (for looking for subtrack data)
+    uint32_t keepStreamNoSub;
+
+    // Which subtrack are we keeping?
+    uint32_t keepSubStreamNo;
+
     // Meta track info (used for pauses)
     int foundMeta = 0;
     uint32_t metaStreamNo = 0;
@@ -275,11 +281,19 @@ int main(int argc, char **argv)
     const unsigned char *zeroPacket = NULL;
     uint32_t zeroPacketSz = 0;
 
-    if (argc != 2) {
+    if (argc < 2) {
         fprintf(stderr, "Use: oggcorrect <track no>\n");
         exit(1);
     }
-    keepStreamNo = atoi(argv[1]);
+    keepStreamNo = keepStreamNoSub = atoi(argv[1]);
+
+    if (argc > 2) {
+        keepSubStreamNo = atoi(argv[2]);
+        if (keepSubStreamNo)
+            keepStreamNoSub = keepStreamNo | 0x80000000;
+    } else {
+        keepSubStreamNo = 0;
+    }
 
     // First look for the header info
     while (readOgg(&preHeader, &oggHeader, &buf, &bufSz, &packetSize)) {
@@ -322,6 +336,8 @@ int main(int argc, char **argv)
     }
 
     skip = vadLevel ? 1 : 0;
+    if (keepSubStreamNo)
+        skip += sizeof(uint32_t); // Substream is kept as first 4 bytes of data
 
     // Now get the actual packet info
     do {
@@ -343,7 +359,10 @@ int main(int argc, char **argv)
             }
         }
 
-        if (oggHeader.streamNo != keepStreamNo)
+        if (oggHeader.streamNo != keepStreamNoSub)
+            continue;
+
+        if (keepSubStreamNo && *((uint32_t *) buf) != keepSubStreamNo)
             continue;
 
         // Check channel count
@@ -381,13 +400,16 @@ int main(int argc, char **argv)
 
         // Check if it's silent
         if (vadLevel) {
-            if (buf[0] < vadLevel) {
+            unsigned char pktVad = buf[0];
+            if (keepSubStreamNo)
+                pktVad = buf[sizeof(uint32_t)];
+            if (pktVad < vadLevel) {
                 // Silent
                 tail->flags |= FLAG_SILENT;
             }
         } else {
             // Silly detection
-            if (packetSize < (flacRate?16:8))
+            if (packetSize - skip < (flacRate?16:8))
                 tail->flags |= FLAG_SILENT;
         }
 
@@ -578,6 +600,8 @@ int main(int argc, char **argv)
     } while (readOgg(&preHeader, &oggHeader, &buf, &bufSz, &packetSize));
 
     skip = vadLevel ? 1 : 0;
+    if (keepSubStreamNo)
+        skip += sizeof(uint32_t);
 
     // FLAC in ffmpeg is picky about channel counts, so throw in a zero packet right at the start
     {
@@ -591,7 +615,10 @@ int main(int argc, char **argv)
     // And finally, pass thru the data with corrected timestamps
     cur = head.next;
     do {
-        if (oggHeader.streamNo != keepStreamNo)
+        if (oggHeader.streamNo != keepStreamNoSub)
+            continue;
+
+        if (keepSubStreamNo && *((uint32_t *) buf) != keepSubStreamNo)
             continue;
 
         // Add any gaps
@@ -611,6 +638,7 @@ int main(int argc, char **argv)
 
         // Then insert the current packet
         if (!(cur->flags & FLAG_DROP)) {
+            oggHeader.streamNo = keepStreamNo;
             oggHeader.granulePos = cur->outputGranulePos;
             oggHeader.sequenceNo = lastSequenceNo++;
             writeOgg(&oggHeader, buf + skip, packetSize - skip);

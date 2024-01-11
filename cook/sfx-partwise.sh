@@ -31,8 +31,22 @@ SCRIPTBASE=`realpath "$SCRIPTBASE"`
 
 [ "$2" ]
 RECBASE="$1"
-ID="$2"
-STREAMS="$3"
+shift
+ID="$1"
+shift
+
+DURATION=""
+STREAMS=""
+
+for arg in "$@"
+do
+    if [ "$arg" = "-d" ]
+    then
+        DURATION="-d"
+    else
+        STREAMS="$STREAMS $arg"
+    fi
+done
 
 cd "$RECBASE"
 
@@ -53,6 +67,11 @@ for c in $STREAMS
 do
     LFILTER="$(timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
                timeout $DEF_TIMEOUT "$SCRIPTBASE/oggmeta" |
-               timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" $((c-1)))"
-    timeout $DEF_TIMEOUT $NICE ffmpeg -nostdin -filter_complex "$LFILTER" -map '[aud]' -f ogg -page_duration 20000 -c:a flac - < /dev/null
+               timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" $DURATION $((c-1)))"
+    if [ "$DURATION" ]
+    then
+        printf '%s\n' "$LFILTER"
+    else
+        timeout $DEF_TIMEOUT $NICE ffmpeg -nostdin -filter_complex "$LFILTER" -map '[aud]' -f ogg -page_duration 20000 -c:a flac - < /dev/null
+    fi
 done

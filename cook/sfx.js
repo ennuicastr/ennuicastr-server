@@ -144,7 +144,10 @@ const info = JSON.parse(fs.readFileSync(infoFile, "utf8"));
         // Track no
         if (trackNo >= tracks.length) {
             // Huh?
-            process.stdout.write("anullsrc=cl=stereo:r=48000,aformat=flt,atrim=0:2[aud]\n");
+            if (duration)
+                process.stdout.write("0\n");
+            else
+                process.stdout.write("anullsrc=cl=stereo:r=48000,aformat=flt,atrim=0:2[aud]\n");
             return;
         }
 

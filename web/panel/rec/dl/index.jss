@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020-2023 Yahweasel
+ * Copyright (c) 2020-2024 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -235,7 +235,8 @@ if (request.query.f) {
             format = mext = "vtt";
             break;
         case "raw":
-            format = "raw";
+        case "sfx":
+            format = request.query.f;
             container = "ogg";
             mext = null;
             ext = "ogg";
@@ -255,9 +256,16 @@ if (request.query.f) {
             break;
     }
 
-    // If we're doing raw audio, possibly run it thru oggstension
-    if (request.query.t)
-        thru = [config.repo + "/cook/oggstender", Number.parseInt(request.query.t, 36)];
+    // If we're doing raw audio, possibly run it thru oggcorrect
+    if (request.query.t) {
+        let subTrack = 0;
+        if (request.query.st)
+            subTrack = Number.parseInt(request.query.st, 36);
+        thru = [
+            config.repo + "/cook/oggcorrect",
+            Number.parseInt(request.query.t, 36), subTrack
+        ];
+    }
 
     writeHead(200, {
         "content-type": mime,
@@ -292,6 +300,11 @@ if (request.query.f) {
         await sendPart("header1", writer);
         await sendPart("header2", writer);
         await sendPart("data", writer);
+        if (thru) {
+            await sendPart("header1", writer);
+            await sendPart("header2", writer);
+            await sendPart("data", writer);
+        }
 
         // Possibly wait for the thru program
         if (p) {
@@ -301,20 +314,82 @@ if (request.query.f) {
             });
         }
 
-    } else if (format === "info") {
-        write("{\"tracks\":{\n");
-        await sendPart("users", write);
-        write("},\"sfx\":");
+    } else if (format === "sfx") {
+        await new Promise((res, rej) => {
+            const p = cp.spawn(config.repo + "/cook/sfx-partwise.sh",
+                [config.rec, ""+rid, ""+Number.parseInt(request.query.t, 36)],
+                {
+                    stdio: ["ignore", "pipe", "ignore"]
+                }
+            );
+            p.stdout.on("data", write);
+            p.stdout.on("end", res);
+        });
 
+    } else if (format === "info") {
+        // 1: User tracks
+        write("{\"tracks\":{\n");
+        let usersInfo = "";
+        await sendPart("users", chunk => {
+            write(chunk);
+            usersInfo += chunk.toString("utf8");
+        });
+        write("}");
+
+        // 2: Duration of each track
+        usersInfo = JSON.parse(`{${usersInfo}}`);
+        write(",\"duration\":{\"0\":0");
+        for (let ui = 1; usersInfo[ui]; ui++) {
+            write(`,\"${ui}\":`);
+            await new Promise(async (res, rej) => {
+                let p = cp.spawn(config.repo + "/cook/oggduration",
+                    [""+ui], {
+                        stdio: ["pipe", "pipe", "ignore"]
+                    }
+                );
+                p.stdout.on("data", write);
+                p.stdout.on("end", res);
+                let iwrite = p.stdin.write.bind(p.stdin);
+                await sendPart("header1", iwrite);
+                await sendPart("header2", iwrite);
+                await sendPart("data", iwrite);
+                p.stdin.end();
+            });
+        }
+        write("}");
+
+        // 3: sfx
+        write(",\"sfx\":");
+        let sfxct = "";
         await new Promise((res, rej) => {
             let p = cp.spawn(config.repo + "/cook/sfx-partwise.sh",
                 [config.rec, ""+rid],
                 {
                 stdio: ["ignore", "pipe", "ignore"]
             });
-            p.stdout.on("data", write);
+            p.stdout.on("data", chunk => {
+                write(chunk);
+                sfxct += chunk.toString("utf8");
+            });
             p.stdout.on("end", res);
         });
+        sfxct = JSON.parse(sfxct);
+
+        // 4: sfx duration
+        write(",\"sfxduration\":{\"0\":0");
+        for (let si = 1; si <= sfxct; si++) {
+            write(`,\"${si}\":`);
+            await new Promise(async (res, rej) => {
+                let p = cp.spawn(config.repo + "/cook/sfx-partwise.sh",
+                    [config.rec, ""+rid, "-d", ""+si], {
+                        stdio: ["ignore", "pipe", "ignore"]
+                    }
+                );
+                p.stdout.on("data", write);
+                p.stdout.on("end", res);
+            });
+        }
+        write("}");
 
         write("}\n");
 
