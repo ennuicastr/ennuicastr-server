@@ -62,75 +62,7 @@ await include("../../head.jss", {title: "Download"});
 ?>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
-<script type="text/javascript" src="ennuicastr-download-processor.js"></script>
-
-<script type="text/javascript">
-    EnnuicastrDownloadProcessor.dsLoad({prefix: "/"});
-    function go() {
-        Promise.all([]).then(function() {
-            LibAV = {base: "/assets/libav"};
-            return ecLoadLibrary({
-                name: "Audio processing",
-                file: "/assets/libav/libav-4.8.6.0.1-ecdl.js"
-            });
-        }).then(function() {
-            return ecLoadLibrary({
-                name: "Processing",
-                file: "/assets/js/localforage.min.js"
-            });
-        }).then(function() {
-            LibSpecBleach = {base: "/assets/libs"};
-            return ecLoadLibrary({
-                name: "Audio processing",
-                file: "/assets/libs/libspecbleach-0.1.7-js2.js"
-            });
-        }).then(function() {
-            return ecLoadLibrary({
-                name: "Processing",
-                file: "/assets/libs/yalap-1.0.1-zip.js"
-            });
-        }).then(function() {
-            return fetch("../dl/?i=<?JS= rid.toString(36) ?>&f=info");
-        }).then(function(ret) {
-            return ret.json();
-        }).then(function(info) {
-            var tracks = [];
-
-            // First the normal tracks
-            for (var i = 1; info.tracks[i]; i++) {
-                var ti = info.tracks[i];
-                tracks.push({
-                    type: "rec",
-                    name: ti.nick.replace(/[^A-Za-z0-9]/g, "_"),
-                    trackNo: i,
-                    duration: info.duration[i],
-                    applyEchoCancellation: "no",
-                    applyNoiseReduction: "no",
-                    applyNormalization: "no"
-                });
-            }
-
-            // Then sfx tracks
-            for (var i = 1; i <= info.sfx; i++) {
-                tracks.push({
-                    type: "sfx",
-                    trackNo: i,
-                    duration: info.sfxduration[i]
-                });
-            }
-
-            return EnnuicastrDownloadProcessor.download({
-                id: <?JS= rid ?>,
-                name: <?JS= JSON.stringify(safeName) ?>,
-                format: "m4a",
-                codec: "aac",
-                ctx: {sample_fmt: LibAV.AV_SAMPLE_FMT_FLTP},
-                tracks: tracks,
-                onprogress: console.log
-            });
-        });
-    }
-</script>
+<script type="text/javascript" src="ennuicastr-download-processor.min.js"></script>
 
 <section class="wrapper special">
     <p><?JS= reclib.recordingName(recInfo) ?></p>
@@ -157,7 +89,49 @@ await include("../../head.jss", {title: "Download"});
     </span></p>
     <?JS } ?>
 
-    <button onclick="go();">Test</button>
+    <link rel="stylesheet" href="ennuicastr-download-chooser.css" />
+
+    <div id="downloader-box" class="ecdl-main">Loading...</div>
+
+    <script type="text/javascript" src="ennuicastr-download-chooser.js"></script>
+
+<script type="text/javascript">
+EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
+    LibAV = {base: "/assets/libav"};
+    return ecLoadLibrary({
+        name: "Audio processing",
+        file: "/assets/libav/libav-4.8.6.0.1-ecdl.js"
+    });
+}).then(function() {
+    return ecLoadLibrary({
+        name: "Processing",
+        file: "/assets/js/localforage.min.js"
+    });
+}).then(function() {
+    LibSpecBleach = {base: "/assets/libs"};
+    return ecLoadLibrary({
+        name: "Audio processing",
+        file: "/assets/libs/libspecbleach-0.1.7-js2.js"
+    });
+}).then(function() {
+    return ecLoadLibrary({
+        name: "Processing",
+        file: "/assets/libs/yalap-1.0.1-zip.js"
+    });
+}).then(function() {
+
+    // Get the metadata for this recording
+    return fetch("../dl/?i=<?JS= rid.toString(36) ?>&f=info");
+}).then(function(resp) {
+    return resp.json();
+}).then(function(ret) {
+    dlChooser(
+        <?JS= rid ?>, <?JS= JSON.stringify(safeName) ?>, ret,
+        document.getElementById("downloader-box")
+    );
+});
+</script>
+
 </section>
 
 <script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>

@@ -45,6 +45,12 @@ try {
     recInfoExtra = JSON.parse(recInfo.extra);
 } catch (ex) {}
 
+let hasCaptionsFile = false;
+try {
+    fs.accessSync(config.rec + "/" + rid + ".ogg.captions", fs.constants.R_OK);
+    hasCaptionsFile = true;
+} catch (ex) {}
+
 const accountCredits = await creditsj.accountCredits(uid);
 const preferredGateway = await payment.preferredGateway(uid);
 
@@ -254,6 +260,20 @@ if (request.query.f) {
             ext = "json";
             mime = "application/json";
             break;
+        case "infotxt":
+            format = "infotxt";
+            container = "txt";
+            mext = null;
+            ext = "txt";
+            mime = "text/plain";
+            break;
+        case "captions":
+            format = "captions";
+            container = "json";
+            mext = null;
+            ext = "json";
+            mime = "application/json";
+            break;
     }
 
     // If we're doing raw audio, possibly run it thru oggcorrect
@@ -391,6 +411,12 @@ if (request.query.f) {
         }
         write("}");
 
+        // 5: Caption info
+        write(
+            ",\"transcription\":" +
+            (hasCaptionsFile || recInfo.transcription)
+        );
+
         write("}\n");
 
     } else {
@@ -408,6 +434,8 @@ if (request.query.f) {
 
             if (format === "vtt")
                 args.push("--exclude", "audio");
+            else if (format === "captions")
+                args.push("--include", "captions");
 
             const p = cp.spawn(config.repo + "/cook/cook2.sh", args, {
                 stdio: ["ignore", "pipe", "ignore"]
@@ -457,8 +485,6 @@ function maybeSample() {
 
 // Show the downloader
 await include("../../head.jss", {title: "Download", paypal: !recInfo.purchased});
-
-let hasCaptionsFile = false;
 
 if (!recInfo.purchased)
     samplePost = "&s=1";
@@ -622,11 +648,6 @@ if (!recInfo.purchased && !request.query.s) {
 
 // Check for captioning in progress
 } else if (recInfoExtra && recInfoExtra.captionImprover) {
-    try {
-        fs.accessSync(config.rec + "/" + rid + ".ogg.captions", fs.constants.R_OK);
-        hasCaptionsFile = true;
-    } catch (ex) {}
-
     if (!hasCaptionsFile) {
 ?>
         <section class="wrapper special style1" id="captions-dialog">

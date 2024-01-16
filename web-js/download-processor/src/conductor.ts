@@ -15,6 +15,8 @@
  */
 
 import * as archive from "./archive";
+import * as cText from "./cap-txt";
+import * as cVTT from "./cap-vtt";
 import * as proc from "./processor";
 import * as pFetch from "./proc-fetch";
 import * as pDecoder from "./proc-decoder";
@@ -128,7 +130,37 @@ export interface SFXTrackDescription {
     duration: number;
 }
 
-export type TrackDescription = RecTrackDescription | SFXTrackDescription;
+export interface CaptionsTrackDescription {
+    type: "captions";
+
+    /**
+     * Name for this track.
+     */
+    name: string;
+
+    /**
+     * Track number, exclude for all tracks.
+     */
+    trackNo?: number;
+
+    /**
+     * Names to prefix, per track.
+     */
+    names?: Record<number, string>;
+
+    /**
+     * Format of track captions.
+     */
+    format: "json" | "vtt" | "txt";
+}
+
+export interface InfoTxtTrackDescription {
+    type: "infotxt";
+}
+
+export type TrackDescription =
+    RecTrackDescription | SFXTrackDescription | CaptionsTrackDescription |
+    InfoTxtTrackDescription;
 
 function include(ts: Tristate, on: boolean) {
     if (ts === "both") return true;
@@ -280,9 +312,76 @@ export async function download(opts: DownloadOptions) {
         });
     }
 
+    let captions: any = null;
+    async function addCaptionsTrack(track: CaptionsTrackDescription) {
+        // Possibly download the captions
+        if (!captions) {
+            const url = "../dl/" +
+                `?i=${opts.id.toString(36)}` +
+                "&f=captions";
+            try {
+                const f = await fetch(url);
+                captions = (await f.json()).captions;
+            } catch (ex) {
+                captions = [];
+            }
+        }
+
+        // Select only the requested track
+        let c: any[] = captions;
+        if (typeof track.trackNo !== "undefined")
+            c = c.filter(x => x.id === track.trackNo);
+        else
+            c = c.filter(x => typeof x.id !== "undefined");
+
+        // And make it the appropriate type
+        let retStr: string;
+        if (track.format === "json") {
+            retStr = JSON.stringify(c);
+        } else if (track.format === "vtt") {
+            retStr = cVTT.toVTT(captions, track.names || {});
+        } else if (track.format === "txt") {
+            retStr = cText.toText(captions, track.names || {});
+        }
+        const retU8 = (new TextEncoder()).encode(retStr);
+
+        let fname = "";
+        if (typeof track.trackNo !== "undefined") {
+            fname = track.trackNo + "-";
+            if (fname.length < 3) fname = `0${fname}`;
+        }
+        fname += track.name;
+
+        files.push({
+            pathname: `${fname}.${track.format}`,
+            stream: new wsp.ReadableStream<Uint8Array>({
+                start: controller => {
+                    controller.enqueue(retU8);
+                    controller.close();
+                }
+            })
+        });
+    }
+
+    function addInfoTxt() {
+        const inp = new pFetch.FetchProcessor(
+            "../dl/" +
+            `?i=${opts.id.toString(36)}` +
+            "&f=infotxt"
+        );
+        files.push({
+            pathname: "info.txt",
+            stream: inp.stream
+        });
+    }
+
     for (const track of opts.tracks) {
         if (track.type === "sfx")
             await addSFXTrack(track);
+        else if (track.type === "captions")
+            await addCaptionsTrack(track);
+        else if (track.type === "infotxt")
+            addInfoTxt();
         else // rec
             await addRecTrack(track);
     }
@@ -295,7 +394,6 @@ export async function download(opts: DownloadOptions) {
     }
 
     // Zip the files all together
-    /*
     const zipper = await YALAP.YALAPW({format: "zip"});
     const downloadPromise = downloadStream.stream(
         `${opts.name}.${suffix}.zip`, zipper.stream, {
@@ -305,19 +403,11 @@ export async function download(opts: DownloadOptions) {
     for (const file of files)
         await zipper.addFile(file.pathname, file.stream);
     await zipper.free();
-    */
-    for (const file of files) {
-        const rdr = file.stream.getReader();
-        while (true) {
-            const rd = await rdr.read();
-            if (rd.done) break;
-        }
-    }
 
     // Clear up the space from saved data
     for (const saver of savers)
         await saver.clear();
 
     // And wait for the download to finish (if it hasn't)
-    //await downloadPromise;
+    await downloadPromise;
 }

@@ -2119,6 +2119,20 @@
             background-color: var(--bg-5);
         }
 
+        input[type="checkbox"]:checked + label.button,
+        input[type="radio"]:checked + label.button {
+            background-color: var(--bg-7);
+            color: var(--fg-6) !important;
+        }
+
+        input[type="checkbox"]:checked:hover + label.button {
+            background-color: var(--bg-8);
+        }
+
+        input[type="checkbox"]:checked:active + label.button {
+            background-color: var(--bg-9);
+        }
+
         input[type="submit"].alt,
         input[type="reset"].alt,
         input[type="button"].alt,
@@ -2229,6 +2243,10 @@
         text-align: right;
         font-size: 0.9em;
         margin: 0 0 0.2em 0;
+    }
+
+    label.button {
+        width: auto;
     }
 
     input[type="text"],

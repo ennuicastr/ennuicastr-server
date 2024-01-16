@@ -1,0 +1,34 @@
+.ecdl-main {
+    max-width: 52em;
+    margin: auto;
+}
+
+.ecdl-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.25em;
+}
+
+.ecdl-row-even {
+    background-color: var(--bg-1);
+    color: var(--fg-1);
+}
+
+.ecdl-row-odd {
+    background-color: var(--bg-5);
+    color: var(--fg-1);
+}
+
+.ecdl-row-label {
+    width: 12em;
+    max-width: 12em;
+    text-align: right;
+    margin-right: 0.25em;
+}
+
+.ecdl-row-chooser {
+    flex: auto;
+    min-width: 16em;
+    text-align: left;
+}

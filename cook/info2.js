@@ -72,7 +72,7 @@ async function main() {
         delete users["0"];
         for (let ui = 1; users[ui]; ui++)
             delete users[ui].packetNo;
-        process.stdout.write(JSON.stringify(info) + "\n");
+        process.stdout.write("\"info\":" + JSON.stringify(info) + "\n");
     } else {
         process.stdout.write("Users:\r\n");
         for (let i = 1; users[i]; i++)
@@ -81,7 +81,7 @@ async function main() {
         if (info.chat)
             process.stdout.write("\r\n\r\nChat:\r\n");
 
-        for (const line of info.chat) {
+        for (const line of (info.chat||[])) {
             process.stdout.write("\t" +
                 timeStr(line.time) +
                 ": " +
