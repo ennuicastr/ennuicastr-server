@@ -83,23 +83,67 @@ export class SaveProcessor extends proc.Processor<Uint8Array> {
 }
 
 export class RestoreProcessor extends proc.Processor<Uint8Array> {
-    constructor(private _save: SaveProcessor) {
+    /**
+     * @param _save  SaveProcessor that will cache the data
+     * @param _redo  Function to generate a stream to redo the input, in case
+     *               the cache is invalidated.
+     */
+    constructor(
+        private _save: SaveProcessor,
+        private _redo: () => proc.Processor<Uint8Array>
+    ) {
+        let rdCount = 0;
+        let redo: wsp.ReadableStreamDefaultReader<Uint8Array> | null = null;
         super(new wsp.ReadableStream({
             pull: async (controller) => {
-                await _save.getDonePromise();
+                while (true) {
+                    if (redo) {
+                        // We were forced to redo!
+                        const rd = await redo.read();
+                        if (rd.done) {
+                            controller.close();
+                            break;
+                        }
 
-                if (!this._idx) {
-                    this._idx = 0;
-                    this._lfInstance = _save.getLFInstance();
-                }
+                        if (rdCount) {
+                            if (rd.value.length > rdCount) {
+                                // Skip this, already read it
+                                rdCount -= rd.value.length;
+                                continue;
+                            }
+                            // Partially read it
+                            controller.enqueue(rd.value.slice(rdCount));
+                            rdCount = 0;
+                        } else {
+                            controller.enqueue(rd.value);
+                        }
 
-                const idx = this._idx++;
-                if (idx >= _save.getCt()) {
-                    controller.close();
-                } else {
-                    controller.enqueue(await this._lfInstance.getItem(
-                        "" + idx
-                    ));
+                    } else {
+                        await _save.getDonePromise();
+
+                        if (!this._idx) {
+                            this._idx = 0;
+                            this._lfInstance = _save.getLFInstance();
+                        }
+
+                        const idx = this._idx++;
+                        if (idx >= _save.getCt()) {
+                            controller.close();
+                            break;
+                        } else {
+                            const rd = <Uint8Array | null>
+                                await this._lfInstance.getItem("" + idx);
+                            if (rd) {
+                                rdCount += rd.length;
+                                controller.enqueue(rd);
+                                break;
+                            } else {
+                                // Cache must have been dropped!
+                                redo = _redo().stream.getReader();
+                            }
+                        }
+
+                    }
                 }
             }
         }, {highWaterMark: 0}));
@@ -107,4 +151,34 @@ export class RestoreProcessor extends proc.Processor<Uint8Array> {
 
     private _idx: number;
     private _lfInstance: typeof localforage;
+}
+
+export class Cache {
+    constructor(
+        prefix: string,
+
+        /**
+         * Function to create the initial stream *or* a new stream in case of
+         * cache invalidation.
+         */
+        public stream: () => proc.Processor<Uint8Array>
+    ) {
+        this._save = new SaveProcessor(prefix, stream().stream);
+    }
+
+    /**
+     * Get the save processor associated with this cache.
+     */
+    getSaveProcessor() { return this._save; }
+
+    /**
+     * Get a restore processor for this cache.
+     */
+    getRestoreProcessor() {
+        return new RestoreProcessor(this._save, this.stream);
+    }
+
+    public clear() { this._save.clear(); }
+
+    private _save: SaveProcessor;
 }

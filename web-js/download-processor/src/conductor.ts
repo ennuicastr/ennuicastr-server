@@ -179,15 +179,15 @@ export async function download(opts: DownloadOptions) {
     // Turn the tracks into files
     const files: archive.Archive = [];
     const fileNames: Record<string, boolean> = Object.create(null);
-    const savers: pSave.SaveProcessor[] = [];
+    const savers: pSave.Cache[] = [];
 
     async function addRecTrack(track: RecTrackDescription) {
         // Figure out if there are multiple outputs for a given input
         const multiple =
             (track.applyNoiseReduction === "both") ||
             (track.applyNormalization === "both");
-        let saverNoEC: pSave.SaveProcessor | null = null;
-        let saverEC: pSave.SaveProcessor | null = null;
+        let saverNoEC: pSave.Cache | null = null;
+        let saverEC: pSave.Cache | null = null;
 
         // Make a file for each option
         for (
@@ -210,7 +210,7 @@ export async function download(opts: DownloadOptions) {
             let inp: proc.Processor<Uint8Array> | null = null;
             if (multiple && saver) {
                 // Start by restoring this saver
-                inp = new pSave.RestoreProcessor(saver);
+                inp = saver.getRestoreProcessor();
 
             } else {
                 // Start with a fetch
@@ -224,19 +224,20 @@ export async function download(opts: DownloadOptions) {
                     url += `&st=${Math.pow(2,31).toString(36)}`;
                 }
 
-                inp = new pFetch.FetchProcessor(url);
-
                 // Possibly make a saver
                 if (multiple) {
-                    saver = inp = new pSave.SaveProcessor(
+                    saver = new pSave.Cache(
                         `${opts.id}.${track.trackNo}.${ec}`,
-                        inp.stream
+                        () => new pFetch.FetchProcessor(url)
                     );
                     savers.push(saver);
                     if (ec)
                         saverEC = saver;
                     else
                         saverNoEC = saver;
+                    inp = saver.getSaveProcessor();
+                } else {
+                    inp = new pFetch.FetchProcessor(url);
                 }
             }
 
