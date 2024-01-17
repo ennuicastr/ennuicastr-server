@@ -50,6 +50,12 @@ INCLUDE_INFO=yes
 INCLUDE_CHAT=yes
 INCLUDE_AUDIO=yes
 INCLUDE_CAPTIONS=maybe
+INCLUDE_DURATIONS=no
+
+# Whether we have captions (as a separate question from whether to include
+# them)
+CHECK_CAPTIONS=no
+HAVE_CAPTIONS=no
 
 # Filters to apply to each track
 FILTER="anull"
@@ -128,6 +134,10 @@ do
                 captions)
                     INCLUDE_CAPTIONS=yes
                     ;;
+
+                durations)
+                    INCLUDE_DURATIONS=yes
+                    ;;
             esac
             ;;
 
@@ -136,6 +146,7 @@ do
             INCLUDE_CHAT=no
             INCLUDE_AUDIO=no
             INCLUDE_CAPTIONS=no
+            INCLUDE_DURATIONS=no
             ;;
 
         --exclude)
@@ -156,6 +167,10 @@ do
 
                 captions)
                     INCLUDE_CAPTIONS=no
+                    ;;
+
+                durations)
+                    INCLUDE_DURATIONS=no
                     ;;
             esac
             ;;
@@ -178,10 +193,12 @@ fi
 case "$CONTAINER" in
     json)
         INCLUDE_AUDIO=no
+        INCLUDE_DURATIONS=yes
         CAPTIONFORMAT=json
         if [ "$INCLUDE_CAPTIONS" = "maybe" ]
         then
             INCLUDE_CAPTIONS=no
+            CHECK_CAPTIONS=yes
         fi
         ;;
 
@@ -273,27 +290,38 @@ mkmeta() {
 }
 
 # Get the number of SFX tracks
-if [ "$INCLUDE_AUDIO" = "yes" ]
+if [ "$INCLUDE_AUDIO" = "yes" -o "$INCLUDE_DURATIONS" = "yes" ]
 then
     mkmeta
     NB_SFX="$(timeout 10 "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" < $tmpdir/meta)"
+
+    if [ "$INCLUDE_DURATIONS" = "yes" ]
+    then
+        # SFX *count* is included with metadata
+        printf '"sfx":%d' "$NB_SFX" > "$OUTDIR/sfx.json"
+        FILES="$FILES sfx.json"
+    fi
 fi
 
 # Detect if we have captions
-if [ "$INCLUDE_CAPTIONS" = "maybe" ]
+if [ "$INCLUDE_CAPTIONS" != "no" -o "$CHECK_CAPTIONS" = "yes" ]
 then
-    INCLUDE_CAPTIONS=no
+    HAVE_CAPTIONS=no
     if [ -e $ID.ogg.captions -a -s $ID.ogg.captions ]
     then
-        INCLUDE_CAPTIONS=yes
+        HAVE_CAPTIONS=yes
     else
         mkmeta
         grep -m 1 '"caption"' $tmpdir/meta > /dev/null 2>&1
         if [ "$?" = "0" ]
         then
-            INCLUDE_CAPTIONS=yes
+            HAVE_CAPTIONS=yes
         fi
     fi
+fi
+if [ "$INCLUDE_CAPTIONS" = "maybe" ]
+then
+    INCLUDE_CAPTIONS="$HAVE_CAPTIONS"
 fi
 if [ "$INCLUDE_CAPTIONS" = "yes" ]
 then
@@ -327,6 +355,11 @@ do
         mkfifo "$TRACK_FFN"
         FILES="$FILES $AUDDIR$TRACK_FN"
     fi
+    if [ "$INCLUDE_DURATIONS" = "yes" ]
+    then
+        mkfifo "$TRACK_FFN.duration"
+        FILES="$FILES $AUDDIR$TRACK_FN.duration"
+    fi
     if [ "$INCLUDE_CAPTIONS" = "yes" -a "$CONTAINER" != "json" ]
     then
         mkfifo "$CAP_FFN"
@@ -342,12 +375,13 @@ do
 done
 
 # Handle the SFX files
-if [ "$INCLUDE_AUDIO" = "yes" ]
-then
-    for c in $(seq -w 1 $NB_SFX)
-    do
-        SFX_FN="sfx-$c.$ext"
-        SFX_FFN="$OUTDIR/$AUDDIR$SFX_FN"
+for c in $(seq -w 1 $NB_SFX)
+do
+    SFX_FN="sfx-$c.$ext"
+    SFX_FFN="$OUTDIR/$AUDDIR$SFX_FN"
+
+    if [ "$INCLUDE_AUDIO" = "yes" ]
+    then
         mkfifo "$SFX_FFN"
         FILES="$FILES $AUDDIR$SFX_FN"
 
@@ -356,8 +390,14 @@ then
             printf '\t<import filename="%s" offset="0.00000000" mute="0" solo="0" height="150" minimized="0" gain="1.0" pan="0.0"/>\n' \
                 "$SFX_FN" >> "$OUTDIR/$FNAME.aup"
         fi
-    done
-fi
+    fi
+
+    if [ "$INCLUDE_DURATIONS" = "yes" ]
+    then
+        mkfifo "$SFX_FFN.duration"
+        FILES="$FILES $SFX_FFN.duration"
+    fi
+done
 
 # End the XML file for Audacity
 if [ "$CONTAINER" = "aupzip" ]
@@ -379,12 +419,15 @@ do
     # Get the stream number of this track
     TRACK_STREAMNO="$(echo "$STREAM_NOS" | sed -n "$c"p)"
 
-    if [ "$INCLUDE_AUDIO" = "yes" ]
+    if [ "$INCLUDE_AUDIO" = "yes" -o "$INCLUDE_DURATIONS" = "yes" ]
     then
         # Get the duration of this track
         TRACK_DURATION="$(timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
             timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $c)"
+    fi
 
+    if [ "$INCLUDE_AUDIO" = "yes" ]
+    then
         if [ "$FORMAT" = "copy" ]
         then
             # Just copy the data directly
@@ -420,6 +463,12 @@ do
         fi
     fi
 
+    # Duration metadata
+    if [ "$INCLUDE_DURATIONS" = "yes" ]
+    then
+        printf '"duration_%s":%s' "$c" "$TRACK_DURATION" > "$TRACK_FFN.duration" &
+    fi
+
     # And the captions
     if [ "$INCLUDE_CAPTIONS" = "yes" -a "$CONTAINER" != "json" ]
     then
@@ -428,13 +477,14 @@ do
 done &
 
 # Same for SFX
-if [ "$INCLUDE_AUDIO" = "yes" ]
-then
-    for c in $(seq -w 1 $NB_SFX)
-    do
-        SFX_FN="sfx-$c.$ext"
-        SFX_FFN="$OUTDIR/$AUDDIR$SFX_FN"
-        SFX_DURATION="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" -d $((c-1)) < $tmpdir/meta)"
+for c in $(seq -w 1 $NB_SFX)
+do
+    SFX_FN="sfx-$c.$ext"
+    SFX_FFN="$OUTDIR/$AUDDIR$SFX_FN"
+    SFX_DURATION="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" -d $((c-1)) < $tmpdir/meta)"
+
+    if [ "$INCLUDE_AUDIO" = "yes" ]
+    then
         LFILTER="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" $((c-1)) < $tmpdir/meta)"
         timeout $DEF_TIMEOUT $NICE ffmpeg -filter_complex "$LFILTER" -map '[aud]' -flags bitexact -f wav - |
             timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/wavduration" "$SFX_DURATION" |
@@ -442,8 +492,13 @@ then
                 timeout $DEF_TIMEOUT $NICE $ENCODE > "$SFX_FFN";
                 cat > /dev/null
             )
-    done &
-fi
+    fi
+
+    if [ "$INCLUDE_DURATIONS" = "yes" ]
+    then
+        printf '"sfx_duration_%s":%s' "$c" "$SFX_DURATION" > "$SFX_FFN.duration" &
+    fi
+done &
 
 if [ "$FORMAT" = "copy" ]
 then
@@ -467,15 +522,22 @@ then
             timeout $DEF_TIMEOUT "$SCRIPTBASE/info2.js" "$ID" < /dev/null > $OUTDIR/info.txt &
         fi
     else #json
+        mkmeta
         mkfifo $OUTDIR/info.json
         FILES="$FILES info.json"
         if [ "$INCLUDE_CHAT" = "yes" ]
         then
-            mkmeta
             timeout $DEF_TIMEOUT "$SCRIPTBASE/info2.js" --json "$ID" < $tmpdir/meta > $OUTDIR/info.json &
         else
             timeout $DEF_TIMEOUT "$SCRIPTBASE/info2.js" --json "$ID" < /dev/null > $OUTDIR/info.json &
         fi
+        mkfifo $OUTDIR/meta.json
+        FILES="$FILES meta.json"
+        (
+            printf '"meta":['
+            grep -v '"c":"caption"' $tmpdir/meta | sed 's/$/,/'
+            printf 'null]'
+        ) > $OUTDIR/meta.json &
     fi
 fi
        
@@ -508,7 +570,14 @@ case "$CONTAINER" in
             cat $i
             printf ',\n'
         done
-        printf '"//":"generated by Ennuicastr"}\n'
+        printf '"transcript":'
+        if [ "$HAVE_CAPTIONS" = "yes" ]
+        then
+            printf 'true\n'
+        else
+            printf 'false\n'
+        fi
+        printf '}\n'
         ;;
 
     txt)

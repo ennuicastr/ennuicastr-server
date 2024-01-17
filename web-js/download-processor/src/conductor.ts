@@ -144,9 +144,9 @@ export interface CaptionsTrackDescription {
     trackNo?: number;
 
     /**
-     * Names to prefix, per track.
+     * Recording info, for names.
      */
-    names?: Record<number, string>;
+    info: any;
 
     /**
      * Format of track captions.
@@ -335,14 +335,22 @@ export async function download(opts: DownloadOptions) {
         else
             c = c.filter(x => typeof x.id !== "undefined");
 
+        // Get the name mapping
+        const names: Record<number, string> = {};
+        if (typeof track.trackNo === "undefined") {
+            const users = track.info.info.users;
+            for (let ui = 1; users[ui]; ui++)
+                names[ui] = users[ui].nick;
+        }
+
         // And make it the appropriate type
         let retStr: string;
         if (track.format === "json") {
             retStr = JSON.stringify(c);
         } else if (track.format === "vtt") {
-            retStr = cVTT.toVTT(captions, track.names || {});
+            retStr = cVTT.toVTT(c, names);
         } else if (track.format === "txt") {
-            retStr = cText.toText(captions, track.names || {});
+            retStr = cText.toText(c, names);
         }
         const retU8 = (new TextEncoder()).encode(retStr);
 

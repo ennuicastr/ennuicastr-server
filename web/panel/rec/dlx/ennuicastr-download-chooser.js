@@ -71,7 +71,7 @@ function dlChooser(rid, name, info, dlBox) {
             if (hadSelected >= 0) {
                 selOpt = opts[hadSelected];
                 selOpt.sel[0].checked = true;
-                onselect(opt.value);
+                onselect(selOpt.value);
                 return;
             }
             if (val === null) {
@@ -246,9 +246,9 @@ function dlChooser(rid, name, info, dlBox) {
     var trackSelectors = {};
     trackSelectors[0] = document.createElement("div");
     mkSelectors(trackSelectors[0], "--default--", 0);
-    for (var i = 1; info.tracks[i]; i++) {
+    for (var i = 1; info.info.users[i]; i++) {
         var ts = trackSelectors[i] = document.createElement("div");
-        mkSelectors(ts, info.tracks[i].nick, i);
+        mkSelectors(ts, info.info.users[i].nick, i);
     }
 
     // Then the track selector itself
@@ -262,8 +262,8 @@ function dlChooser(rid, name, info, dlBox) {
         value: 0,
         selected: true
     }];
-    for (var i = 1; info.tracks[i]; i++)
-        opts.push({name: info.tracks[i].nick, value: i});
+    for (var i = 1; info.info.users[i]; i++)
+        opts.push({name: info.info.users[i].nick, value: i});
     multiSelector(ch, "ec-track", opts, function(v) {
         selectedTrack = v;
         trackSelectorBox.innerHTML = "";
@@ -297,7 +297,7 @@ function dlChooser(rid, name, info, dlBox) {
 
     // Whether to download transcription
     var dlTranscript = false;
-    if (info.transcription) {
+    if (info.transcript) {
         dlTranscript = true;
         ch = row(dlBox, "Download transcript?");
         multiSelector(ch, "ec-dl-transcript", [
@@ -358,17 +358,17 @@ function dlChooser(rid, name, info, dlBox) {
                 downloadOnly = selectedTrack;
 
             // First the normal tracks
-            for (var i = 1; info.tracks[i]; i++) {
+            for (var i = 1; info.info.users[i]; i++) {
                 if (downloadOnly && downloadOnly !== i)
                     continue;
-                var ti = info.tracks[i];
+                var ti = info.info.users[i];
                 var safeName = ti.nick.replace(/[^A-Za-z0-9]/g, "_");
                 if (dlAudio) {
                     tracks.push({
                         type: "rec",
                         name: safeName,
                         trackNo: i,
-                        duration: info.duration[i],
+                        duration: info["duration_" + i],
                         applyEchoCancellation: maybe(i, "ec"),
                         applyNoiseReduction: maybe(i, "nr"),
                         applyNormalization: maybe(i, "norm")
@@ -396,7 +396,7 @@ function dlChooser(rid, name, info, dlBox) {
                     tracks.push({
                         type: "sfx",
                         trackNo: i,
-                        duration: info.sfxduration[i]
+                        duration: info["sfx_duration_" + i]
                     });
                 }
             }
@@ -404,18 +404,18 @@ function dlChooser(rid, name, info, dlBox) {
             // Then transcript
             if (dlTranscript && !downloadOnly) {
                 var trackNames = {};
-                for (var i = 1; info.tracks[i]; i++)
-                    trackNames[i] = info.tracks[i].nick;
+                for (var i = 1; info.info.users[i]; i++)
+                    trackNames[i] = info.info.users[i].nick;
                 tracks.push({
                     type: "captions",
                     name: "transcript",
-                    names: trackNames,
+                    info: info,
                     format: "vtt"
                 });
                 tracks.push({
                     type: "captions",
                     name: "transcript",
-                    names: trackNames,
+                    info: info,
                     format: "txt"
                 });
             }
