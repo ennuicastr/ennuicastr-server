@@ -129,6 +129,8 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
         <?JS= rid ?>, <?JS= JSON.stringify(safeName) ?>, ret,
         document.getElementById("downloader-box")
     );
+}).catch(function() {
+    document.location.href = "../dl/?i=<?JS= rid.toString(36) ?>&nox=1";
 });
 </script>
 
