@@ -163,7 +163,7 @@ async function main() {
 
             // Get to the start time
             while (curStart < capStart) {
-                if (curEnd <= curStart) {
+                if (curEnd <= curStart || !curChunks.length) {
                     // Need more data
                     await readChunk();
                 }

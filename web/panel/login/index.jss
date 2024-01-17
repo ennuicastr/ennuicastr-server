@@ -55,7 +55,6 @@ await include("../../head.jss", {menu: false, title: "Log in"});
     await include("paypal/button.jss");
     await include("google2/button.jss");
     ?><br/><?JS
-    await include("facebook/button.jss");
     await include("discord/button.jss");
     ?><br/><?JS
     await include("firebase/button.jss");
