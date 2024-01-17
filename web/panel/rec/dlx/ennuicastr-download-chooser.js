@@ -165,6 +165,29 @@ function dlChooser(rid, name, info, dlBox) {
     }];
     multiSelector(ch, "ec-format", opts, function(v) { format = v; });
 
+    // Determine which tracks have subtracks
+    var subtracks = {};
+    for (var mi = 0; mi < info.meta.length; mi++) {
+        var meta = info.meta[mi];
+        try {
+            if (meta.d.c === "subtrack") {
+                subtracks[meta.d.id] = subtracks[meta.d.id] || {};
+                subtracks[meta.d.id][meta.d.subId] = true;
+            }
+        } catch (ex) {}
+    }
+
+    function hasSubtrack(id, stid) {
+        try {
+            return !!subtracks[id][stid];
+        } catch (ex) {}
+        return false;
+    }
+
+    function hasECTrack(id) {
+        return hasSubtrack(id, ~~0x80000000);
+    }
+
     // Options for each track
     var trackOpts = {};
 
@@ -214,14 +237,15 @@ function dlChooser(rid, name, info, dlBox) {
         genOpts = JSON.stringify(genOpts);
 
         // Echo cancellation?
-        trackOpt.ec = "no";
-        // FIXME: Need to check if EC was actually recorded
-        ch = row(addTo, "Echo cancellation:");
-        multiSelector(
-            ch, "ec-opt-ec-" + name,
-            JSON.parse(genOpts),
-            function(v) { trackOpt.ec = v; }
-        );
+        trackOpt.ec = def;
+        if (idx === 0 || hasECTrack(idx)) {
+            ch = row(addTo, "Echo cancellation:");
+            multiSelector(
+                ch, "ec-opt-ec-" + name,
+                JSON.parse(genOpts),
+                function(v) { trackOpt.ec = v; }
+            );
+        }
 
         // Noise reduction?
         trackOpt.nr = def;
@@ -369,7 +393,8 @@ function dlChooser(rid, name, info, dlBox) {
                         name: safeName,
                         trackNo: i,
                         duration: info["duration_" + i],
-                        applyEchoCancellation: maybe(i, "ec"),
+                        applyEchoCancellation: hasECTrack(i)
+                            ? maybe(i, "ec") : "no",
                         applyNoiseReduction: maybe(i, "nr"),
                         applyNormalization: maybe(i, "norm")
                     });
