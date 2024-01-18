@@ -20,9 +20,9 @@ import type * as LibAVT from "libav.js";
 declare let LibAV: LibAVT.LibAVWrapper;
 import * as wsp from "web-streams-polyfill/ponyfill";
 
-export class NormalizeProcessor extends proc.Processor<LibAVT.Frame> {
-    constructor(private _input: proc.Processor<LibAVT.Frame>) {
-        super(new wsp.ReadableStream<LibAVT.Frame>({
+export class NormalizeProcessor extends proc.Processor<LibAVT.Frame[]> {
+    constructor(private _input: proc.Processor<LibAVT.Frame[]>) {
+        super(new wsp.ReadableStream<LibAVT.Frame[]>({
             pull: async (controller) => {
                 if (!this._inputRdr)
                     this._inputRdr = _input.stream.getReader();
@@ -36,14 +36,14 @@ export class NormalizeProcessor extends proc.Processor<LibAVT.Frame> {
                     if (!this._frame)
                         this._frame = await la.av_frame_alloc();
                     if (!this._filterGraph) {
-                        let frame = rd.value;
-                        if (!frame) {
-                            frame = {
+                        let frames = rd.value;
+                        if (!frames || !frames.length) {
+                            frames = [{
                                 data: [new Float32Array(0)],
                                 format: la.AV_SAMPLE_FMT_FLTP,
                                 sample_rate: 48000,
                                 channel_layout: 4
-                            }
+                            }];
                         }
                         [
                             this._filterGraph, this._bufferSrc, this._bufferSink
@@ -52,22 +52,22 @@ export class NormalizeProcessor extends proc.Processor<LibAVT.Frame> {
                             "[a]apad=whole_dur=16,atrim=0:16[a];" +
                             "[a][b]concat=v=0:a=1,dynaudnorm,atrim=16,asetpts=PTS-STARTPTS",
                         {
-                            sample_rate: frame.sample_rate,
-                            sample_fmt: frame.format,
-                            channel_layout: frame.channel_layout
+                            sample_rate: frames[0].sample_rate,
+                            sample_fmt: frames[0].format,
+                            channel_layout: frames[0].channel_layout
                         }, {
-                            sample_rate: frame.sample_rate,
-                            sample_fmt: frame.format,
-                            channel_layout: frame.channel_layout
+                            sample_rate: frames[0].sample_rate,
+                            sample_fmt: frames[0].format,
+                            channel_layout: frames[0].channel_layout
                         });
                     }
 
                     const filterFrames = await la.ff_filter_multi(
                         this._bufferSrc, this._bufferSink, this._frame,
-                        rd.done ? [] : [rd.value], rd.done
+                        rd.done ? [] : rd.value, rd.done
                     );
-                    for (const frame of filterFrames)
-                        controller.enqueue(frame);
+                    if (filterFrames.length)
+                        controller.enqueue(filterFrames);
 
                     if (rd.done) {
                         if (this._filterGraph)
@@ -89,7 +89,7 @@ export class NormalizeProcessor extends proc.Processor<LibAVT.Frame> {
         }));
     }
 
-    private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame>;
+    private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame[]>;
     private _la: LibAVT.LibAV;
     private _frame: number;
     private _filterGraph: number;

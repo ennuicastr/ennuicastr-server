@@ -242,7 +242,7 @@ export async function download(opts: DownloadOptions) {
             }
 
             // Decode it
-            let proc: proc.Processor<LibAVT.Frame> =
+            let proc: proc.Processor<LibAVT.Frame[]> =
                 new pDecoder.DecoderProcessor(inp, track.duration);
 
             // Perform any processing
@@ -292,7 +292,7 @@ export async function download(opts: DownloadOptions) {
         );
 
         // Decode it
-        let proc: proc.Processor<LibAVT.Frame> =
+        let proc: proc.Processor<LibAVT.Frame[]> =
             new pDecoder.DecoderProcessor(inp, track.duration);
 
         // Make a name for it

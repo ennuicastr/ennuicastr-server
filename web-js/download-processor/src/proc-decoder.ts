@@ -24,7 +24,7 @@ import * as wsp from "web-streams-polyfill/ponyfill";
  * A decoding processor. Demuxes, decodes, and sends the data as float32
  * planar.
  */
-export class DecoderProcessor extends proc.Processor<LibAVT.Frame> {
+export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
     /**
      * @param _input  Input file to decode.
      * @param _duration  Expected duration
@@ -33,7 +33,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame> {
         private _input: proc.Processor<Uint8Array>,
         private _duration: number
     ) {
-        super(new wsp.ReadableStream<LibAVT.Frame>({
+        super(new wsp.ReadableStream<LibAVT.Frame[]>({
             pull: async (controller) => {
                 if (!this._inputRdr) {
                     this._inputRdr = _input.stream.getReader();
@@ -70,7 +70,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame> {
 
                     // Read some data
                     const rdPromise = la.ff_read_multi(
-                        this._fmtCtx, this._pkt, void 0, {limit: 1}
+                        this._fmtCtx, this._pkt, void 0, {limit: 1024*1024}
                     );
                     await this._flushReaderDev();
                     const [rdRes, allPackets] = await rdPromise;
@@ -115,8 +115,8 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame> {
                     }
 
                     // And send whatever data we got
-                    for (const frame of filterFrames)
-                        controller.enqueue(<LibAVT.Frame> frame);
+                    if (filterFrames.length)
+                        controller.enqueue(<LibAVT.Frame[]> filterFrames);
                     if (rdRes === la.AVERROR_EOF) {
                         await this._free();
                         controller.close();

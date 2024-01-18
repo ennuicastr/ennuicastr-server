@@ -22,7 +22,7 @@ import * as wsp from "web-streams-polyfill/ponyfill";
 
 export class EncoderProcessor extends proc.Processor<Uint8Array> {
     constructor(
-        private _input: proc.Processor<LibAVT.Frame>,
+        private _input: proc.Processor<LibAVT.Frame[]>,
         private _duration: number,
         private _format: string, private _codec: string,
         private _codecCtx: LibAVT.AVCodecContextProps,
@@ -40,36 +40,36 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
 
                 while (true) {
                     const rd = await this._inputRdr.read();
-                    let frame = rd.value;
+                    let frames = rd.value;
 
                     if (!this._c) {
-                        if (!frame) {
+                        if (!frames || !frames.length) {
                             // No input frames, make one up
-                            frame = {
+                            frames = [{
                                 data: [new Float32Array(0)],
                                 sample_rate: 48000,
                                 format: la.AV_SAMPLE_FMT_FLTP,
                                 channel_layout: 4,
                                 channels: 1
-                            };
+                            }];
                         }
 
                         // Initialize the encoder
-                        sampleRate = frame.sample_rate;
+                        sampleRate = frames[0].sample_rate;
                         const ctx = Object.assign({
-                            sample_rate: frame.sample_rate,
-                            channel_layout: frame.channel_layout
+                            sample_rate: frames[0].sample_rate,
+                            channel_layout: frames[0].channel_layout
                         }, _codecCtx || {});
                         [, this._c, this._frame, this._pkt, this._frameSize] =
                             await la.ff_init_encoder(_codec, <any> {
                                 ctx,
-                                time_base: [1, frame.sample_rate]
+                                time_base: [1, frames[0].sample_rate]
                             });
 
                         // If this is flac, set the duration in the extradata
                         if (_codec === "flac") {
                             let dur = Math.floor(
-                                _duration * frame.sample_rate
+                                _duration * frames[0].sample_rate
                             );
                             const exp = await la.AVCodecContext_extradata(
                                 this._c
@@ -96,13 +96,13 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         [
                             this._filterGraph, this._bufferSrc, this._bufferSink
                         ] = await la.ff_init_filter_graph("anull", {
-                            sample_rate: frame.sample_rate,
-                            sample_fmt: frame.format,
-                            channel_layout: frame.channel_layout
+                            sample_rate: frames[0].sample_rate,
+                            sample_fmt: frames[0].format,
+                            channel_layout: frames[0].channel_layout
                         }, {
-                            sample_rate: frame.sample_rate,
+                            sample_rate: frames[0].sample_rate,
                             sample_fmt: _codecCtx.sample_fmt,
-                            channel_layout: frame.channel_layout,
+                            channel_layout: frames[0].channel_layout,
                             frame_size: this._frameSize
                         });
                     }
@@ -119,7 +119,7 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                             filename: "output",
                             device: true,
                             open: true
-                        }, [[this._c, 1, frame.sample_rate]]);
+                        }, [[this._c, 1, frames[0].sample_rate]]);
 
                         // Set delay_moov for ISMV
                         if (_format === "ismv") {
@@ -132,7 +132,7 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         const st = await la.AVFormatContext_streams_a(
                             this._fmtCtx, 0
                         );
-                        const dur = Math.floor(_duration * frame.sample_rate);
+                        const dur = Math.floor(_duration * frames[0].sample_rate);
                         const dur64 = la.f64toi64(dur);
                         console.log(dur64);
                         await la.AVStream_duration_s(st, dur64[0]);
@@ -142,9 +142,9 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                     }
 
                     // Convert the frame size
-                    const frames = await la.ff_filter_multi(
+                    frames = await la.ff_filter_multi(
                         this._bufferSrc, this._bufferSink, this._frame,
-                        rd.done ? [] : [rd.value], rd.done
+                        rd.done ? [] : frames, rd.done
                     );
 
                     // Encode this data
@@ -203,7 +203,7 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
         }, {highWaterMark: 0}));
     }
 
-    private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame>;
+    private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame[]>;
     private _la: LibAVT.LibAV;
     private _c: number;
     private _frame: number;

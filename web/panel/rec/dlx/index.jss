@@ -24,6 +24,8 @@ if (!request.query.i)
 
 const rid = Number.parseInt(request.query.i, 36);
 
+const fs = require("fs");
+
 const config = require("../config.js");
 const edb = require("../db.js");
 const db = edb.db;
@@ -56,9 +58,30 @@ const dlName = (function() {
 })();
 
 const safeName = dlName.replace(/[^A-Za-z0-9]/g, "_");
+let hasCaptionsFile = false;
+try {
+    fs.accessSync(config.rec + "/" + rid + ".ogg.captions", fs.constants.R_OK);
+    hasCaptionsFile = true;
+} catch (ex) {}
 
 // Show the downloader
 await include("../../head.jss", {title: "Download"});
+
+if (recInfoExtra && recInfoExtra.captionImprover) {
+    if (!hasCaptionsFile) {
+?>
+        <section class="wrapper special style1" id="captions-dialog">
+            <header><h2>Note</h2></header>
+
+            <p>Transcription is currently in progress. The transcript is not yet available.</p>
+
+            <?JS if (recInfo.transcription) { ?>
+                <p>The captions generated live while recording are available until the improved captions have been generated.</p>
+            <?JS } ?>
+        </section>
+<?JS
+    }
+}
 ?>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
@@ -129,7 +152,7 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
         <?JS= rid ?>, <?JS= JSON.stringify(safeName) ?>, ret,
         document.getElementById("downloader-box")
     );
-}).catch(function() {
+}).catch(function(ex) {
     document.location.href = "../dl/?i=<?JS= rid.toString(36) ?>&nox=1";
 });
 </script>

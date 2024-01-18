@@ -463,7 +463,7 @@ function dlChooser(rid, name, info, dlBox) {
             dlBtn.disabled = false;
             dlBtn.classList.remove("disabled");
 
-        }).catch(function() {
+        }).catch(function(ex) {
             document.location.href =
                 "../dl/?i=" + rid.toString(36) + "&nox=1";
 
