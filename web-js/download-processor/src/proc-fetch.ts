@@ -22,7 +22,7 @@ import * as wsp from "web-streams-polyfill/ponyfill";
  * A fetch processor. This is a small frontend to fetch() that's careful not to
  * open the stream until you've started reading.
  */
-export class FetchProcessor extends proc.Processor<Uint8Array> {
+export class FetchProcessor extends proc.CorkableProcessor<Uint8Array> {
     /**
      * @param _url  URL to download
      * @param _init  Initialization for fetch (RequestInit)
@@ -30,6 +30,7 @@ export class FetchProcessor extends proc.Processor<Uint8Array> {
     constructor(private _url: string, private _init?: any) {
         super(new wsp.ReadableStream({
             pull: async (controller) => {
+                await this.cork;
                 if (!this._fetchRdr) {
                     const f = await fetch(_url, _init);
                     this._fetchRdr = f.body.getReader();
@@ -40,7 +41,7 @@ export class FetchProcessor extends proc.Processor<Uint8Array> {
                 else
                     controller.enqueue(rd.value);
             }
-        }, {highWaterMark: 0}));
+        }));
     }
 
     private _fetchRdr: ReadableStreamDefaultReader<Uint8Array>;

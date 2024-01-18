@@ -207,7 +207,7 @@ export async function download(opts: DownloadOptions) {
                 saver = saverEC;
 
             // Start the process chain with a fetch or saver
-            let inp: proc.Processor<Uint8Array> | null = null;
+            let inp: proc.CorkableProcessor<Uint8Array> | null = null;
             if (multiple && saver) {
                 // Start by restoring this saver
                 inp = saver.getRestoreProcessor();
@@ -242,15 +242,15 @@ export async function download(opts: DownloadOptions) {
             }
 
             // Decode it
-            let proc: proc.Processor<LibAVT.Frame[]> =
+            let pr: proc.Processor<LibAVT.Frame[]> =
                 new pDecoder.DecoderProcessor(inp, track.duration);
 
             // Perform any processing
             // FIXME: echo
             if (nr)
-                proc = new pNoiser.NoiserProcessor(proc);
+                pr = new pNoiser.NoiserProcessor(pr);
             if (norm)
-                proc = new pNorm.NormalizeProcessor(proc);
+                pr = new pNorm.NormalizeProcessor(pr);
 
             // Make a name for it
             let trackNoStr = "" + track.trackNo;
@@ -270,7 +270,7 @@ export async function download(opts: DownloadOptions) {
 
             // And then encode
             const outp = new pEncoder.EncoderProcessor(
-                proc, track.duration, libavFormat, opts.codec, opts.ctx,
+                pr, track.duration, libavFormat, opts.codec, opts.ctx,
                 opts.onprogress
                     ? (time => opts.onprogress(fname, time))
                     : void 0
@@ -278,7 +278,7 @@ export async function download(opts: DownloadOptions) {
 
             files.push({
                 pathname: `${fname}.${opts.format}`,
-                stream: outp.stream
+                stream: new proc.PopProcessor(inp, outp).stream
             });
         }
     }
@@ -292,7 +292,7 @@ export async function download(opts: DownloadOptions) {
         );
 
         // Decode it
-        let proc: proc.Processor<LibAVT.Frame[]> =
+        let pr: proc.Processor<LibAVT.Frame[]> =
             new pDecoder.DecoderProcessor(inp, track.duration);
 
         // Make a name for it
@@ -301,7 +301,7 @@ export async function download(opts: DownloadOptions) {
 
         // And then encode
         const outp = new pEncoder.EncoderProcessor(
-            proc, track.duration, libavFormat, opts.codec, opts.ctx,
+            pr, track.duration, libavFormat, opts.codec, opts.ctx,
             opts.onprogress
                 ? (time => opts.onprogress(fname, time))
                 : void 0
@@ -309,7 +309,7 @@ export async function download(opts: DownloadOptions) {
 
         files.push({
             pathname: `${fname}.${opts.format}`,
-            stream: outp.stream
+            stream: new proc.PopProcessor(inp, outp).stream
         });
     }
 
@@ -380,7 +380,7 @@ export async function download(opts: DownloadOptions) {
         );
         files.push({
             pathname: "info.txt",
-            stream: inp.stream
+            stream: new proc.PopProcessor(inp, inp).stream
         });
     }
 

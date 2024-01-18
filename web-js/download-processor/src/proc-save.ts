@@ -20,7 +20,7 @@ import type * as localforageT from "localforage";
 declare let localforage : typeof localforageT;
 import * as wsp from "web-streams-polyfill/ponyfill";
 
-export class SaveProcessor extends proc.Processor<Uint8Array> {
+export class SaveProcessor extends proc.CorkableProcessor<Uint8Array> {
     constructor(
         /**
          * Prefix to use for saving.
@@ -30,14 +30,17 @@ export class SaveProcessor extends proc.Processor<Uint8Array> {
         /**
          * Input to save and pass through.
          */
-        private _input: wsp.ReadableStream<Uint8Array>
+        private _input: proc.CorkableProcessor<Uint8Array>
     ) {
         super(new wsp.ReadableStream<Uint8Array>({
             pull: async (controller) => {
+                await this.cork;
+                _input.uncork();
+
                 if (!this._inputRdr) {
                     const db = this._dbName =
                         _prefix + Math.random() + Math.random() + Math.random();
-                    this._inputRdr = _input.getReader();
+                    this._inputRdr = _input.stream.getReader();
                     this._ct = 0;
                     this._lfInstance = await localforage.createInstance({
                         name: `ennuicastr-download-processor-${db}`
@@ -56,7 +59,7 @@ export class SaveProcessor extends proc.Processor<Uint8Array> {
                     this._doneRes();
                 }
             }
-        }, {highWaterMark: 0}));
+        }));
         this._donePromise = new Promise<void>(res => this._doneRes = res);
     }
 
@@ -82,7 +85,7 @@ export class SaveProcessor extends proc.Processor<Uint8Array> {
     private _doneRes: () => unknown;
 }
 
-export class RestoreProcessor extends proc.Processor<Uint8Array> {
+export class RestoreProcessor extends proc.CorkableProcessor<Uint8Array> {
     /**
      * @param _save  SaveProcessor that will cache the data
      * @param _redo  Function to generate a stream to redo the input, in case
@@ -90,12 +93,13 @@ export class RestoreProcessor extends proc.Processor<Uint8Array> {
      */
     constructor(
         private _save: SaveProcessor,
-        private _redo: () => proc.Processor<Uint8Array>
+        private _redo: () => proc.CorkableProcessor<Uint8Array>
     ) {
         let rdCount = 0;
         let redo: wsp.ReadableStreamDefaultReader<Uint8Array> | null = null;
         super(new wsp.ReadableStream({
             pull: async (controller) => {
+                await this.cork;
                 while (true) {
                     if (redo) {
                         // We were forced to redo!
@@ -139,14 +143,16 @@ export class RestoreProcessor extends proc.Processor<Uint8Array> {
                                 break;
                             } else {
                                 // Cache must have been dropped!
-                                redo = _redo().stream.getReader();
+                                const redoProc = _redo();
+                                redoProc.uncork();
+                                redo = redoProc.stream.getReader();
                             }
                         }
 
                     }
                 }
             }
-        }, {highWaterMark: 0}));
+        }));
     }
 
     private _idx: number;
@@ -161,9 +167,9 @@ export class Cache {
          * Function to create the initial stream *or* a new stream in case of
          * cache invalidation.
          */
-        public stream: () => proc.Processor<Uint8Array>
+        public stream: () => proc.CorkableProcessor<Uint8Array>
     ) {
-        this._save = new SaveProcessor(prefix, stream().stream);
+        this._save = new SaveProcessor(prefix, stream());
     }
 
     /**

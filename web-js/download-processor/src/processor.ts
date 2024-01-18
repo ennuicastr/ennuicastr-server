@@ -31,3 +31,56 @@ export class Processor<T> {
         public stream: wsp.ReadableStream<T>
     ) {}
 }
+
+/**
+ * A processor that starts "corked" and can be "uncorked" when needed. To
+ * implement, wait on cork in the ReadableStream's pull.
+ */
+export class CorkableProcessor<T> extends Processor<T> {
+    constructor(stream: wsp.ReadableStream<T>) {
+        super(stream);
+        this.cork = new Promise<void>(res => this._corkRes = res);
+    }
+
+    /**
+     * Call to uncork.
+     */
+    public uncork() {
+        if (this._corkRes) {
+            this._corkRes();
+            this._corkRes = null;
+        }
+    }
+
+    /**
+     * The cork. Resolved when this processor is ready to stream.
+     */
+    public cork: Promise<void>;
+
+    private _corkRes: () => unknown | null;
+}
+
+/**
+ * A processor that simply uncorks another processor when it's first read.
+ */
+export class PopProcessor<T, U> extends Processor<U> {
+    constructor(
+        public corkedInputStream: CorkableProcessor<T>,
+        public outputStream: Processor<U>
+    ) {
+        let rdr: wsp.ReadableStreamDefaultReader<U> | null = null;
+        super(new wsp.ReadableStream({
+            pull: async (controller) => {
+                if (!rdr) {
+                    corkedInputStream.uncork();
+                    rdr = outputStream.stream.getReader();
+                }
+                const rd = await rdr.read();
+                if (rd.done)
+                    controller.close();
+                else
+                    controller.enqueue(rd.value);
+            }
+        }, {highWaterMark: 0}));
+    }
+}

@@ -65,7 +65,7 @@ export class NoiserProcessor extends proc.Processor<LibAVT.Frame[]> {
 
                 controller.enqueue(rd.value);
             }
-        }, {highWaterMark: 0}));
+        }));
     }
 
     private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame[]>;

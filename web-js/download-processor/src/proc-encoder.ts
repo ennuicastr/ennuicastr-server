@@ -134,7 +134,6 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         );
                         const dur = Math.floor(_duration * frames[0].sample_rate);
                         const dur64 = la.f64toi64(dur);
-                        console.log(dur64);
                         await la.AVStream_duration_s(st, dur64[0]);
                         await la.AVStream_durationhi_s(st, dur64[1]);
 
@@ -200,7 +199,7 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                     }
                 }
             }
-        }, {highWaterMark: 0}));
+        }));
     }
 
     private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame[]>;

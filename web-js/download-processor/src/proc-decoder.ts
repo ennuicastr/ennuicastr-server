@@ -126,7 +126,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                         break;
                 }
             }
-        }, {highWaterMark: 0}));
+        }));
     }
 
     /**
