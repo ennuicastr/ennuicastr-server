@@ -88,6 +88,8 @@ if (recInfoExtra && recInfoExtra.captionImprover) {
 <script type="text/javascript" src="ennuicastr-download-processor.min.js"></script>
 
 <section class="wrapper special">
+    <header><h2>Download <?JS= recInfo.name.replace(/[<>]/g, "") || "(Anonymous)" ?></h2></header>
+
     <p><?JS= reclib.recordingName(recInfo) ?></p>
 
     <?JS if (recInfo.end) { ?>
@@ -159,6 +161,16 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
 
 </section>
 
+<section id="video-box" style="display: none">
+    <header><h3>Video</h3></header>
+
+    <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
+
+    <p><button id="video-button">Fetch video</button></p>
+
+    <p>&nbsp;</p>
+</section>
+
 <script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>
 <script type="text/javascript">(function() {
     var fs = new URL(<?JS= JSON.stringify(config.client + "fs/") ?>);
@@ -205,6 +217,22 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
 
     document.body.appendChild(ifr);
 })();</script>
+
+<?JS
+if (recInfo.purchased && (!recInfoExtra || !recInfoExtra.captionImprover)) {
+    ?>
+<section class="wrapper special">
+    <header><h3>Transcript</h3></header>
+
+    <p><a class="button" href="../dl/<?JS= `?i=${recInfo.rid.toString(36)}&amp;captionImprover=1` ?>">Transcribe speech</a></p>
+
+    <p><span style="display: inline-block; max-width: 50em;">NOTE: Transcriptions are inferred by OpenAI Whisper. If you choose to generate a transcription, your audio data will be sent to a server operated by <a href="https://www.runpod.io/">RunPod</a>. Consult <a href="https://www.runpod.io/legal/privacy-policy">their privacy policy</a> for further information.</p>
+
+    <p>&nbsp;</p>
+</section>
+    <?JS
+}
+?>
 
 <?JS
 await include("../../../tail.jss");
