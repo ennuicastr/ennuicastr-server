@@ -238,7 +238,18 @@ function dlChooser(rid, name, info, dlBox) {
 
         // Echo cancellation?
         trackOpt.ec = def;
-        if (idx === 0 || hasECTrack(idx)) {
+        let showECSelector = false;
+        if (idx === 0) {
+            for (let subIdx = 1; info.info.users[subIdx]; subIdx++) {
+                if (hasECTrack(subIdx)) {
+                    showECSelector = true;
+                    break;
+                }
+            }
+        } else {
+            showECSelector = hasECTrack(idx);
+        }
+        if (showECSelector) {
             ch = row(addTo, "Echo cancellation:");
             multiSelector(
                 ch, "ec-opt-ec-" + name,
