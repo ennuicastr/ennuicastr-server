@@ -62,7 +62,7 @@ if (!mobile)
 const recommendBasic = (mac?"aac":"flac");
 recommend.push(recommendBasic);
 
-async function showMainDLs() {
+async function showDLHeader() {
     maybeSample();
     ?>
 
@@ -88,8 +88,11 @@ async function showMainDLs() {
     <span style="font-size: 0.8em">
     (NOTE: This duration will be incorrect if you paused during recording)
     </span></p>
-    <?JS } ?>
+    <?JS }
+}
 
+async function showMainDLs() {
+    ?>
     <p>Please choose a format</p>
 
     <script type="text/javascript">
@@ -134,5 +137,5 @@ async function showOtherDLs() {
     }
 }
 
-module.exports = {showMainDLs, showOtherDLs, showDL};
+module.exports = {showDLHeader, showMainDLs, showOtherDLs, showDL};
 ?>

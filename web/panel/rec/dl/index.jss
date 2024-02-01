@@ -382,21 +382,32 @@ if (!recInfo.purchased && !request.query.s) {
 }
 ?>
 
+<link rel="stylesheet" href="ennuicastr-download-chooser.css" />
+
 <section class="wrapper special">
     <?JS
-    const {showMainDLs, showOtherDLs, showDL} =
+    const {showDLHeader, showMainDLs, showOtherDLs, showDL} =
         await include("./dl-interface.jss", {rid, recInfo, dlHeader});
-    showMainDLs();
+
+    showDLHeader();
+
+    let useDLX = (recInfo.purchased && !request.query.nox);
+    if (useDLX) {
+        await include("./dlx-interface.jss", {rid, recInfo, safeName});
+    } else {
+        showMainDLs();
+    }
 
     await include("./video-interface.jss", {rid, recInfo});
 
-    if (recInfo.purchased) {
+    if (!useDLX && recInfo.purchased) {
         await include("./transcript-interface.jss", {
             rid, recInfo, recInfoExtra, hasCaptionsFile, showDL
         });
     }
 
-    showOtherDLs();
+    if (!useDLX)
+        showOtherDLs();
     ?>
 </section>
 

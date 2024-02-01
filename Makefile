@@ -6,7 +6,7 @@ all: rec sounds \
         cook/oggcorrect cook/oggduration cook/oggmeta cook/oggstender \
         cook/oggtracks cook/wavduration \
 	web/ecdssw.min.js \
-	web/panel/rec/dlx/ennuicastr-download-processor.min.js \
+	web/panel/rec/dl/ennuicastr-download-processor.min.js \
 	web/assets/js/localforage.min.js \
 	web/assets/libs/libspecbleach-0.1.7-js2.js \
 	web/assets/libs/yalap-1.0.1-zip.js
@@ -20,7 +20,7 @@ server/ennuicastr.js server/ennuicastr-beta.js: server/ennuicastr.ts node_module
 	node_modules/.bin/tsc $< --outFile $@.tmp
 	mv $@.tmp $@
 
-web/panel/rec/dlx/ennuicastr-download-processor.min.js: \
+web/panel/rec/dl/ennuicastr-download-processor.min.js: \
 	web-js/download-processor/dist/ennuicastr-download-processor.min.js
 	cp $< $@
 
