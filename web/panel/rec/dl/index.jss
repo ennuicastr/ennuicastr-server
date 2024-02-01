@@ -192,205 +192,10 @@ const dlName = (function() {
 const uriName = encodeURIComponent(dlName);
 const safeName = dlName.replace(/[^A-Za-z0-9]/g, "_");
 
-function formatToName(format) {
-    if (format === "aup")
-        return "Audacity project";
-    else if (format === "opus")
-        return "Opus";
-    else if (format === "vorbis")
-        return "Ogg Vorbis";
-    else if (format === "vtt")
-        return "WebVTT captions";
-    else
-        return format.toUpperCase();
-}
-
 // Maybe do an actual download
 if (request.query.f) {
-    if (!request.query.s && !recInfo.purchased) {
-        // Trying to do a full download of an un-purchased recording
-        writeHead(402);
-        write("You must purchase this recording before downloading a non-sample version.");
-        return;
-    }
-
-    // No need for compression, as the download is already compressed
-    response.compress(null);
-
-    var format = "flac", container = "zip", mext = "flac", ext = "zip",
-        mime = "application/zip", thru = null;
-    switch (request.query.f) {
-        case "aup":
-            container = "aupzip";
-            mext = "aup";
-            break;
-        case "aac":
-            format = mext = "aac";
-            break;
-        case "opus":
-            format = mext = "opus";
-            break;
-        case "vorbis":
-            format = "vorbis";
-            mext = "ogg";
-            break;
-        case "wav":
-            format = mext = "wav";
-            break;
-        case "vtt":
-            format = mext = "vtt";
-            break;
-        case "raw":
-        case "sfx":
-            format = request.query.f;
-            container = "ogg";
-            mext = null;
-            ext = "ogg";
-            mime = "audio/ogg";
-            if (request.query.s) {
-                writeHead(402);
-                write("Raw audio is only available with purchase.");
-                return;
-            }
-            break;
-        case "info":
-            format = "info";
-            container = "json";
-            mext = null;
-            ext = "json";
-            mime = "application/json";
-            break;
-        case "infotxt":
-            format = "infotxt";
-            container = "txt";
-            mext = null;
-            ext = "txt";
-            mime = "text/plain";
-            break;
-        case "captions":
-            format = "captions";
-            container = "json";
-            mext = null;
-            ext = "json";
-            mime = "application/json";
-            break;
-    }
-
-    // If we're doing raw audio, possibly run it thru oggcorrect
-    if (request.query.t) {
-        let subTrack = 0;
-        if (request.query.st)
-            subTrack = Number.parseInt(request.query.st, 36);
-        thru = [
-            config.repo + "/cook/oggcorrect",
-            Number.parseInt(request.query.t, 36), subTrack
-        ];
-    }
-
-    writeHead(200, {
-        "content-type": mime,
-        "content-disposition": "attachment; filename=\"" + uriName + (request.query.s?"-sample":"") + (mext?"."+mext:"") + "." + ext + "\""
-    });
-
-    // Give plenty of time
-    response.setTimeLimit(1000*60*60*24);
-
-    // Handler for raw parts
-    async function sendPart(part, writer) {
-        await new Promise(function(res, rej) {
-            var st = fs.createReadStream(config.rec + "/" + rid + ".ogg." + part);
-            st.on("data", writer);
-            st.on("end", res);
-        });
-    }
-
-
-    if (format === "raw") {
-        // Set up thru if applicable
-        var writer = write, p = null;
-        if (thru) {
-            p = cp.spawn(thru[0], thru.slice(1), {
-                stdio: ["pipe", "pipe", "ignore"]
-            });
-            p.stdout.on("data", write);
-            writer = p.stdin.write.bind(p.stdin);
-        }
-
-        // Do the raw download
-        await sendPart("header1", writer);
-        await sendPart("header2", writer);
-        await sendPart("data", writer);
-        if (thru) {
-            await sendPart("header1", writer);
-            await sendPart("header2", writer);
-            await sendPart("data", writer);
-        }
-
-        // Possibly wait for the thru program
-        if (p) {
-            await new Promise(function(res, rej) {
-                p.stdin.end();
-                p.stdout.on("end", res);
-            });
-        }
-
-    } else if (format === "sfx") {
-        await new Promise((res, rej) => {
-            const p = cp.spawn(config.repo + "/cook/sfx-partwise.sh",
-                [config.rec, ""+rid, ""+Number.parseInt(request.query.t, 36)],
-                {
-                    stdio: ["ignore", "pipe", "ignore"]
-                }
-            );
-            p.stdout.on("data", write);
-            p.stdout.on("end", res);
-        });
-
-    } else {
-        // Jump through to the actual downloader
-        await new Promise(function(resolve) {
-            const args = [
-                "--id", `${rid}`,
-                "--rec-base", config.rec,
-                "--file-name", safeName,
-                "--format", format,
-                "--container", container
-            ];
-            if (request.query.s)
-                args.push("--sample");
-
-            if (format === "vtt")
-                args.push("--exclude", "audio");
-            else if (format === "captions")
-                args.push("--include", "captions");
-
-            const p = cp.spawn(config.repo + "/cook/cook2.sh", args, {
-                stdio: ["ignore", "pipe", "ignore"]
-            });
-
-            p.stdout.on("data", write);
-            p.stdout.on("end", resolve);
-        });
-
-    }
-
+    await include("./dl.jss", {rid, recInfo, uriName, safeName});
     return;
-}
-
-// Determine their platform
-const mac = (/mac os x/i.test(params.HTTP_USER_AGENT));
-const mobile = (/(android|iphone|ipad)/i.test(params.HTTP_USER_AGENT));
-const recommend = [];
-if (!mobile)
-    recommend.push("aup");
-const recommendBasic = (mac?"aac":"flac");
-recommend.push(recommendBasic);
-
-var samplePost = "";
-
-// Function to show a download button
-function showDL(format) {
-    ?><a class="button dl" href="?i=<?JS= recInfo.rid.toString(36) ?>&f=<?JS= format + samplePost ?>" onclick="disableDownloads();"><?JS= formatToName(format) ?></a> <?JS
 }
 
 // Since we show the download header at different points, a function to generate it
@@ -398,23 +203,9 @@ function dlHeader() {
     ?><header><h2>Download <?JS= recInfo.name.replace(/[<>]/g, "") || "(Anonymous)" ?></h2></header><?JS
 }
 
-// We say "sample download" if it's a sample download
-function maybeSample() {
-    if (!recInfo.purchased) {
-        ?>
-        <a name="sample"></a>
-        <header><h2>Sample Download</h2></header>
-        <?JS
-    } else {
-        dlHeader();
-    }
-}
-
 // Show the downloader
 await include("../../head.jss", {title: "Download", paypal: !recInfo.purchased});
 
-if (!recInfo.purchased)
-    samplePost = "&s=1";
 if (!recInfo.purchased && !request.query.s) {
 ?>
     <section class="wrapper special style1" id="purchase-dialog">
@@ -592,171 +383,22 @@ if (!recInfo.purchased && !request.query.s) {
 ?>
 
 <section class="wrapper special">
-    <?JS maybeSample(); ?>
+    <?JS
+    const {showMainDLs, showOtherDLs, showDL} =
+        await include("./dl-interface.jss", {rid, recInfo, dlHeader});
+    showMainDLs();
 
-    <p><?JS= reclib.recordingName(recInfo) ?></p>
+    await include("./video-interface.jss", {rid, recInfo});
 
-    <?JS if (recInfo.end) { ?>
-    <p>Recording duration: <?JS {
-        const start = new Date(recInfo.start);
-        const end = new Date(recInfo.end);
-        const dur = end.getTime() - start.getTime();
-        let m = Math.round(dur / 60000);
-        let h = Math.floor(m / 60);
-        m -= h * 60;
-        if (h) {
-            write(`${h} hour`);
-            if (h !== 1)
-                write("s");
-        }
-        write(` ${m} minute`);
-        if (m !== 1)
-            write("s");
-    } ?><br/>
-    <span style="font-size: 0.8em">
-    (NOTE: This duration will be incorrect if you paused during recording)
-    </span></p>
-    <?JS } ?>
-
-    <p>Please choose a format</p>
-
-    <script type="text/javascript"><!--
-    function disableDownloads() {
-        document.querySelectorAll(".dl").forEach(function(b) {
-            b.classList.add("disabled");
+    if (recInfo.purchased) {
+        await include("./transcript-interface.jss", {
+            rid, recInfo, recInfoExtra, hasCaptionsFile, showDL
         });
     }
-    //--></script>
 
-    <header><h3>Suggested formats</h3></header>
-
-    <p><span style="display: inline-block; max-width: 50em;">
-    <?JS if (!mobile) { ?>
-    If you use Audacity (a popular, free audio editor), download the Audacity project. Otherwise, the
-    <?JS } else { ?>
-    The
-    <?JS } ?>
-    suggested format for your platform is <?JS= formatToName(recommendBasic) ?>.</span></p>
-
-    <p><?JS
-    recommend.forEach(showDL);
-    ?></p>
-
-    <p>&nbsp;</p>
-
-    <div id="video-box" style="display: none">
-    <header><h3>Video</h3></header>
-
-    <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
-
-    <p><button id="video-button">Fetch video</button></p>
-
-    <p>&nbsp;</p>
-    </div>
-
-    <?JS
-    if (recInfo.purchased) {
-        ?>
-        <header><h3>Transcript</h3></header>
-
-        <?JS
-        if (hasCaptionsFile) {
-        ?>
-            <p><?JS showDL("vtt"); ?></p>
-        <?JS
-        } else if (recInfo.transcription) {
-        ?>
-        <p>Transcript generated while recording:<br/><?JS showDL("vtt"); ?></p>
-        <?JS } ?>
-
-        <?JS
-        if (!recInfoExtra || !recInfoExtra.captionImprover) {
-        ?>
-        <p><a class="button" href="<?JS= `?i=${recInfo.rid.toString(36)}&amp;captionImprover=1` ?>">Transcribe speech</a></p>
-
-        <p><span style="display: inline-block; max-width: 50em;">NOTE: Transcriptions are inferred by OpenAI Whisper. If you choose to generate a transcription, your audio data will be sent to a server operated by <a href="https://www.runpod.io/">RunPod</a>. Consult <a href="https://www.runpod.io/legal/privacy-policy">their privacy policy</a> for further information.</p>
-        <?JS } ?>
-
-        <p>&nbsp;</p>
-        <?JS
-    }
-    ?>
-
-    <?JS
-    if (recInfo.purchased) {
-        ?>
-        <header><h3>Advanced processing</h3></header>
-
-        <p><span style="display: inline-block; max-width: 50em;">If you need your audio mixed or leveled, want to perform noise reduction, or need other formats such as Apple's ALAC or uncompressed WAV, you can use this tool to do processing in your browser:</span></p>
-
-        <p><a class="button" href="<?JS= config.ennuizel ?>?i=<?JS= recInfo.rid.toString(36) ?>&k=<?JS= recInfo.wskey.toString(36) ?>&nm=<?JS= uriName ?>" target="_blank">Advanced processing</a></p>
-
-        <p>&nbsp;</p>
-        <?JS
-    }
-    ?>
-
-    <header><h3>Other formats</h3></header>
-
-    <p><?JS
-    if (mobile)
-        showDL("aup");
-    ["wav", (mac?"flac":"aac"), "opus", "vorbis"].forEach(showDL);
-    ?></p>
-
-    <?JS
-    if (recInfo.purchased) {
-        ?><p>Raw audio (NOTE: No audio editor will correctly read this file!): <a href="?i=<?JS= recInfo.rid.toString(36) ?>&f=raw">Raw</a></p><?JS
-    }
+    showOtherDLs();
     ?>
 </section>
-
-<script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>
-<script type="text/javascript">(function() {
-    var fs = new URL(<?JS= JSON.stringify(config.client + "fs/") ?>);
-    var ifr = document.createElement("iframe");
-    ifr.style.display = "none";
-    ifr.src = fs.toString();
-
-    var mp, key;
-
-    window.addEventListener("message", function(ev) {
-        if (ev.origin !== fs.origin)
-            return;
-        if (typeof ev.data !== "object" || ev.data === null || ev.data.c !== "ennuicastr-file-storage")
-            return;
-        mp = ev.data.port;
-        mp.onmessage = onmessage;
-        mp.postMessage({c: "ennuicastr-file-storage"});
-    });
-
-    function onmessage(ev) {
-        var msg = ev.data;
-        switch (msg.c) {
-            case "salt":
-                var hash = window["sha512-es"].default.hash;
-                key = hash(hash(
-                    <?= JSON.stringify(rid + ":" + recInfo.key + ":" + recInfo.master) ?> +
-                    ":" + msg.global) +
-                    ":" + msg.local);
-                mp.postMessage({c: "list", key: key});
-                break;
-
-            case "list":
-                var files = msg.files;
-                if (files.length) {
-                    document.getElementById("video-box").style.display = "";
-                    document.getElementById("video-button").onclick = function() {
-                        for (var i = 0; i < files.length; i++)
-                            mp.postMessage({c: "download", id: files[i].id, key: key});
-                    };
-                }
-                break;
-        }
-    }
-
-    document.body.appendChild(ifr);
-})();</script>
 
 <?JS
 await include("../../../tail.jss");
