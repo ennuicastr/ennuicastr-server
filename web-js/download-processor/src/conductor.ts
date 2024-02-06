@@ -73,7 +73,7 @@ export interface DownloadOptions {
     /**
      * Optional progress callback.
      */
-    onprogress?: (name: string, time: number) => unknown;
+    onprogress?: (name: string, time: number, duration: number) => unknown;
 }
 
 export interface RecTrackDescription {
@@ -272,7 +272,7 @@ export async function download(opts: DownloadOptions) {
             const outp = new pEncoder.EncoderProcessor(
                 pr, track.duration, libavFormat, opts.codec, opts.ctx,
                 opts.onprogress
-                    ? (time => opts.onprogress(fname, time))
+                    ? (time => opts.onprogress(fname, time, track.duration))
                     : void 0
             );
 
@@ -303,7 +303,7 @@ export async function download(opts: DownloadOptions) {
         const outp = new pEncoder.EncoderProcessor(
             pr, track.duration, libavFormat, opts.codec, opts.ctx,
             opts.onprogress
-                ? (time => opts.onprogress(fname, time))
+                ? (time => opts.onprogress(fname, time, track.duration))
                 : void 0
         );
 

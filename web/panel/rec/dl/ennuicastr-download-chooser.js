@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 Yahweasel
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 function dlChooser(rid, name, info, dlBox) {
     // Create a radio select that looks like a button
     function radioButton(addTo, name, idsuff, text, type) {
@@ -126,6 +142,30 @@ function dlChooser(rid, name, info, dlBox) {
     }
 
     dlBox.innerHTML = "";
+
+    // Box to eventually be filled with a status bar
+    var statusBox = document.createElement("div");
+    dlBox.appendChild(statusBox);
+    Object.assign(statusBox.style, {
+        position: "relative",
+        display: "none",
+        height: "2em",
+        fontSize: "1.5em",
+        lineHeight: "2em",
+        marginBottom: "1em"
+    });
+    var statusBar = document.createElement("div");
+    statusBox.appendChild(statusBar);
+    var statusInd = document.createElement("div");
+    Object.assign(statusInd.style, {
+        position: "absolute",
+        left: "0px",
+        right: "0px",
+        top: "0px",
+        bottom: "0px"
+    });
+    statusBox.appendChild(statusInd);
+
 
     // The very first option is the download button itself
     var ch = row(dlBox);
@@ -467,12 +507,26 @@ function dlChooser(rid, name, info, dlBox) {
                 ctx: formatOpts,
                 project: project,
                 tracks: tracks,
-                onprogress: console.log
+                onprogress: (file, time, duration) => {
+                    statusBox.style.display = "";
+
+                    var progress = time / duration * 100;
+                    Object.assign(statusBar.style, {
+                        position: "absolute",
+                        left: "0px",
+                        top: "0px",
+                        bottom: "0px",
+                        width: progress + "%",
+                        backgroundColor: "var(--bg-10)"
+                    });
+                    statusInd.innerText = file + ": " + Math.round(progress) + "%";
+                }
             });
 
         }).then(function() {
             dlBtn.disabled = false;
             dlBtn.classList.remove("disabled");
+            statusBox.style.display = "none";
 
         }).catch(function(ex) {
             document.location.href =
