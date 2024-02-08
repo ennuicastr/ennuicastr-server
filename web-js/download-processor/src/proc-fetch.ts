@@ -31,6 +31,7 @@ export class FetchProcessor extends proc.CorkableProcessor<Uint8Array> {
         super(new wsp.ReadableStream({
             pull: async (controller) => {
                 await this.cork;
+
                 if (!this._fetchRdr) {
                     const f = await fetch(_url, _init);
                     this._fetchRdr = f.body.getReader();

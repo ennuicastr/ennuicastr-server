@@ -14,10 +14,10 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+import * as LibAV from "./libav";
 import * as proc from "./processor";
 
 import type * as LibAVT from "libav.js";
-declare let LibAV: LibAVT.LibAVWrapper;
 import * as wsp from "web-streams-polyfill/ponyfill";
 
 export class NormalizeProcessor extends proc.Processor<LibAVT.Frame[]> {
@@ -31,7 +31,7 @@ export class NormalizeProcessor extends proc.Processor<LibAVT.Frame[]> {
                     const rd = await this._inputRdr.read();
 
                     if (!this._la)
-                        this._la = await LibAV.LibAV();
+                        this._la = await LibAV.libav("normalize");
                     const la = this._la;
                     if (!this._frame)
                         this._frame = await la.av_frame_alloc();
@@ -75,9 +75,6 @@ export class NormalizeProcessor extends proc.Processor<LibAVT.Frame[]> {
 
                         if (this._frame)
                             await la.av_frame_free_js(this._frame);
-
-                        if (la)
-                            la.terminate();
 
                         controller.close();
                         break;

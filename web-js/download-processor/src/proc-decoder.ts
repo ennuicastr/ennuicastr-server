@@ -14,10 +14,10 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+import * as LibAV from "./libav";
 import * as proc from "./processor";
 
 import type * as LibAVT from "libav.js";
-declare let LibAV: LibAVT.LibAVWrapper;
 import * as wsp from "web-streams-polyfill/ponyfill";
 
 /**
@@ -39,7 +39,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                     this._inputRdr = _input.stream.getReader();
 
                     // Create a libav instance
-                    const la = this._la = await LibAV.LibAV();
+                    const la = this._la = await LibAV.libav("decoder");
 
                     await la.mkreaderdev("input");
 
@@ -164,11 +164,6 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
         if (this._fmtCtx) {
             await la.avformat_free_context(this._fmtCtx);
             this._fmtCtx = 0;
-        }
-
-        if (la) {
-            la.terminate();
-            this._la = null;
         }
     }
 

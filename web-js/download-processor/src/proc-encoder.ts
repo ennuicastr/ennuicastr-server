@@ -14,10 +14,10 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+import * as LibAV from "./libav";
 import * as proc from "./processor";
 
 import type * as LibAVT from "libav.js";
-declare let LibAV: LibAVT.LibAVWrapper;
 import * as wsp from "web-streams-polyfill/ponyfill";
 
 export class EncoderProcessor extends proc.Processor<Uint8Array> {
@@ -35,7 +35,7 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                     this._inputRdr = this._input.stream.getReader();
 
                 if (!this._la)
-                    this._la = await LibAV.LibAV();
+                    this._la = await LibAV.libav("encoder");
                 const la = this._la;
 
                 while (true) {
@@ -190,7 +190,6 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         await la.ff_free_encoder(
                             this._c, this._frame, this._pkt
                         );
-                        la.terminate();
 
                         controller.close();
                         break;

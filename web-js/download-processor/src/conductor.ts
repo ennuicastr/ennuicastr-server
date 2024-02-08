@@ -246,7 +246,6 @@ export async function download(opts: DownloadOptions) {
                 new pDecoder.DecoderProcessor(inp, track.duration);
 
             // Perform any processing
-            // FIXME: echo
             if (nr)
                 pr = new pNoiser.NoiserProcessor(pr);
             if (norm)
