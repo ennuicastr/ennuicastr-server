@@ -20,8 +20,13 @@ import * as proc from "./processor";
 import type * as LibAVT from "libav.js";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
+const sharedWriters: Record<
+    string, (pos: number, buf: Uint8Array | Int8Array) => void
+> = Object.create(null);
+
 export class EncoderProcessor extends proc.Processor<Uint8Array> {
     constructor(
+        private _name: string,
         private _input: proc.Processor<LibAVT.Frame[]>,
         private _duration: number,
         private _format: string, private _codec: string,
@@ -34,8 +39,13 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                 if (!this._inputRdr)
                     this._inputRdr = this._input.stream.getReader();
 
-                if (!this._la)
+                if (!this._la) {
                     this._la = await LibAV.libav("encoder");
+                    this._la.onwrite = (name, pos, buf) => {
+                        if (sharedWriters[name])
+                            sharedWriters[name](pos, buf);
+                    };
+                }
                 const la = this._la;
 
                 while (true) {
@@ -109,14 +119,14 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
 
                     this._hadWrite = false;
                     if (!this._fmtCtx) {
-                        la.onwrite = (filename, pos, buf) => {
+                        sharedWriters[`output.${_name}`] = (pos, buf) => {
                             this._hadWrite = true;
                             controller.enqueue(new Uint8Array(buf.buffer));
                         };
 
                         [this._fmtCtx, , this._pb] = await la.ff_init_muxer({
                             format_name: _format,
-                            filename: "output",
+                            filename: `output.${_name}`,
                             device: true,
                             open: true
                         }, [[this._c, 1, frames[0].sample_rate]]);

@@ -26,25 +26,28 @@ import * as wsp from "web-streams-polyfill/ponyfill";
  */
 export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
     /**
+     * @param _name  Filename of input (only uniqueness matters).
      * @param _input  Input file to decode.
-     * @param _duration  Expected duration
+     * @param _duration  Expected duration.
      */
     constructor(
-        private _input: proc.Processor<Uint8Array>,
+        private _name: string,
+        private _input: proc.CorkableProcessor<Uint8Array>,
         private _duration: number
     ) {
         super(new wsp.ReadableStream<LibAVT.Frame[]>({
             pull: async (controller) => {
                 if (!this._inputRdr) {
+                    await _input.cork;
                     this._inputRdr = _input.stream.getReader();
 
                     // Create a libav instance
                     const la = this._la = await LibAV.libav("decoder");
 
-                    await la.mkreaderdev("input");
+                    await la.mkreaderdev(`input.${_name}`);
 
                     // Create a demuxer
-                    const demuxPromise = la.ff_init_demuxer_file("input");
+                    const demuxPromise = la.ff_init_demuxer_file(`input.${_name}`);
                     await this._flushReaderDev();
                     const [fmtCtx, streams] = await demuxPromise;
                     this._fmtCtx = fmtCtx;
@@ -138,9 +141,9 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
         while (await la.ff_reader_dev_waiting()) {
             const rd = await this._inputRdr.read();
             if (rd.done)
-                await la.ff_reader_dev_send("input", null);
+                await la.ff_reader_dev_send(`input.${this._name}`, null);
             else
-                await la.ff_reader_dev_send("input", rd.value);
+                await la.ff_reader_dev_send(`input.${this._name}`, rd.value);
         }
     }
 

@@ -241,16 +241,6 @@ export async function download(opts: DownloadOptions) {
                 }
             }
 
-            // Decode it
-            let pr: proc.Processor<LibAVT.Frame[]> =
-                new pDecoder.DecoderProcessor(inp, track.duration);
-
-            // Perform any processing
-            if (nr)
-                pr = new pNoiser.NoiserProcessor(pr);
-            if (norm)
-                pr = new pNorm.NormalizeProcessor(pr);
-
             // Make a name for it
             let trackNoStr = "" + track.trackNo;
             if (trackNoStr.length < 2)
@@ -267,9 +257,19 @@ export async function download(opts: DownloadOptions) {
             }
             fileNames[fname] = true;
 
+            // Decode it
+            let pr: proc.Processor<LibAVT.Frame[]> =
+                new pDecoder.DecoderProcessor(fname, inp, track.duration);
+
+            // Perform any processing
+            if (nr)
+                pr = new pNoiser.NoiserProcessor(pr);
+            if (norm)
+                pr = new pNorm.NormalizeProcessor(pr);
+
             // And then encode
             const outp = new pEncoder.EncoderProcessor(
-                pr, track.duration, libavFormat, opts.codec, opts.ctx,
+                fname, pr, track.duration, libavFormat, opts.codec, opts.ctx,
                 opts.onprogress
                     ? (time => opts.onprogress(fname, time, track.duration))
                     : void 0
@@ -292,7 +292,7 @@ export async function download(opts: DownloadOptions) {
 
         // Decode it
         let pr: proc.Processor<LibAVT.Frame[]> =
-            new pDecoder.DecoderProcessor(inp, track.duration);
+            new pDecoder.DecoderProcessor(`sfx.${track.trackNo}`, inp, track.duration);
 
         // Make a name for it
         let fname = `sfx-${track.trackNo}`;
@@ -300,6 +300,7 @@ export async function download(opts: DownloadOptions) {
 
         // And then encode
         const outp = new pEncoder.EncoderProcessor(
+            `sfx.${track.trackNo}`,
             pr, track.duration, libavFormat, opts.codec, opts.ctx,
             opts.onprogress
                 ? (time => opts.onprogress(fname, time, track.duration))
