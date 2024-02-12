@@ -53,6 +53,7 @@ const defaults = await (async function() {
     }
     row.rtennuiVideo = row.extra.rtennuiVideo;
     row.jitsiAudio = row.extra.jitsiAudio;
+    row.noDualEC = row.extra.noDualEC;
     return row;
 })();
 ?>
@@ -138,7 +139,8 @@ const defaults = await (async function() {
                               defaults.rtennuiVideo ||
                               !defaults.rtc ||
                               defaults.recordOnly ||
-                              defaults.transcription);
+                              defaults.transcription ||
+                              defaults.noDualEC);
 
         // Quality option button
         ?>
@@ -193,6 +195,10 @@ const defaults = await (async function() {
             ?>
         </div>
         <?JS
+
+        l("noDualEC", "Disable post hoc EC", true);
+        chk("noDualEC", "xndec");
+        alt("noDualEC", "By default, Ennuicastr allows you to enable or disable (or both) echo cancellation when downloading, so that you can decide post hoc which sounds better. That is, Ennuicastr supports “post hoc echo cancellation”. However, this feature doubles the bandwidth requirement while recording. Disabling it will save bandwidth, but limit your audio versatility.");
 
         l("recordOnly", "Mute live voice chat", true);
         chk("recordOnly", "x");
@@ -316,6 +322,8 @@ function launchRecording() {
             features |= 0x800;
         if (res.extra && res.extra.rtennuiVideo)
             features |= 0x400;
+        if (res.extra && res.extra.noDualEC)
+            features |= 0x2000;
         if (res.format === "flac")
             features |= 0x10;
 

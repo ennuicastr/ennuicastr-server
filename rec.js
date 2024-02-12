@@ -234,6 +234,8 @@ function hostUrl(rec, opts) {
         features |= 0x800;
     if (extra.rtennuiVideo)
         features |= 0x400;
+    if (extra.noDualEC)
+        features |= 0x2000;
     if (rec.format === "flac")
         features |= 0x10;
 

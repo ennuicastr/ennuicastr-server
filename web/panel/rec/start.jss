@@ -51,7 +51,8 @@ rec = {
     universalMonitor: !!rec.r,
     extra: {
         rtennuiVideo: !!rec.xrv,
-        jitsiAudio: !!!rec.xrv && !!rec.xja
+        jitsiAudio: !!!rec.xrv && !!rec.xja,
+        noDualEC: !!rec.xndec
     }
 };
 
