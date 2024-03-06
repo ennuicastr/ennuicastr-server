@@ -21,7 +21,7 @@ function dlChooser(rid, name, info, dlBox) {
         sel.type = type || "radio";
         sel.name = name;
         sel.id = name + "-" + idsuff;
-        sel.style.display = "none";
+        sel.style.appearance = "none";
         var lbl = document.createElement("label");
         lbl.classList.add("button");
         lbl.style.marginLeft = "1px";

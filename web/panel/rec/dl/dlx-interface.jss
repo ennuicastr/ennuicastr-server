@@ -67,3 +67,5 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
 </script>
 
 <p>&nbsp;</p>
+<p><a href="?i=<?JS= rid.toString(36) ?>&nox=1">Use simple downloader</a></p>
+<p>&nbsp;</p>
