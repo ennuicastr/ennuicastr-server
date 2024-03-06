@@ -16,22 +16,24 @@
 
 function dlChooser(rid, name, info, dlBox) {
     // Create a radio select that looks like a button
-    function radioButton(addTo, name, idsuff, text, longText, type) {
+    function radioButton(addTo, name, idsuff, text, type) {
         var sel = document.createElement("input");
         sel.type = type || "radio";
         sel.name = name;
         sel.id = name + "-" + idsuff;
-        //sel.style.appearance = "none";
-        sel.classList.add("button");
-        sel.style.marginLeft = "1px";
-        sel.setAttribute("aria-label", longText);
-        sel.innerText = text;
+        sel.style.display = "none";
+        var lbl = document.createElement("label");
+        lbl.classList.add("button");
+        lbl.style.marginLeft = "1px";
+        lbl.htmlFor = name + "-" + idsuff;
+        lbl.innerText = text;
         addTo.appendChild(sel);
-        return sel;
+        addTo.appendChild(lbl);
+        return [sel, lbl];
     }
 
     // Create a multi-option selector
-    function multiSelector(addTo, name, longName, opts, onselect) {
+    function multiSelector(addTo, name, opts, onselect) {
         var others = null, osel = null;
         var selOpt = opts[0];
         var hadSelected = -1;
@@ -42,20 +44,18 @@ function dlChooser(rid, name, info, dlBox) {
             if (opt.other) {
                 if (!others) {
                     osel = radioButton(
-                        addTo, name + "-other", "", "Others",
-                        longName + "Others",
-                        "checkbox"
+                        addTo, name + "-other", "", "Others", "checkbox"
                     );
                     others = document.createElement("div");
                     others.style.display = "none";
                     addTo.appendChild(others);
 
-                    osel.onchange = function() {
-                        if (osel.checked) {
+                    osel[0].onchange = function() {
+                        if (osel[0].checked) {
                             others.style.display = "";
                         } else {
                             if (selOpt.other) {
-                                opts[0].sel.checked = true;
+                                opts[0].sel[0].checked = true;
                                 onselect(opts[0].value);
                             }
                             others.style.display = "none";
@@ -65,17 +65,17 @@ function dlChooser(rid, name, info, dlBox) {
             }
 
             var sel = opt.sel = radioButton(
-                opt.other ? others : addTo, name, i, opt.name, longName + opt.name
+                opt.other ? others : addTo, name, i, opt.name
             );
             if (opt.selected) 
                 hadSelected = i;
             if (i === 0 || opt.selected || opt.default)
                 hadDefault = i;
 
-            sel.onchange = function() {
+            sel[0].onchange = function() {
                 selOpt = opt;
                 if (others && !opt.other) {
-                    osel.checked = false;
+                    osel[0].checked = false;
                     others.style.display = "none";
                 }
                 localforage.setItem(name, opt.value);
@@ -86,7 +86,7 @@ function dlChooser(rid, name, info, dlBox) {
         localforage.getItem(name).then(function(val) {
             if (hadSelected >= 0) {
                 selOpt = opts[hadSelected];
-                selOpt.sel.checked = true;
+                selOpt.sel[0].checked = true;
                 onselect(selOpt.value);
                 return;
             }
@@ -100,9 +100,9 @@ function dlChooser(rid, name, info, dlBox) {
                 var opt = opts[i];
                 if (opt.value === val) {
                     selOpt = opt;
-                    opt.sel.checked = true;
+                    opt.sel[0].checked = true;
                     if (opt.other) {
-                        osel.checked = true;
+                        osel[0].checked = true;
                         others.style.display = "";
                     }
                     onselect(opt.value);
@@ -203,7 +203,7 @@ function dlChooser(rid, name, info, dlBox) {
         value: "alac",
         other: true
     }];
-    multiSelector(ch, "ec-format", "Format: ", opts, function(v) { format = v; });
+    multiSelector(ch, "ec-format", opts, function(v) { format = v; });
 
     // Determine which tracks have subtracks
     var subtracks = {};
@@ -252,7 +252,7 @@ function dlChooser(rid, name, info, dlBox) {
         if (idx > 0) {
             ch = row(addTo, "Download only this track?");
             multiSelector(
-                ch, "ec-download-only-" + idx, "Download only this track? ",
+                ch, "ec-download-only-" + idx,
                 [
                     {name: "Yes", value: true},
                     {name: "No", value: false, selected: true}
@@ -292,7 +292,7 @@ function dlChooser(rid, name, info, dlBox) {
         if (showECSelector) {
             ch = row(addTo, "Echo cancellation:");
             multiSelector(
-                ch, "ec-opt-ec-" + name, "Echo cancellation: ",
+                ch, "ec-opt-ec-" + name,
                 JSON.parse(genOpts),
                 function(v) { trackOpt.ec = v; }
             );
@@ -302,7 +302,7 @@ function dlChooser(rid, name, info, dlBox) {
         trackOpt.nr = def;
         ch = row(addTo, "Noise reduction:");
         multiSelector(
-            ch, "ec-opt-nr-" + name, "Noise reduction: ",
+            ch, "ec-opt-nr-" + name,
             JSON.parse(genOpts),
             function(v) { trackOpt.nr = v; }
         );
@@ -311,7 +311,7 @@ function dlChooser(rid, name, info, dlBox) {
         trackOpt.norm = def;
         ch = row(addTo, "Volume normalization:");
         multiSelector(
-            ch, "ec-opt-norm-" + name, "Volume normalization: ",
+            ch, "ec-opt-norm-" + name,
             JSON.parse(genOpts),
             function(v) { trackOpt.norm = v; }
         );
@@ -339,7 +339,7 @@ function dlChooser(rid, name, info, dlBox) {
     }];
     for (var i = 1; info.info.users[i]; i++)
         opts.push({name: info.info.users[i].nick, value: i});
-    multiSelector(ch, "ec-track", "Track: ", opts, function(v) {
+    multiSelector(ch, "ec-track", opts, function(v) {
         selectedTrack = v;
         trackSelectorBox.innerHTML = "";
         trackSelectorBox.appendChild(trackSelectors[v]);
@@ -354,7 +354,7 @@ function dlChooser(rid, name, info, dlBox) {
     // Whether to download normal audio tracks
     var dlAudio = true;
     ch = row(dlBox, "Download audio?");
-    multiSelector(ch, "ec-dl-audio", "Download audio? ", [
+    multiSelector(ch, "ec-dl-audio", [
         {name: "Yes", value: true, selected: true},
         {name: "No", value: false}
     ], function(v) { dlAudio = v; });
@@ -364,7 +364,7 @@ function dlChooser(rid, name, info, dlBox) {
     if (info.sfx) {
         dlSfx = true;
         ch = row(dlBox, "Download SFX?");
-        multiSelector(ch, "ec-dl-sfx", "Download SFX? ", [
+        multiSelector(ch, "ec-dl-sfx", [
             {name: "Yes", value: true, selected: true},
             {name: "No", value: false}
         ], function(v) { dlSfx = v; });
@@ -375,7 +375,7 @@ function dlChooser(rid, name, info, dlBox) {
     if (info.transcript) {
         dlTranscript = true;
         ch = row(dlBox, "Download transcript?");
-        multiSelector(ch, "ec-dl-transcript", "Download transcript? ", [
+        multiSelector(ch, "ec-dl-transcript", [
             {name: "Yes", value: true, selected: true},
             {name: "No", value: false}
         ], function(v) { dlTranscript = v; });
