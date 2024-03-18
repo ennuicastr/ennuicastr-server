@@ -33,7 +33,7 @@ if (!request.query.s && !recInfo.purchased) {
 response.compress(null);
 
 var format = "flac", container = "zip", mext = "flac", ext = "zip",
-    mime = "application/zip", thru = null;
+    mime = "application/zip", onlyTrack = null, subtrack = 0;
 switch (request.query.f) {
     case "aup":
         container = "aupzip";
@@ -91,15 +91,11 @@ switch (request.query.f) {
         break;
 }
 
-// If we're doing raw audio, possibly run it thru oggcorrect
+// If we're doing raw audio, possibly choose one track
 if (request.query.t) {
-    let subTrack = 0;
+    onlyTrack = Number.parseInt(request.query.t, 36);
     if (request.query.st)
-        subTrack = Number.parseInt(request.query.st, 36);
-    thru = [
-        config.repo + "/cook/oggcorrect",
-        Number.parseInt(request.query.t, 36), subTrack
-    ];
+        subtrack = Number.parseInt(request.query.st, 36);
 }
 
 writeHead(200, {
@@ -121,33 +117,27 @@ async function sendPart(part, writer) {
 
 
 if (format === "raw") {
-    // Set up thru if applicable
-    var writer = write, p = null;
-    if (thru) {
-        p = cproc.spawn(thru[0], thru.slice(1), {
-            stdio: ["pipe", "pipe", "ignore"]
+    // Use the downloader in raw mode
+    await new Promise(function(resolve) {
+        const args = [
+            "--id", `${rid}`,
+            "--rec-base", config.rec,
+            "--file-name", safeName,
+            "--format", "copy",
+            "--container", "raw"
+        ];
+        if (onlyTrack !== null)
+            args.push("--only", onlyTrack + "");
+        if (subtrack)
+            args.push("--subtrack", subtrack + "");
+
+        const p = cproc.spawn(config.repo + "/cook/cook2.sh", args, {
+            stdio: ["ignore", "pipe", "ignore"]
         });
+
         p.stdout.on("data", write);
-        writer = p.stdin.write.bind(p.stdin);
-    }
-
-    // Do the raw download
-    await sendPart("header1", writer);
-    await sendPart("header2", writer);
-    await sendPart("data", writer);
-    if (thru) {
-        await sendPart("header1", writer);
-        await sendPart("header2", writer);
-        await sendPart("data", writer);
-    }
-
-    // Possibly wait for the thru program
-    if (p) {
-        await new Promise(function(res, rej) {
-            p.stdin.end();
-            p.stdout.on("end", res);
-        });
-    }
+        p.stdout.on("end", resolve);
+    });
 
 } else if (format === "sfx") {
     await new Promise((res, rej) => {

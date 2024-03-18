@@ -52,6 +52,10 @@ INCLUDE_AUDIO=yes
 INCLUDE_CAPTIONS=maybe
 INCLUDE_DURATIONS=no
 
+# Only include specified track(s)
+ONLY_TRACK=no
+SUBTRACK=0
+
 # Whether we have captions (as a separate question from whether to include
 # them)
 CHECK_CAPTIONS=no
@@ -72,6 +76,7 @@ usage() {
               [--format <format>] [--container <container>] [--filter <filter>]
               [--sample] [--exclude-all] [--include <audio/captions>]
               [--exclude <audio/captions>]
+              [--only <track>] [--subtrack <id>]
 ' >&2
 }
 
@@ -175,6 +180,16 @@ do
             esac
             ;;
 
+        --only)
+            ONLY_TRACK="$1"
+            shift
+            ;;
+
+        --subtrack)
+            SUBTRACK="$1"
+            shift
+            ;;
+
         *)
             usage
             exit 1
@@ -204,6 +219,12 @@ case "$CONTAINER" in
 
     txt)
         INCLUDE_AUDIO=no
+        INCLUDE_CAPTIONS=no
+        ;;
+
+    raw)
+        INCLUDE_INFO=no
+        INCLUDE_CHAT=no
         INCLUDE_CAPTIONS=no
         ;;
 
@@ -344,6 +365,11 @@ fi
 # Make our fifos and surrounding content
 for c in $(seq -w 1 $NB_STREAMS)
 do
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$c" ]
+    then
+        continue
+    fi
+
     TRACK_USER="$($SCRIPTBASE/userinfo.js $ID $c)"
     [ "$TRACK_USER" ] || unset TRACK__USER
     TRACK_FN="$c${TRACK_USER+-}$TRACK_USER.$ext"
@@ -377,6 +403,11 @@ done
 # Handle the SFX files
 for c in $(seq -w 1 $NB_SFX)
 do
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" ]
+    then
+        continue
+    fi
+
     SFX_FN="sfx-$c.$ext"
     SFX_FFN="$OUTDIR/$AUDDIR$SFX_FN"
 
@@ -409,6 +440,11 @@ fi
 # Encode thru fifos
 for c in $(seq -w 1 $NB_STREAMS)
 do
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$c" ]
+    then
+        continue
+    fi
+
     TRACK_USER="$($SCRIPTBASE/userinfo.js $ID $c)"
     [ "$TRACK_USER" ] || unset TRACK__USER
     TRACK_FN="$c${TRACK_USER+-}$TRACK_USER.$ext"
@@ -434,7 +470,7 @@ do
             timeout $DEF_TIMEOUT cat \
                 $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data \
                 $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-                timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $TRACK_STREAMNO > "$TRACK_FFN" &
+                timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $TRACK_STREAMNO $SUBTRACK > "$TRACK_FFN" &
 
         else
             # Get out the codec for this track
@@ -449,7 +485,7 @@ do
             timeout $DEF_TIMEOUT cat \
                 $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data \
                 $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-                timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $TRACK_STREAMNO |
+                timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggcorrect" $TRACK_STREAMNO $SUBTRACK |
                 timeout $DEF_TIMEOUT $NICE ffmpeg -codec $TRACK_CODEC -copyts -i - \
                 -filter_complex '[0:a]'"$LFILTER"'[aud]' \
                 -map '[aud]' \
@@ -479,6 +515,11 @@ done &
 # Same for SFX
 for c in $(seq -w 1 $NB_SFX)
 do
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" ]
+    then
+        continue
+    fi
+
     SFX_FN="sfx-$c.$ext"
     SFX_FFN="$OUTDIR/$AUDDIR$SFX_FN"
     SFX_DURATION="$(timeout $DEF_TIMEOUT "$SCRIPTBASE/sfx.js" -i "$ID.ogg.info" -d $((c-1)) < $tmpdir/meta)"
@@ -500,11 +541,11 @@ do
     fi
 done &
 
-if [ "$FORMAT" = "copy" ]
-then
-    # Wait for the immediate child, which has spawned more children
-    wait
-fi
+#if [ "$FORMAT" = "copy" ]
+#then
+#    # Wait for the immediate child, which has spawned more children
+#    wait
+#fi
 
 
 # Also provide info.txt
@@ -580,7 +621,7 @@ case "$CONTAINER" in
         printf '}\n'
         ;;
 
-    txt)
+    txt|raw)
         cat $FILES
         ;;
 
