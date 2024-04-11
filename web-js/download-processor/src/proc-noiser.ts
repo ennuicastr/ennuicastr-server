@@ -59,8 +59,16 @@ export class NoiserProcessor extends proc.Processor<LibAVT.Frame[]> {
                     }
 
                     // And denoise
-                    for (let c = 0; c < frame.data.length; c++)
+                    let lastBreak = performance.now();
+                    for (let c = 0; c < frame.data.length; c++) {
                         frame.data[c] = this._lsp[c].process(frame.data[c]);
+
+                        const now = performance.now();
+                        if (now > lastBreak + 2) {
+                            lastBreak = now;
+                            await new Promise(res => setImmediate(res));
+                        }
+                    }
                 }
 
                 controller.enqueue(rd.value);

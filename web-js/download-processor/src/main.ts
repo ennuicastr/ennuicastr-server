@@ -25,6 +25,8 @@ import * as pSave from "./proc-save";
 
 import * as downloadStream from "@ennuicastr/dl-stream";
 
+import "setimmediate";
+
 export const dsLoad = downloadStream.load;
 
 export const download = conductor.download;

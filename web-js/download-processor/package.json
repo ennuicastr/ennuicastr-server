@@ -22,9 +22,10 @@
   },
   "homepage": "https://github.com/ennuicastr/download-processor#readme",
   "dependencies": {
-    "@ennuicastr/dl-stream": "^1.0.0",
+    "@ennuicastr/dl-stream": "^1.0.1",
     "@ennuicastr/libspecbleach.js": "=0.1.7-js2",
     "localforage": "^1.10.0",
+    "setimmediate": "^1.0.5",
     "web-streams-polyfill": "^3.3.2",
     "yalap.js": "=1.0.1"
   },

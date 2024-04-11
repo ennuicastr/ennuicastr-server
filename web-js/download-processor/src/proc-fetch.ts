@@ -18,6 +18,8 @@ import * as proc from "./processor";
 
 import * as wsp from "web-streams-polyfill/ponyfill";
 
+const chunkSize = 4194304;
+
 /**
  * A fetch processor. This is a small frontend to fetch() that's careful not to
  * open the stream until you've started reading.
@@ -37,10 +39,21 @@ export class FetchProcessor extends proc.CorkableProcessor<Uint8Array> {
                     this._fetchRdr = f.body.getReader();
                 }
                 const rd = await this._fetchRdr.read();
-                if (rd.done)
+                if (rd.done) {
                     controller.close();
-                else
+                    return;
+                }
+
+                if (rd.value.length < chunkSize) {
                     controller.enqueue(rd.value);
+                    return;
+                }
+
+                // Chunk into reasonable sizes
+                for (let i = 0; i < rd.value.length; i += chunkSize) {
+                    controller.enqueue(rd.value.slice(i, i + chunkSize));
+                    await new Promise(res => setImmediate(res));
+                }
             }
         }));
     }
