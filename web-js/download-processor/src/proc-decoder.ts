@@ -20,7 +20,7 @@ import * as proc from "./processor";
 import type * as LibAVT from "libav.js";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
-const chunkSize = 128;
+const chunkSize = 512;
 
 /**
  * A decoding processor. Demuxes, decodes, and sends the data as float32
@@ -93,7 +93,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                         // Decode it
                         const decFrames = await la.ff_decode_multi(
                             this._c, this._pkt, this._frame, packets.slice(ci, ci + chunkSize),
-                            (rdRes === la.AVERROR_EOF)
+                            (rdRes === la.AVERROR_EOF) && (ci >= packets.length - chunkSize)
                         );
 
                         // Maybe initialize the filter
