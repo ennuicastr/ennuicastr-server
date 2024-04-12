@@ -20,6 +20,8 @@ import * as proc from "./processor";
 import type * as LibAVT from "libav.js";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
+const chunkSize = 128;
+
 /**
  * A decoding processor. Demuxes, decodes, and sends the data as float32
  * planar.
@@ -84,48 +86,59 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                         rdRes !== la.AVERROR_EOF)
                         throw new Error(await la.ff_error(rdRes));
 
-                    // Decode it
-                    const decFrames = await la.ff_decode_multi(
-                        this._c, this._pkt, this._frame, packets,
-                        (rdRes === la.AVERROR_EOF)
-                    );
+                    let hadFilterFrames = false;
 
-                    // Maybe initialize the filter
-                    if (decFrames.length && !this._filterGraph) {
-                        const ff = decFrames[0];
-                        [
-                            this._filterGraph, this._bufferSrc,
-                            this._bufferSink
-                        ] = await la.ff_init_filter_graph(
-                            `asetpts=PTS-STARTPTS,apad,atrim=0:${_duration}`, {
-                            sample_rate: ff.sample_rate,
-                            sample_fmt: ff.format,
-                            channel_layout: ff.channel_layout
-                        }, {
-                            sample_rate: ff.sample_rate,
-                            sample_fmt: la.AV_SAMPLE_FMT_FLTP,
-                            channel_layout: ff.channel_layout
-                        });
-                    }
-
-                    // Filter it
-                    let filterFrames = decFrames;
-                    if (this._filterGraph) {
-                        filterFrames = await la.ff_filter_multi(
-                            this._bufferSrc, this._bufferSink, this._frame,
-                            decFrames, (rdRes === la.AVERROR_EOF)
+                    // Decode in manageable groups
+                    for (let ci = 0; ci < packets.length; ci += chunkSize) {
+                        // Decode it
+                        const decFrames = await la.ff_decode_multi(
+                            this._c, this._pkt, this._frame, packets.slice(ci, ci + chunkSize),
+                            (rdRes === la.AVERROR_EOF)
                         );
+
+                        // Maybe initialize the filter
+                        if (decFrames.length && !this._filterGraph) {
+                            const ff = decFrames[0];
+                            [
+                                this._filterGraph, this._bufferSrc,
+                                this._bufferSink
+                            ] = await la.ff_init_filter_graph(
+                                `asetpts=PTS-STARTPTS,apad,atrim=0:${_duration}`, {
+                                sample_rate: ff.sample_rate,
+                                sample_fmt: ff.format,
+                                channel_layout: ff.channel_layout
+                            }, {
+                                sample_rate: ff.sample_rate,
+                                sample_fmt: la.AV_SAMPLE_FMT_FLTP,
+                                channel_layout: ff.channel_layout
+                            });
+                        }
+
+                        // Filter it
+                        let filterFrames = decFrames;
+                        if (this._filterGraph) {
+                            filterFrames = await la.ff_filter_multi(
+                                this._bufferSrc, this._bufferSink, this._frame,
+                                decFrames, (rdRes === la.AVERROR_EOF)
+                            );
+                        }
+
+                        if (filterFrames.length)
+                            hadFilterFrames = true;
+
+                        // And send whatever data we got
+                        if (filterFrames.length)
+                            controller.enqueue(<LibAVT.Frame[]> filterFrames);
+
+                        await new Promise(res => setImmediate(res));
                     }
 
-                    // And send whatever data we got
-                    if (filterFrames.length)
-                        controller.enqueue(<LibAVT.Frame[]> filterFrames);
                     if (rdRes === la.AVERROR_EOF) {
                         await this._free();
                         controller.close();
                         break;
                     }
-                    if (filterFrames.length)
+                    if (hadFilterFrames)
                         break;
                 }
             }
