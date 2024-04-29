@@ -1,6 +1,6 @@
 <?JS!
 /*
- * Copyright (c) 2020-2023 Yahweasel
+ * Copyright (c) 2020-2024 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -51,8 +51,8 @@ const defaults = await (async function() {
     } catch (ex) {
         row.extra = {};
     }
-    row.rtennuiVideo = row.extra.rtennuiVideo;
     row.jitsiAudio = row.extra.jitsiAudio;
+    row.jitsiVideo = row.extra.jitsiVideo;
     row.noDualEC = row.extra.noDualEC;
     return row;
 })();
@@ -136,7 +136,7 @@ const defaults = await (async function() {
                           defaults.format === "flac" ||
                           defaults.continuous);
         const showAdvanced = (defaults.jitsiAudio ||
-                              defaults.rtennuiVideo ||
+                              defaults.jitsiVideo ||
                               !defaults.rtc ||
                               defaults.recordOnly ||
                               defaults.transcription ||
@@ -181,10 +181,9 @@ const defaults = await (async function() {
         chk("transcription", "t");
         alt("transcription", "Enable live captions. Currently only English is supported.");
 
-        l("rtennuiVideo", "Use experimental video", true);
-        chk("rtennuiVideo", "xrv");
-        alt("rtennuiVideo", "Ennable Ennuicastr's new, experimental system for live video chat. This will become the default once it's considered sufficiently stable. Currently, you must enable this option to support live video chat on Firefox.");
-        //alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
+        l("jitsiVideo", "Use Jitsi for video", true);
+        chk("jitsiVideo", "xjv");
+        alt("jitsiVideo", "Disable Ennuicastr's native live video chat system, and use Jitsi Meet for live chat. Use this only if you're having technical issues with live chat. If you're having issues with both video and audio, you can enable Jitsi for audio after enabling Jitsi for video.");
         ?>
 
         <div id="jitsi-audio-hider" style="display: none">
@@ -228,13 +227,13 @@ const defaults = await (async function() {
 <script type="text/javascript">
 var clientUrl, clientWindow;
 
-function updateRTEnnuiVideo() {
-    var v = $("#r-rtennuiVideo")[0].checked;
-    $("#jitsi-audio-hider")[0].style.display = v ? "none" : "";
+function updateJitsiVideo() {
+    var v = $("#r-jitsiVideo")[0].checked;
+    $("#jitsi-audio-hider")[0].style.display = v ? "" : "none";
 }
 
-$("#r-rtennuiVideo")[0].onchange = updateRTEnnuiVideo;
-updateRTEnnuiVideo();
+$("#r-jitsiVideo")[0].onchange = updateJitsiVideo;
+updateJitsiVideo();
 
 function updateRecordOnly() {
     var v = $("#r-recordOnly")[0].checked;
@@ -320,8 +319,8 @@ function launchRecording() {
             features |= 0x100;
         if (res.extra && res.extra.jitsiAudio)
             features |= 0x800;
-        if (res.extra && res.extra.rtennuiVideo)
-            features |= 0x400;
+        if (res.extra && res.extra.jitsiVideo)
+            features |= 0x1000;
         if (res.extra && res.extra.noDualEC)
             features |= 0x2000;
         if (res.format === "flac")

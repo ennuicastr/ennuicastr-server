@@ -1,6 +1,6 @@
 <?JS
 /*
- * Copyright (c) 2020-2022 Yahweasel
+ * Copyright (c) 2020-2024 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -50,8 +50,8 @@ rec = {
     transcription: !!rec.t,
     universalMonitor: !!rec.r,
     extra: {
-        rtennuiVideo: !!rec.xrv,
-        jitsiAudio: !!!rec.xrv && !!rec.xja,
+        jitsiAudio: !!rec.xjv && !!rec.xja,
+        jitsiVideo: !!rec.xjv,
         noDualEC: !!rec.xndec
     }
 };
