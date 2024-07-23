@@ -91,9 +91,11 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                     // Decode in manageable groups
                     for (let ci = 0; ci < packets.length; ci += chunkSize) {
                         // Decode it
+                        const eof =
+                            (rdRes === la.AVERROR_EOF) && (ci >= packets.length - chunkSize);
                         const decFrames = await la.ff_decode_multi(
                             this._c, this._pkt, this._frame, packets.slice(ci, ci + chunkSize),
-                            (rdRes === la.AVERROR_EOF) && (ci >= packets.length - chunkSize)
+                            eof
                         );
 
                         // Maybe initialize the filter
@@ -119,7 +121,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                         if (this._filterGraph) {
                             filterFrames = await la.ff_filter_multi(
                                 this._bufferSrc, this._bufferSink, this._frame,
-                                decFrames, (rdRes === la.AVERROR_EOF)
+                                decFrames, eof
                             );
                         }
 
