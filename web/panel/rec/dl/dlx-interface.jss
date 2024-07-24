@@ -21,7 +21,7 @@ const {rid, recInfo, safeName} = arguments[1];
 ?>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
-<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=5"></script>
+<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=6"></script>
 
 <div id="downloader-box" class="ecdl-main">Loading...</div>
 
