@@ -66,10 +66,10 @@ if (isSafari) {
             <a href="https://ecastr.com/" target="_blank">More information</a></div>
         </div>
         <script type="text/javascript">
-            ecLoadLibrary({file: "protocol.js?v=l", name: "Ennuicastr"})
+            ecLoadLibrary({file: "protocol.js?v=n", name: "Ennuicastr"})
             .then(function() {
             return ecLoadLibrary({
-                file: "ennuicastr.js?v=b3",
+                file: "ennuicastr.js?v=bp",
                 name: "Ennuicastr"
             });
             });
