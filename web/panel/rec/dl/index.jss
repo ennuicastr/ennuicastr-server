@@ -400,7 +400,7 @@ if (!recInfo.purchased && !request.query.s) {
 
     await include("./video-interface.jss", {rid, recInfo});
 
-    if (!useDLX && recInfo.purchased) {
+    if (/*!useDLX &&*/ recInfo.purchased) {
         await include("./transcript-interface.jss", {
             rid, recInfo, recInfoExtra, hasCaptionsFile, showDL
         });
