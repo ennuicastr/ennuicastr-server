@@ -402,8 +402,16 @@ export async function download(opts: DownloadOptions) {
         pAup.aupProject(opts.name, files);
     }
 
+    // Safari auto-extracts zip files, but doesn't support Zip64
+    let zipOptions = "";
+    if (navigator.userAgent.indexOf("Safari") >= 0 && navigator.userAgent.indexOf("Chrome") < 0)
+        zipOptions = "!zip64";
+
     // Zip the files all together
-    const zipper = await YALAP.YALAPW({format: "zip"});
+    const zipper = await YALAP.YALAPW({
+        format: "zip",
+        options: zipOptions
+    });
     const downloadPromise = downloadStream.stream(
         `${opts.name}.${suffix}.zip`, zipper.stream, {
             "content-type": "application/zip"
