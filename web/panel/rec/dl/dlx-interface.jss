@@ -61,7 +61,7 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
         dlBox: document.getElementById("downloader-box")
     });
 }).catch(function(ex) {
-    //document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
+    document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
     console.error(ex);
 });
 </script>
