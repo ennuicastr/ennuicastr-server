@@ -7,6 +7,7 @@ all: rec sounds \
         cook/oggtracks cook/wavduration \
 	web/ecdssw.min.js \
 	web/panel/rec/dl/ennuicastr-download-processor.min.js \
+	web/panel/rec/dl/ennuicastr-download-chooser.min.js \
 	web/assets/js/localforage.min.js \
 	web/assets/libs/libspecbleach-0.1.7-js2.js \
 	web/assets/libs/yalap-1.0.1-zip.js
@@ -43,6 +44,14 @@ web/assets/libs/libspecbleach-0.1.7-js2.js: \
 web/assets/libs/yalap-1.0.1-zip.js: \
 	web-js/download-processor/dist/ennuicastr-download-processor.min.js
 	cp web-js/download-processor/node_modules/yalap.js/dist/yalap-1.0.1-zip.* web/assets/libs/
+
+web/panel/rec/dl/ennuicastr-download-chooser.min.js: \
+	web-js/download-chooser/dist/ennuicastr-download-chooser.min.js
+	cp $< $@
+
+web-js/download-chooser/dist/ennuicastr-download-chooser.min.js:
+	web-js/download-chooser/src/*.ts
+	cd web-js/download-chooser && $(MAKE)
 
 node_modules/.bin/tsc:
 	npm install

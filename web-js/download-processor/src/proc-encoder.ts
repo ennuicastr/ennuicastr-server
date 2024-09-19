@@ -20,32 +20,20 @@ import * as proc from "./processor";
 import type * as LibAVT from "libav.js";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
-const sharedWriters: Record<
-    string, (pos: number, buf: Uint8Array | Int8Array) => void
-> = Object.create(null);
-
-export class EncoderProcessor extends proc.Processor<Uint8Array> {
+export class EncoderProcessor extends proc.Processor<LibAVT.Packet[]> {
     constructor(
-        private _name: string,
         private _input: proc.Processor<LibAVT.Frame[]>,
         private _duration: number,
-        private _format: string, private _codec: string,
-        private _codecCtx: LibAVT.AVCodecContextProps,
-        onprogress?: (time: number) => unknown
+        private _codec: string,
+        private _codecCtx: LibAVT.AVCodecContextProps
     ) {
-        let sampleRate: number;
-        super(new wsp.ReadableStream<Uint8Array>({
+        super(new wsp.ReadableStream<LibAVT.Packet[]>({
             pull: async (controller) => {
                 if (!this._inputRdr)
                     this._inputRdr = this._input.stream.getReader();
 
-                if (!this._la) {
+                if (!this._la)
                     this._la = await LibAV.libav("encoder");
-                    this._la.onwrite = (name, pos, buf) => {
-                        if (sharedWriters[name])
-                            sharedWriters[name](pos, buf);
-                    };
-                }
                 const la = this._la;
 
                 while (true) {
@@ -65,7 +53,6 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         }
 
                         // Initialize the encoder
-                        sampleRate = frames[0].sample_rate;
                         const ctx = Object.assign({
                             sample_rate: frames[0].sample_rate,
                             channel_layout: frames[0].channel_layout
@@ -117,39 +104,6 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         });
                     }
 
-                    this._hadWrite = false;
-                    if (!this._fmtCtx) {
-                        sharedWriters[`output.${_name}`] = (pos, buf) => {
-                            this._hadWrite = true;
-                            controller.enqueue(new Uint8Array(buf.buffer));
-                        };
-
-                        [this._fmtCtx, , this._pb] = await la.ff_init_muxer({
-                            format_name: _format,
-                            filename: `output.${_name}`,
-                            device: true,
-                            open: true
-                        }, [[this._c, 1, frames[0].sample_rate]]);
-
-                        // Set delay_moov for ISMV
-                        if (_format === "ismv") {
-                            await la.av_opt_set(
-                                this._fmtCtx, "movflags", "delay_moov", 0
-                            );
-                        }
-
-                        // Set the duration (needed here for some formats)
-                        const st = await la.AVFormatContext_streams_a(
-                            this._fmtCtx, 0
-                        );
-                        const dur = Math.floor(_duration * frames[0].sample_rate);
-                        const dur64 = la.f64toi64(dur);
-                        await la.AVStream_duration_s(st, dur64[0]);
-                        await la.AVStream_durationhi_s(st, dur64[1]);
-
-                        await la.avformat_write_header(this._fmtCtx, 0);
-                    }
-
                     // Convert the frame size
                     frames = await la.ff_filter_multi(
                         this._bufferSrc, this._bufferSink, this._frame,
@@ -162,53 +116,37 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         frames, rd.done
                     );
 
-                    // Report progress
-                    if (packets.length && onprogress) {
-                        onprogress(
-                            la.i64tof64(packets[0].pts, packets[0].ptshi) /
-                            sampleRate
-                        );
-                    }
-
-                    /* Bug related to ISMV in this implementation, it scales
-                     * timestamps incorrectly and ends up creating weird
-                     * behavior in the generated file. */
-                    if (_format === "ismv") {
-                        for (const packet of packets) {
-                            for (const part of ["pts", "dts", "duration"]) {
-                                if (!(part in packet)) continue;
-                                let ts = la.i64tof64(
-                                    packet[part], packet[part + "hi"]
-                                );
-                                ts *= 10000000 / sampleRate;
-                                const ts64 = la.f64toi64(ts);
-                                packet[part] = ts64[0];
-                                packet[part + "hi"] = ts64[1];
-                            }
-                        }
-                    }
-
-                    await la.ff_write_multi(
-                        this._fmtCtx, this._pkt, packets, rd.done
-                    );
+                    if (packets.length)
+                        controller.enqueue(packets);
 
                     if (rd.done) {
-                        await la.av_write_trailer(this._fmtCtx);
-
-                        await la.avformat_free_context(this._fmtCtx);
                         await la.avfilter_graph_free_js(this._filterGraph);
                         await la.ff_free_encoder(
                             this._c, this._frame, this._pkt
                         );
-
                         controller.close();
                         break;
-                    } else if (this._hadWrite) {
+                    } else if (packets.length) {
                         break;
                     }
                 }
             }
         }));
+    }
+
+    /**
+     * Get the codec parameters for this stream.
+     */
+    async codecpar(): Promise<[LibAVT.CodecParameters, number, number]> {
+        const la = this._la;
+        const codecpar = await la.avcodec_parameters_alloc();
+        await la.avcodec_parameters_from_context(codecpar, this._c);
+        const codecparO = await this._la.ff_copyout_codecpar(codecpar);
+        await this._la.avcodec_parameters_free_js(codecpar);
+        return [
+            codecparO,
+            1, codecparO.sample_rate!
+        ];
     }
 
     private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Frame[]>;
@@ -220,7 +158,4 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
     private _filterGraph: number;
     private _bufferSrc: number;
     private _bufferSink: number;
-    private _fmtCtx: number;
-    private _pb: number;
-    private _hadWrite: boolean;
 }

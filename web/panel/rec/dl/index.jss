@@ -396,9 +396,9 @@ if (!recInfo.purchased && !request.query.s) {
         await include("./dlx-interface.jss", {rid, recInfo, safeName});
     } else {
         showMainDLs();
+        await include("./video-interface.jss", {rid, recInfo});
     }
 
-    await include("./video-interface.jss", {rid, recInfo});
 
     if (/*!useDLX &&*/ recInfo.purchased) {
         await include("./transcript-interface.jss", {

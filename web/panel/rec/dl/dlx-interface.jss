@@ -20,19 +20,21 @@ const config = require("../config.js");
 const {rid, recInfo, safeName} = arguments[1];
 ?>
 
-<script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
-<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=7"></script>
 
 <div id="downloader-box" class="ecdl-main">Loading...</div>
 
+<script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
+<!--<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=7"></script>-->
+<script type="text/javascript" src="ennuicastr-download-processor.js?v=7"></script>
 <script type="text/javascript" src="ennuicastr-download-chooser.js"></script>
+<script type="text/javascript" src="<?JS= config.client ?>libs/sha512-es.min.js"></script>
 
 <script type="text/javascript">
 EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
     LibAV = {base: "/assets/libav"};
     return ecLoadLibrary({
         name: "Audio processing",
-        file: "/assets/libav/libav-4.8.6.0.1-ecdl.js"
+        file: "/assets/libav/libav-5.4.6.1.1c-ecdl.dbg.js"
     });
 }).then(function() {
     return ecLoadLibrary({
@@ -51,18 +53,16 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
         file: "/assets/libs/yalap-1.0.1-zip.js"
     });
 }).then(function() {
-
-    // Get the metadata for this recording
-    return fetch("?i=<?JS= rid.toString(36) ?>&f=info");
-}).then(function(resp) {
-    return resp.json();
-}).then(function(ret) {
-    dlChooser(
-        <?JS= rid ?>, <?JS= JSON.stringify(safeName) ?>, ret,
-        document.getElementById("downloader-box")
-    );
+    EnnuicastrDownloadChooser.dlChooser({
+        rid: <?JS= rid ?>,
+        videoUrl: <?JS= JSON.stringify(config.client + "fs/") ?>,
+        key: <?JS= JSON.stringify(rid + ":" + recInfo.key + ":" + recInfo.master) ?>,
+        name: <?JS= JSON.stringify(safeName) ?>,
+        dlBox: document.getElementById("downloader-box")
+    });
 }).catch(function(ex) {
-    document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
+    //document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
+    console.error(ex);
 });
 </script>
 

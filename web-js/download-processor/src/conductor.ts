@@ -19,10 +19,13 @@ import * as cText from "./cap-txt";
 import * as cVTT from "./cap-vtt";
 import * as proc from "./processor";
 import * as pFetch from "./proc-fetch";
+import * as pFSFetch from "./proc-fs-fetch";
 import * as pDecoder from "./proc-decoder";
 import * as pNoiser from "./proc-noiser";
 import * as pNorm from "./proc-norm";
 import * as pEncoder from "./proc-encoder";
+import * as pVideoTimer from "./proc-video-timer";
+import * as pMuxer from "./proc-muxer";
 import * as pSave from "./proc-save";
 import * as pAup from "./proj-aup";
 
@@ -114,6 +117,22 @@ export interface RecTrackDescription {
      * Whether to apply audio level normalization.
      */
     applyNormalization?: Tristate;
+
+    /**
+     * Port over which to get video data.
+     */
+    videoPort: MessagePort | null;
+
+    /**
+     * Video tracks to mux with this audio. null to get audio unmuxed.
+     */
+    videoInfo: (pFSFetch.VideoDescription | null)[];
+}
+
+export interface VideoTrackDescription {
+    type: "video";
+    videoPort: MessagePort;
+    videoInfo: pFSFetch.VideoDescription[];
 }
 
 export interface SFXTrackDescription {
@@ -184,8 +203,9 @@ export async function download(opts: DownloadOptions) {
     async function addRecTrack(track: RecTrackDescription) {
         // Figure out if there are multiple outputs for a given input
         const multiple =
+            (track.applyNormalization === "both") ||
             (track.applyNoiseReduction === "both") ||
-            (track.applyNormalization === "both");
+            (track.videoInfo.length > 1);
         let saverNoEC: pSave.Cache | null = null;
         let saverEC: pSave.Cache | null = null;
 
@@ -202,83 +222,157 @@ export async function download(opts: DownloadOptions) {
             if (!include(track.applyEchoCancellation, ec)) continue;
             if (!include(track.applyNoiseReduction, nr)) continue;
             if (!include(track.applyNormalization, norm)) continue;
-            let saver = saverNoEC;
-            if (ec)
-                saver = saverEC;
 
-            // Start the process chain with a fetch or saver
-            let inp: proc.CorkableProcessor<Uint8Array> | null = null;
-            if (multiple && saver) {
-                // Start by restoring this saver
-                inp = saver.getRestoreProcessor();
+            // For each video input...
+            for (const videoInfo of track.videoInfo) {
+                const toPop: proc.CorkableProcessor<Uint8Array>[] = [];
 
-            } else {
-                // Start with a fetch
-                let url = "../dl/" +
-                    `?i=${opts.id.toString(36)}` +
-                    `&f=raw&t=${track.trackNo.toString(36)}`;
-
-                /* If we're using echo cancellation, that's implemented as a
-                 * subtrack with the highest bit set. */
-                if (ec) {
-                    url += `&st=${Math.pow(2,31).toString(36)}`;
-                }
-
-                // Possibly make a saver
-                if (multiple) {
-                    saver = new pSave.Cache(
-                        `${opts.id}.${track.trackNo}.${ec}`,
-                        () => new pFetch.FetchProcessor(url)
+                // Maybe get video
+                let vidInp: pVideoTimer.VideoTimerProcessor | null = null;
+                if (videoInfo) {
+                    const vf = new pFSFetch.FSFetchProcessor(
+                        track.videoPort, videoInfo
                     );
-                    savers.push(saver);
-                    if (ec)
-                        saverEC = saver;
-                    else
-                        saverNoEC = saver;
-                    inp = saver.getSaveProcessor();
-                } else {
-                    inp = new pFetch.FetchProcessor(url);
+                    vidInp = new pVideoTimer.VideoTimerProcessor(
+                        videoInfo.id, vf, track.duration
+                    );
+                    toPop.push(vf);
                 }
-            }
 
-            // Make a name for it
-            let trackNoStr = "" + track.trackNo;
-            if (trackNoStr.length < 2)
-                trackNoStr = "0" + trackNoStr;
-            let fname = `${trackNoStr}-${track.name}`;
-            if (fileNames[fname]) {
-                // Already used, so extend it with the processing info
+                // Start the process chain with a fetch or saver
+                let saver = saverNoEC;
                 if (ec)
-                    fname += "-ec";
+                    saver = saverEC;
+
+                let inp: proc.CorkableProcessor<Uint8Array> | null = null;
+                if (multiple && saver) {
+                    // Start by restoring this saver
+                    inp = saver.getRestoreProcessor();
+
+                } else {
+                    // Start with a fetch
+                    let url = "../dl/" +
+                        `?i=${opts.id.toString(36)}` +
+                        `&f=raw&t=${track.trackNo.toString(36)}`;
+
+                    /* If we're using echo cancellation, that's implemented as a
+                     * subtrack with the highest bit set. */
+                    if (ec) {
+                        url += `&st=${Math.pow(2,31).toString(36)}`;
+                    }
+
+                    // Possibly make a saver
+                    if (multiple) {
+                        saver = new pSave.Cache(
+                            `${opts.id}.${track.trackNo}.${ec}`,
+                            () => new pFetch.FetchProcessor(url)
+                        );
+                        savers.push(saver);
+                        if (ec)
+                            saverEC = saver;
+                        else
+                            saverNoEC = saver;
+                        inp = saver.getSaveProcessor();
+                    } else {
+                        inp = new pFetch.FetchProcessor(url);
+                    }
+                }
+                toPop.push(inp);
+
+                // Make a name for it
+                let trackNoStr = "" + track.trackNo;
+                if (trackNoStr.length < 2)
+                    trackNoStr = "0" + trackNoStr;
+                let fname = `${trackNoStr}-${track.name}`;
+                if (fileNames[fname]) {
+                    // Already used, so extend it with the processing info
+                    if (ec)
+                        fname += "-ec";
+                    if (nr)
+                        fname += "-nr";
+                    if (norm)
+                        fname += "-norm";
+                }
+                fileNames[fname] = true;
+
+                // Decode it
+                let pr: proc.Processor<LibAVT.Frame[]> =
+                    new pDecoder.DecoderProcessor(fname, inp, track.duration);
+
+                // Perform any processing
                 if (nr)
-                    fname += "-nr";
+                    pr = new pNoiser.NoiserProcessor(pr);
                 if (norm)
-                    fname += "-norm";
+                    pr = new pNorm.NormalizeProcessor(pr);
+
+                // Encode
+                const encp = new pEncoder.EncoderProcessor(
+                    pr, track.duration, opts.codec, opts.ctx
+                );
+
+                // Choose an output format
+                let ext = opts.format;
+                let laFormat = libavFormat;
+                if (vidInp) {
+                    let webm = true;
+                    let mp4 = true;
+                    switch (opts.codec) {
+                        case "libopus":
+                            mp4 = false;
+                            break;
+
+                        case "aac":
+                        case "alac":
+                            webm = false;
+                            break;
+
+                        default:
+                            webm = mp4 = false;
+                    }
+                    switch (videoInfo.mimeType.replace(/^.*codecs=/, "")) {
+                        case "vp8":
+                        case "vp9":
+                        case "vp09":
+                        case "av01":
+                            mp4 = false;
+                            break;
+
+                        case "avc1":
+                            webm = false;
+                            break;
+
+                        default:
+                            webm = mp4 = false;
+                    }
+
+                    if (webm) {
+                        ext = laFormat = "webm";
+                    } else if (mp4) {
+                        ext = "mp4";
+                        laFormat = "ismv";
+                    } else {
+                        ext = "mkv";
+                        laFormat = "matroska";
+                    }
+                }
+
+                // Mux
+                const streams: any[] = [];
+                if (vidInp)
+                    streams.push(vidInp);
+                streams.push(encp);
+                const outp = new pMuxer.MuxerProcessor(
+                    fname, streams, track.duration, laFormat, 
+                    opts.onprogress
+                        ? (time => opts.onprogress(fname, time, track.duration))
+                        : void 0
+                );
+
+                files.push({
+                    pathname: `${fname}.${ext}`,
+                    stream: new proc.PopProcessor(toPop, outp).stream
+                });
             }
-            fileNames[fname] = true;
-
-            // Decode it
-            let pr: proc.Processor<LibAVT.Frame[]> =
-                new pDecoder.DecoderProcessor(fname, inp, track.duration);
-
-            // Perform any processing
-            if (nr)
-                pr = new pNoiser.NoiserProcessor(pr);
-            if (norm)
-                pr = new pNorm.NormalizeProcessor(pr);
-
-            // And then encode
-            const outp = new pEncoder.EncoderProcessor(
-                fname, pr, track.duration, libavFormat, opts.codec, opts.ctx,
-                opts.onprogress
-                    ? (time => opts.onprogress(fname, time, track.duration))
-                    : void 0
-            );
-
-            files.push({
-                pathname: `${fname}.${opts.format}`,
-                stream: new proc.PopProcessor(inp, outp).stream
-            });
         }
     }
 
@@ -299,17 +393,23 @@ export async function download(opts: DownloadOptions) {
         fileNames[fname] = true;
 
         // And then encode
-        const outp = new pEncoder.EncoderProcessor(
+        const encp = new pEncoder.EncoderProcessor(
+            pr, track.duration, opts.codec, opts.ctx
+        );
+
+        // And mux
+        const outp = new pMuxer.MuxerProcessor(
             `sfx.${track.trackNo}`,
-            pr, track.duration, libavFormat, opts.codec, opts.ctx,
+            [encp], track.duration, libavFormat,
             opts.onprogress
                 ? (time => opts.onprogress(fname, time, track.duration))
                 : void 0
+
         );
 
         files.push({
             pathname: `${fname}.${opts.format}`,
-            stream: new proc.PopProcessor(inp, outp).stream
+            stream: new proc.PopProcessor([inp], outp).stream
         });
     }
 
@@ -380,7 +480,7 @@ export async function download(opts: DownloadOptions) {
         );
         files.push({
             pathname: "info.txt",
-            stream: new proc.PopProcessor(inp, inp).stream
+            stream: new proc.PopProcessor([inp], inp).stream
         });
     }
 

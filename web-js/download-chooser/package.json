@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "libav.js": "^5.4.6",
+    "localforage": "^1.10.0",
+    "rollup": "^4.20.0",
+    "tslib": "^2.6.3"
+  }
+}
