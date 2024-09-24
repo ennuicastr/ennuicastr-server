@@ -778,7 +778,7 @@ export async function dlChooser(opts: ChooserOptions) {
         try {
             await EnnuicastrDownloadProcessor.download({
                 id: opts.rid,
-                name: name,
+                name: opts.name,
                 format: avFormat,
                 codec: codec,
                 ctx: formatOpts,
