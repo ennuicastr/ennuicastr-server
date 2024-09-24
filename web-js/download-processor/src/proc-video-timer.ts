@@ -67,7 +67,7 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                      * blank packets for replication */
                     let blankStreamIdx = streamIdx + 1;
                     for (; blankStreamIdx < streams.length; blankStreamIdx++) {
-                        if (streams[blankStreamIdx].codec_id ===
+                        if (streams[blankStreamIdx].codec_type ===
                             la.AVMEDIA_TYPE_VIDEO)
                             break;
                     }
@@ -109,39 +109,48 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                                 stream.time_base_num /
                                 stream.time_base_den;
                             const firstPts = secondPts - (1/framerate);
-                            mainPkts[0].pts = Math.round(
+                            const pts = la.f64toi64(Math.round(
                                 firstPts *
                                 stream.time_base_den /
                                 stream.time_base_num
-                            );
+                            ));
+                            mainPkts[0].pts = mainPkts[0].dts = pts[0];
+                            mainPkts[0].ptshi = mainPkts[0].dtshi = pts[1];
+                        }
+
+                        // Get the current last time
+                        {
+                            const lastPkt = mainPkts[mainPkts.length-1];
+                            this._lastPTS = [lastPkt.pts, lastPkt.ptshi];
                         }
 
                         // Guess blank packets
-                        this._blankI = mainPkts[0];
-                        if (mainPkts.length > 1)
-                            this._blankP = mainPkts[1];
-                        else
-                            this._blankP = mainPkts[0];
+                        const blankPkts = [mainPkts[0]];
+                        for (let i = 1; i < mainPkts.length; i++) {
+                            const pkt = mainPkts[i];
+                            if (pkt.flags & 1 /* KEY */)
+                                break;
+                            blankPkts.push(pkt);
+                        }
+                        this._blankPkts = blankPkts;
                     }
 
-                    const blankPkts = allPackets[blankStreamIdx];
-                    if (blankPkts && blankPkts.length) {
-                        this._blankI = blankPkts[0];
-                        if (blankPkts.length > 1)
-                            this._blankP = blankPkts[1];
-                        else
-                            this._blankP = blankPkts[0];
+                    {
+                        const blankPkts = allPackets[blankStreamIdx];
+                        if (blankPkts && blankPkts.length)
+                            this._blankPkts = blankPkts;
                     }
 
                     /* Figure out how many blank packets are needed based on
                      * the first real frame. */
+                    this._blankEnd = false;
+                    this._blankTime = 0;
                     if (mainPkts && mainPkts.length) {
                         const firstPts =
                             mainPkts[0].pts *
                             stream.time_base_num /
                             stream.time_base_den;
-                        this._blankCt = Math.round(firstPts / this._framerate);
-                        this._blankTime = 0;
+                        this._blankCt = Math.round(firstPts * this._framerate);
                     } else {
                         this._blankCt = 0;
                     }
@@ -151,27 +160,32 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                 }
 
                 // If we need to send blank packets, do so
-                if (this._blankCt) {
+                if (this._blankCt || this._blankEnd) {
                     const ret: LibAVT.Packet[] = [];
                     const stream = this._stream;
                     let sent = 0;
                     for (; sent < 1024 && sent < this._blankCt; sent++) {
-                        let pkt: LibAVT.Packet;
-                        if ((sent % 120) === 0) {
-                            pkt = this._blankI;
-                        } else {
-                            pkt = this._blankP;
-                        }
-                        pkt = Object.create(pkt);
-                        pkt.pts = Math.round(
+                        let pkt = this._blankPkts[sent % this._blankPkts.length];
+                        pkt = Object.assign({}, pkt);
+                        const pts = this._la.f64toi64(Math.round(
                             this._blankTime *
                             stream.time_base_den /
                             stream.time_base_num
-                        );
+                        ));
+                        pkt.pts = pkt.dts = pts[0];
+                        pkt.ptshi = pkt.dtshi = pts[1];
                         this._blankTime += 1 / this._framerate;
+                        ret.push(pkt);
                     }
                     this._blankCt -= sent;
-                    controller.enqueue(ret);
+                    if (sent)
+                        controller.enqueue(ret);
+
+                    if (this._blankEnd && !this._blankCt) {
+                        await this._free();
+                        controller.close();
+                    }
+
                     return;
                 }
 
@@ -202,11 +216,23 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                     if (packets && packets.length) {
                         hadFrames = true;
                         controller.enqueue(packets);
+                        {
+                            const lastPkt = packets[packets.length-1];
+                            this._lastPTS = [lastPkt.pts, lastPkt.ptshi];
+                        }
                     }
 
                     if (rdRes === la.AVERROR_EOF) {
-                        await this._free();
-                        controller.close();
+                        // Fill in the end with blanks
+                        this._blankEnd = true;
+                        this._blankTime =
+                            this._la.i64tof64(this._lastPTS[0], this._lastPTS[1]) *
+                            this._stream.time_base_num /
+                            this._stream.time_base_den +
+                            1/this._framerate;
+                        this._blankCt = Math.round(
+                            (_duration - this._blankTime) * this._framerate
+                        );
                         break;
                     }
                     if (hadFrames)
@@ -277,9 +303,10 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
     private _bufferSink: number;
 
     private _framerate: number;
-    private _blankI: LibAVT.Packet;
-    private _blankP: LibAVT.Packet;
+    private _blankPkts: LibAVT.Packet[];
     private _blankCt: number;
     private _blankTime: number;
+    private _blankEnd: boolean;
+    private _lastPTS: [number, number];
     private _queuePackets?: LibAVT.Packet[];
 }

@@ -49,7 +49,7 @@ web/panel/rec/dl/ennuicastr-download-chooser.min.js: \
 	web-js/download-chooser/dist/ennuicastr-download-chooser.min.js
 	cp $< $@
 
-web-js/download-chooser/dist/ennuicastr-download-chooser.min.js:
+web-js/download-chooser/dist/ennuicastr-download-chooser.min.js: \
 	web-js/download-chooser/src/*.ts
 	cd web-js/download-chooser && $(MAKE)
 
