@@ -241,8 +241,11 @@ wss.on("connection", (ws, wsreq) => {
     // Track metadata for this client (only if data)
     let track = null;
 
-    // Last granule position received from this client
+    // Last granule position of normal data received from this client
     let lastGranule = 0;
+
+    // Last granule position for subtracks received from this client
+    let lastSubtrackGranules: Record<number, number> = {};
 
     // Is this a non-Chrome user?
     let nonChrome: boolean = false;
@@ -694,28 +697,18 @@ wss.on("connection", (ws, wsreq) => {
                     recInfo.mode >= prot.mode.finished)
                     break;
 
-                // Get the granule position
-                let granulePos = msg.readUIntLE(p.granulePos, 6);
-
-                // Fix any weirdness
-                let latestAcceptable = curGranule() + 30*48000;
-                if (granulePos < lastGranule)
-                    granulePos = lastGranule;
-                else if (granulePos > latestAcceptable)
-                    granulePos = latestAcceptable;
-                lastGranule = granulePos;
-
                 let chunk = msg.slice(p.length);
 
                 // Handle datax
                 let localTrack = track;
                 let localId = id;
+                let subId = 0;
                 if (cmd === prot.ids.datax) {
                     localId |= 0x80000000;
 
                     /* Our extended data is given with the high bit set in the
                      * ID and a 32-bit value at the beginning of the data block */
-                    let subId = msg.readInt32LE(p.track);
+                    subId = msg.readInt32LE(p.track);
                     let chunkPrefix = new Buffer(4);
                     chunkPrefix.writeInt32LE(subId);
                     chunk = Buffer.concat([chunkPrefix, chunk]);
@@ -729,6 +722,23 @@ wss.on("connection", (ws, wsreq) => {
                     }
                     localTrack = track.subTracks[subId];
                 }
+
+                // Get the granule position
+                let granulePos = msg.readUIntLE(p.granulePos, 6);
+
+                // Fix any weirdness
+                let dataLastGranule = lastGranule;
+                if (cmd === prot.ids.datax)
+                    dataLastGranule = lastSubtrackGranules[subId] || 0;
+                let latestAcceptable = curGranule() + 30*48000;
+                if (granulePos < dataLastGranule)
+                    granulePos = dataLastGranule;
+                else if (granulePos > latestAcceptable)
+                    granulePos = latestAcceptable;
+                if (cmd === prot.ids.datax)
+                    lastSubtrackGranules[subId] = granulePos;
+                else
+                    lastGranule = granulePos;
 
                 // Check for abuse
                 if (floodDetect({p: granulePos, l: chunk.length}))
