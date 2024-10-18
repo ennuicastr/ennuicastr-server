@@ -24,6 +24,10 @@ const libavPromises: Record<string, Promise<LibAVT.LibAV>> = Object.create(null)
  * @param name  Shared name. All instances with the same name use the same worker.
  */
 export async function libav(name: string) {
+    // If we don't have much memory, don't make multiple instances
+    if (!(<any> navigator).deviceMemory || (<any> navigator).deviceMemory < 1)
+        name = "shared";
+
     if (!(name in libavPromises))
         libavPromises[name] = LibAV.LibAV();
     return await libavPromises[name];
