@@ -34,6 +34,8 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
         onprogress?: (time: number) => unknown
     ) {
         let sampleRate: number;
+        let buf: Uint8Array[] = [];
+        let eof = false;
         super(new wsp.ReadableStream<Uint8Array>({
             pull: async (controller) => {
                 if (!this._inputRdr)
@@ -49,6 +51,16 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                 const la = this._la;
 
                 while (true) {
+                    if (buf.length) {
+                        controller.enqueue(buf.shift());
+                        break;
+                    }
+
+                    if (eof) {
+                        controller.close();
+                        break;
+                    }
+
                     const rd = await this._inputRdr.read();
                     let frames = rd.value;
 
@@ -117,17 +129,18 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         });
                     }
 
-                    this._hadWrite = false;
                     if (!this._fmtCtx) {
-                        sharedWriters[`output.${_name}`] = (pos, buf) => {
-                            this._hadWrite = true;
-                            controller.enqueue(new Uint8Array(buf.buffer));
+                        sharedWriters[`output.${_name}`] = (pos, chunk) => {
+                            if (chunk.byteOffset)
+                                chunk = chunk.slice(0);
+                            buf.push(new Uint8Array(chunk.buffer));
                         };
+
+                        await la.mkstreamwriterdev(`output.${_name}`);
 
                         [this._fmtCtx, , this._pb] = await la.ff_init_muxer({
                             format_name: _format,
                             filename: `output.${_name}`,
-                            device: true,
                             open: true
                         }, [[this._c, 1, frames[0].sample_rate]]);
 
@@ -195,16 +208,13 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                     if (rd.done) {
                         await la.av_write_trailer(this._fmtCtx);
 
-                        await la.avformat_free_context(this._fmtCtx);
+                        await la.ff_free_muxer(this._fmtCtx, this._pb);
                         await la.avfilter_graph_free_js(this._filterGraph);
                         await la.ff_free_encoder(
                             this._c, this._frame, this._pkt
                         );
 
-                        controller.close();
-                        break;
-                    } else if (this._hadWrite) {
-                        break;
+                        eof = true;
                     }
                 }
             }
@@ -222,5 +232,4 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
     private _bufferSink: number;
     private _fmtCtx: number;
     private _pb: number;
-    private _hadWrite: boolean;
 }
