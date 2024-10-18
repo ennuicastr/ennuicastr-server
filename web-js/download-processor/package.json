@@ -33,7 +33,7 @@
     "browser-pack-flat": "^3.5.0",
     "browserify": "^17.0.0",
     "exorcist": "^2.0.0",
-    "libav.js": "^4.8.6",
+    "libav.js": "^6.2.7",
     "tsify": "^5.0.4",
     "typescript": "^5.3.3",
     "uglify-js": "^3.17.4"
