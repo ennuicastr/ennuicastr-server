@@ -17,7 +17,7 @@
 
 const config = require("../config.js");
 
-const {rid, recInfo, safeName} = arguments[1];
+const {rid, recInfo, safeName, noRedirect} = arguments[1];
 ?>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
@@ -59,10 +59,17 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
 }).then(function(ret) {
     dlChooser(
         <?JS= rid ?>, <?JS= JSON.stringify(safeName) ?>, ret,
-        document.getElementById("downloader-box")
+        document.getElementById("downloader-box"), {
+            noRedirect: <?JS= noRedirect ?>
+        }
     );
 }).catch(function(ex) {
-    document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
+    if (<?JS= noRedirect ?>) {
+        document.getElementById("footer").innerText = ex.message + "\n" + ex.stack;
+        throw ex;
+    } else {
+        document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
+    }
 });
 </script>
 

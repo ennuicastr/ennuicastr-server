@@ -14,7 +14,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-function dlChooser(rid, name, info, dlBox) {
+function dlChooser(rid, name, info, dlBox, dlChooserOpts) {
     // Create a radio select that looks like a button
     function radioButton(addTo, name, idsuff, text, type) {
         var sel = document.createElement("input");
@@ -529,8 +529,13 @@ function dlChooser(rid, name, info, dlBox) {
             statusBox.style.display = "none";
 
         }).catch(function(ex) {
-            document.location.href =
-                "../dl/?i=" + rid.toString(36) + "&nox=1";
+            if (dlChooserOpts && dlChooserOpts.noRedirect) {
+                document.getElementById("footer").innerText = ex.message + "\n" + ex.stack;
+                throw ex;
+            } else {
+                document.location.href =
+                    "../dl/?i=" + rid.toString(36) + "&nox=1";
+            }
 
         });
     };
