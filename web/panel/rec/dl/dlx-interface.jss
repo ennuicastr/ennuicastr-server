@@ -21,11 +21,11 @@ const {rid, recInfo, safeName, noRedirect} = arguments[1];
 ?>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
-<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=7"></script>
+<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=9"></script>
 
 <div id="downloader-box" class="ecdl-main">Loading...</div>
 
-<script type="text/javascript" src="ennuicastr-download-chooser.js"></script>
+<script type="text/javascript" src="ennuicastr-download-chooser.js?v=2"></script>
 
 <script type="text/javascript">
 EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {

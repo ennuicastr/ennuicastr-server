@@ -147,7 +147,7 @@ export class EncoderProcessor extends proc.Processor<Uint8Array> {
                         // Set delay_moov for ISMV
                         if (_format === "ismv") {
                             await la.av_opt_set(
-                                this._fmtCtx, "movflags", "+frag_every_frame", 0
+                                this._fmtCtx, "movflags", "+frag_every_frame", la.AV_OPT_SEARCH_CHILDREN
                             );
                         }
 
