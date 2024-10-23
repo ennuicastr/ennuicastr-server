@@ -17,16 +17,14 @@
 
 const config = require("../config.js");
 
-const {rid, recInfo, safeName} = arguments[1];
+const {rid, recInfo, safeName, noRedirect} = arguments[1];
 ?>
-
 
 <div id="downloader-box" class="ecdl-main">Loading...</div>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
-<!--<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=7"></script>-->
-<script type="text/javascript" src="ennuicastr-download-processor.js?v=7"></script>
-<script type="text/javascript" src="ennuicastr-download-chooser.js"></script>
+<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=7"></script>
+<script type="text/javascript" src="ennuicastr-download-chooser.js?v=2"></script>
 <script type="text/javascript" src="<?JS= config.client ?>libs/sha512-es.min.js"></script>
 
 <script type="text/javascript">
@@ -34,7 +32,7 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
     LibAV = {base: "/assets/libav"};
     return ecLoadLibrary({
         name: "Audio processing",
-        file: "/assets/libav/libav-5.4.6.1.1c-ecdl.dbg.js"
+        file: "/assets/libav/libav-6.3.7.1-ecdl.js"
     });
 }).then(function() {
     return ecLoadLibrary({
@@ -61,8 +59,12 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
         dlBox: document.getElementById("downloader-box")
     });
 }).catch(function(ex) {
-    document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
-    console.error(ex);
+    if (<?JS= noRedirect ?>) {
+        document.getElementById("footer").innerText = ex.message + "\n" + ex.stack;
+        throw ex;
+    } else {
+        document.location.href = "?i=<?JS= rid.toString(36) ?>&nox=1";
+    }
 });
 </script>
 

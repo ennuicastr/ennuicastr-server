@@ -20,16 +20,12 @@ const config = require("../config.js");
 const {rid, recInfo} = arguments[1];
 ?>
 
-<div id="video-box" style="visibility: hidden;">
+<div id="video-box" style="display: none">
     <header><h3>Video</h3></header>
 
-    <div id="video-dl-box" style="display: none;">
-        <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
+    <p><span style="display: inline-block; max-width: 50em;">Video recorded during this session is stored in your browser.</span></p>
 
-        <p><button id="video-button">Fetch video</button></p>
-    </div>
-
-    <iframe id="video-dl-iframe" style="visibility: hidden;"></iframe>
+    <p><button id="video-button">Fetch video</button></p>
 
     <p>&nbsp;</p>
 </div>
@@ -37,15 +33,14 @@ const {rid, recInfo} = arguments[1];
 <script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>
 <script type="text/javascript">(function() {
     var fs = new URL(<?JS= JSON.stringify(config.client + "fs/") ?>);
-    var videoBox = document.getElementById("video-box");
-    var videoDLBox = document.getElementById("video-dl-box");
-    var ifr = document.getElementById("video-dl-iframe");
+    var ifr = document.createElement("iframe");
+    ifr.style.display = "none";
     ifr.src = fs.toString();
 
     var mp, keys, backends, backendsReceived;
 
     window.addEventListener("message", function(ev) {
-        if (ev.origin !== fs.origin || !ev.data)
+        if (ev.origin !== fs.origin)
             return;
         switch (ev.data.c) {
             case "ennuicastr-file-storage-transient-activation":
@@ -111,7 +106,7 @@ const {rid, recInfo} = arguments[1];
                     <?= JSON.stringify(rid + ":" + recInfo.key + ":" + recInfo.master) ?> +
                     ":" + msg.global) +
                     ":" + msg.local);
-                mp.postMessage({c: "list", ctx: msg.ctx, key: key});
+                mp.postMessage({c: "list", key: key});
                 break;
 
             case "list":
@@ -145,5 +140,7 @@ const {rid, recInfo} = arguments[1];
                 break;
         }
     }
+
+    document.body.appendChild(ifr);
 })();</script>
 

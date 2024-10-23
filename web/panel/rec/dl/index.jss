@@ -24,6 +24,8 @@ if (!request.query.i)
 
 const rid = Number.parseInt(request.query.i, 36);
 
+const noRedirect = !!request.query.noredirect;
+
 const cp = require("child_process");
 const fs = require("fs");
 
@@ -393,7 +395,7 @@ if (!recInfo.purchased && !request.query.s) {
 
     let useDLX = (recInfo.purchased && !request.query.nox);
     if (useDLX) {
-        await include("./dlx-interface.jss", {rid, recInfo, safeName});
+        await include("./dlx-interface.jss", {rid, recInfo, safeName, noRedirect});
     } else {
         showMainDLs();
         await include("./video-interface.jss", {rid, recInfo});
