@@ -34,6 +34,8 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
         private _format: string,
         onprogress?: (time: number) => unknown
     ) {
+        let buf: Uint8Array[] = [];
+        let eof = false;
         super(new wsp.ReadableStream<Uint8Array>({
             pull: async (controller) => {
                 if (!this._inputRdr) {
@@ -52,6 +54,16 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                 const la = this._la;
 
                 while (true) {
+                    if (buf.length) {
+                        controller.enqueue(buf.shift());
+                        break;
+                    }
+
+                    if (eof) {
+                        controller.close();
+                        break;
+                    }
+
                     let done = true;
 
                     // Get packets and find our range
@@ -113,7 +125,6 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                     }
 
                     // Open for writing if applicable
-                    this._hadWrite = false;
                     if (!this._fmtCtx) {
                         // Determine our codec parameters and compatibility
                         let codecpars: [number, number, number][] = [];
@@ -131,15 +142,17 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                             }
                         }
 
-                        sharedWriters[`output.${_name}`] = (pos, buf) => {
-                            this._hadWrite = true;
-                            controller.enqueue(new Uint8Array(buf.buffer));
+                        sharedWriters[`output.${_name}`] = (pos, chunk) => {
+                            if (chunk.byteOffset)
+                                chunk = chunk.slice(0);
+                            buf.push(new Uint8Array(chunk.buffer));
                         };
 
-                        [this._fmtCtx,] = await la.ff_init_muxer({
+                        await la.mkstreamwriterdev(`output.${_name}`);
+
+                        [this._fmtCtx, this._pb] = await la.ff_init_muxer({
                             format_name: _format,
                             filename: `output.${_name}`,
-                            device: true,
                             open: true,
                             codecpars: true
                         }, codecpars);
@@ -147,7 +160,7 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                         // Set delay_moov for ISMV
                         if (_format === "ismv") {
                             await la.av_opt_set(
-                                this._fmtCtx, "movflags", "delay_moov", 0
+                                this._fmtCtx, "movflags", "+frag_every_frame", la.AV_OPT_SEARCH_CHILDREN
                             );
                         }
 
@@ -213,13 +226,8 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
 
                     if (done) {
                         await la.av_write_trailer(this._fmtCtx);
-
-                        await la.avformat_free_context(this._fmtCtx);
-
-                        controller.close();
-                        break;
-                    } else if (this._hadWrite) {
-                        break;
+                        await la.ff_free_muxer(this._fmtCtx, this._pb);
+                        eof = true;
                     }
                 }
             }
@@ -232,5 +240,5 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
     private _la: LibAVT.LibAV;
     private _pkt: number;
     private _fmtCtx: number;
-    private _hadWrite: boolean;
+    private _pb: number;
 }
