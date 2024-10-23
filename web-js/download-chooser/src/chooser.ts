@@ -169,11 +169,12 @@ async function fetchVideo(opts: ChooserOptions) {
     const fsUrl = new URL(opts.videoUrl);
     const ifr = document.createElement("iframe");
     Object.assign(ifr.style, {
+        display: "block",
         visibility: "hidden",
+        height: "0px",
         margin: "auto"
     });
-    //opts.dlBox.appendChild(ifr);
-    document.body.appendChild(ifr);
+    opts.dlBox.appendChild(ifr);
 
     const videoInfo: Record<string, any> = {};
     const keys: Record<string, boolean> = {};
@@ -192,11 +193,14 @@ async function fetchVideo(opts: ChooserOptions) {
         switch (ev.data.c) {
             case "ennuicastr-file-storage-transient-activation":
                 // Need transient activation for storage
+                for (const node of Array.from(opts.dlBox.childNodes)) {
+                    if (node !== ifr)
+                        opts.dlBox.removeChild(node);
+                }
                 Object.assign(ifr.style, {
-                    display: "",
                     visibility: "",
-                    width: ev.data.btn.w + "px",
-                    height: ev.data.btn.h + "px",
+                    width: `calc(min(${ev.data.btn.w}px, 100%))`,
+                    height: `calc(max(${ev.data.btn.h}px, 32px))`,
                     margin: "auto"
                 });
                 commRes();
@@ -337,11 +341,10 @@ export async function dlChooser(opts: ChooserOptions) {
         return ret;
     }
 
-    dlBox.innerHTML = "";
-    /*
-    if (videoIframe)
-        dlBox.appendChild(videoIframe);
-        */
+    for (const node of Array.from(dlBox.childNodes)) {
+        if (node !== videoIframe)
+            dlBox.removeChild(node);
+    }
 
     // Box to eventually be filled with a status bar
     const statusBox = document.createElement("div");
