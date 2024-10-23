@@ -46,6 +46,7 @@ interface ChooserOptions {
     key: string;
     name: string;
     dlBox: HTMLElement;
+    noRedirect?: boolean;
 }
 
 // Create a radio select that looks like a button
@@ -807,12 +808,14 @@ export async function dlChooser(opts: ChooserOptions) {
             dlBtn.classList.remove("disabled");
             statusBox.style.display = "none";
 
-        } catch (ex) {
-            /*
-            document.location.href =
-               "../dl/?i=" + rid.toString(36) + "&nox=1";
-               */
-            console.error(ex);
+        } catch (ex: any) {
+            if (opts.noRedirect) {
+                document.getElementById("footer")!.innerText = ex.message + "\n" + ex.stack;
+                throw ex;
+            } else {
+                document.location.href =
+                    "../dl/?i=" + opts.rid.toString(36) + "&nox=1";
+            }
 
         }
 

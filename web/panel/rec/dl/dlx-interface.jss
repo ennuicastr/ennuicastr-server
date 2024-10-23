@@ -24,7 +24,7 @@ const {rid, recInfo, safeName, noRedirect} = arguments[1];
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
 <script type="text/javascript" src="ennuicastr-download-processor.min.js?v=7"></script>
-<script type="text/javascript" src="ennuicastr-download-chooser.js?v=2"></script>
+<script type="text/javascript" src="ennuicastr-download-chooser.min.js?v=2"></script>
 <script type="text/javascript" src="<?JS= config.client ?>libs/sha512-es.min.js"></script>
 
 <script type="text/javascript">
@@ -56,7 +56,8 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
         videoUrl: <?JS= JSON.stringify(config.client + "fs/") ?>,
         key: <?JS= JSON.stringify(rid + ":" + recInfo.key + ":" + recInfo.master) ?>,
         name: <?JS= JSON.stringify(safeName) ?>,
-        dlBox: document.getElementById("downloader-box")
+        dlBox: document.getElementById("downloader-box"),
+        noRedirect: <?JS= noRedirect ?>
     });
 }).catch(function(ex) {
     if (<?JS= noRedirect ?>) {

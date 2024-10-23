@@ -37,16 +37,6 @@ export class EncoderProcessor extends proc.Processor<LibAVT.Packet[]> {
                 const la = this._la;
 
                 while (true) {
-                    if (buf.length) {
-                        controller.enqueue(buf.shift());
-                        break;
-                    }
-
-                    if (eof) {
-                        controller.close();
-                        break;
-                    }
-
                     const rd = await this._inputRdr.read();
                     let frames = rd.value;
 
