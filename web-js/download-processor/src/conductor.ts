@@ -178,8 +178,8 @@ export interface InfoTxtTrackDescription {
 }
 
 export type TrackDescription =
-    RecTrackDescription | SFXTrackDescription | CaptionsTrackDescription |
-    InfoTxtTrackDescription;
+    RecTrackDescription | VideoTrackDescription | SFXTrackDescription |
+    CaptionsTrackDescription | InfoTxtTrackDescription;
 
 function include(ts: Tristate, on: boolean) {
     if (ts === "both") return true;
@@ -376,6 +376,66 @@ export async function download(opts: DownloadOptions) {
         }
     }
 
+    async function addVideoTrack(track: VideoTrackDescription) {
+        // For each video input...
+        for (const videoInfo of track.videoInfo) {
+            // Get the video
+            const vf = new pFSFetch.FSFetchProcessor(
+                track.videoPort, videoInfo
+            );
+            const vidInp = new pVideoTimer.VideoTimerProcessor(
+                videoInfo.id, vf, 0
+            );
+
+            // Make a name for it
+            let trackNoStr = "" + videoInfo.track;
+            if (trackNoStr.length < 2)
+                trackNoStr = "0" + trackNoStr;
+            let fname = `${trackNoStr}-${videoInfo.name}`;
+
+            // Choose an output format
+            let webm = true;
+            let mp4 = true;
+            switch (videoInfo.mimeType.replace(/^.*codecs=/, "")) {
+                case "vp8":
+                    case "vp9":
+                    case "vp09":
+                    case "av01":
+                    mp4 = false;
+                    break;
+
+                case "avc1":
+                    webm = false;
+                    break;
+
+                default:
+                    webm = mp4 = false;
+            }
+
+            let ext: string;
+            let laFormat: string;
+            if (webm) {
+                ext = laFormat = "webm";
+            } else if (mp4) {
+                ext = "mp4";
+                laFormat = "ismv";
+            } else {
+                ext = "mkv";
+                laFormat = "matroska";
+            }
+
+            // Mux
+            const outp = new pMuxer.MuxerProcessor(
+                fname, [vidInp], 0, laFormat, void 0
+            );
+
+            files.push({
+                pathname: `${fname}.${ext}`,
+                stream: new proc.PopProcessor([vf], outp).stream
+            });
+        }
+    }
+
     async function addSFXTrack(track: SFXTrackDescription) {
         // Start the process chain with a fetch
         const inp = new pFetch.FetchProcessor(
@@ -491,6 +551,8 @@ export async function download(opts: DownloadOptions) {
             await addCaptionsTrack(track);
         else if (track.type === "infotxt")
             addInfoTxt();
+        else if (track.type === "video")
+            await addVideoTrack(track);
         else // rec
             await addRecTrack(track);
     }

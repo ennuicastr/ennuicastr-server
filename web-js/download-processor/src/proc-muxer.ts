@@ -165,15 +165,17 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                         }
 
                         // Set the duration (needed here for some formats)
-                        for (let i = 0; i < this._input.length; i++) {
-                            const st = await la.AVFormatContext_streams_a(
-                                this._fmtCtx, i
-                            );
-                            let cp = this._codecpars[i] || [null, 1, 1000];
-                            const dur = Math.floor(_duration * cp[2] / cp[1]);
-                            const dur64 = la.f64toi64(dur);
-                            await la.AVStream_duration_s(st, dur64[0]);
-                            await la.AVStream_durationhi_s(st, dur64[1]);
+                        if (_duration) {
+                            for (let i = 0; i < this._input.length; i++) {
+                                const st = await la.AVFormatContext_streams_a(
+                                    this._fmtCtx, i
+                                );
+                                let cp = this._codecpars[i] || [null, 1, 1000];
+                                const dur = Math.floor(_duration * cp[2] / cp[1]);
+                                const dur64 = la.f64toi64(dur);
+                                await la.AVStream_duration_s(st, dur64[0]);
+                                await la.AVStream_durationhi_s(st, dur64[1]);
+                            }
                         }
 
                         await la.avformat_write_header(this._fmtCtx, 0);

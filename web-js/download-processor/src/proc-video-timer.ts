@@ -233,8 +233,11 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                             this._stream.time_base_num /
                             this._stream.time_base_den +
                             1/this._framerate;
-                        this._blankCt = Math.round(
-                            (_duration - this._blankTime) * this._framerate
+                        this._blankCt = Math.max(
+                            Math.round(
+                                (_duration - this._blankTime) * this._framerate
+                            ),
+                            0
                         );
                         break;
                     }
