@@ -202,26 +202,6 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                         );
                     }
 
-                    /* Bug related to ISMV in this implementation, it scales
-                     * timestamps incorrectly and ends up creating weird
-                     * behavior in the generated file. */
-                    if (_format === "ismv") {
-                        for (const packet of packets) {
-                            for (const part of ["pts", "dts", "duration"]) {
-                                if (!(part in packet)) continue;
-                                let ts = la.i64tof64(
-                                    packet[part], packet[part + "hi"]
-                                );
-                                let cp = this._codecpars[packet.stream_index] ||
-                                    [null, 1, 1000];
-                                ts *= 10000000 * cp[1] / cp[2];
-                                const ts64 = la.f64toi64(ts);
-                                packet[part] = ts64[0];
-                                packet[part + "hi"] = ts64[1];
-                            }
-                        }
-                    }
-
                     await la.ff_write_multi(
                         this._fmtCtx, this._pkt, packets, done
                     );
