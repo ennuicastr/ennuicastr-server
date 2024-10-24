@@ -150,7 +150,7 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
 
                         await la.mkstreamwriterdev(`output.${_name}`);
 
-                        [this._fmtCtx, this._pb] = await la.ff_init_muxer({
+                        [this._fmtCtx, , this._pb] = await la.ff_init_muxer({
                             format_name: _format,
                             filename: `output.${_name}`,
                             open: true,

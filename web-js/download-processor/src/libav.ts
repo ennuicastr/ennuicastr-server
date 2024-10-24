@@ -17,7 +17,16 @@
 import type * as LibAVT from "libav.js";
 declare let LibAV: LibAVT.LibAVWrapper;
 
-const libavPromises: Record<string, Promise<LibAVT.LibAV>> = Object.create(null);
+type SharedReaders = Record<
+    string, (pos: number, len: number) => void
+>;
+
+type ShareableLibAV = LibAVT.LibAV & {
+    ecSharedReaders?: SharedReaders
+};
+
+const libavPromises: Record<string, Promise<ShareableLibAV>> =
+    Object.create(null);
 
 /**
  * Get a (shared) libav instance.
@@ -28,7 +37,15 @@ export async function libav(name: string) {
     if (!(<any> navigator).deviceMemory || (<any> navigator).deviceMemory < 1)
         name = "shared";
 
-    if (!(name in libavPromises))
-        libavPromises[name] = LibAV.LibAV();
-    return await libavPromises[name];
+    if (!(name in libavPromises)) {
+        libavPromises[name] = LibAV.LibAV().then(async (la: ShareableLibAV) => {
+            la.ecSharedReaders = Object.create(null);
+            la.onread = (name, pos, len) => {
+                if (la.ecSharedReaders![name])
+                    la.ecSharedReaders![name](pos, len);
+            };
+            return la;
+        });
+    }
+    return libavPromises[name];
 }

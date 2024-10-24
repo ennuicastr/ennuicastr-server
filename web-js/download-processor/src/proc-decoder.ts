@@ -22,10 +22,6 @@ import * as wsp from "web-streams-polyfill/ponyfill";
 
 const chunkSize = 512;
 
-const sharedReaders: Record<
-    string, (pos: number, len: number) => void
-> = Object.create(null);
-
 /**
  * A decoding processor. Demuxes, decodes, and sends the data as float32
  * planar.
@@ -49,14 +45,10 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
 
                     // Create a libav instance
                     const la = this._la = await LibAV.libav("decoder");
-                    this._la.onread = (name, pos, len) => {
-                        if (sharedReaders[name])
-                            sharedReaders[name](pos, len);
-                    };
 
                     const filename = `input.${_name}`;
                     await la.mkreaderdev(filename);
-                    sharedReaders[filename] = async () => {
+                    la.ecSharedReaders![filename] = async () => {
                         const rd = await this._inputRdr.read();
                         if (rd.done)
                             await la.ff_reader_dev_send(filename, null);
@@ -90,8 +82,8 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                     const la = this._la;
 
                     // Read some data
-                    const [rdRes, allPackets] = await la.ff_read_multi(
-                        this._fmtCtx, this._pkt, void 0, {limit: 1024*1024}
+                    const [rdRes, allPackets] = await la.ff_read_frame_multi(
+                        this._fmtCtx, this._pkt, {limit: 1024*1024}
                     );
                     const packets = allPackets[this._stream.index] || [];
 

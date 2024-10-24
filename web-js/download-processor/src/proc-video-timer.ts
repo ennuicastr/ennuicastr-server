@@ -46,12 +46,19 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                     // Create a libav instance
                     const la = this._la = await LibAV.libav("decoder");
 
-                    await la.mkreaderdev(`input.${_name}`);
+                    const filename = `vinput.${_name}`;
+                    await la.mkreaderdev(filename);
+                    la.ecSharedReaders![filename] = async () => {
+                        const rd = await this._inputRdr.read();
+                        if (rd.done)
+                            await la.ff_reader_dev_send(filename, null);
+                        else
+                            await la.ff_reader_dev_send(filename, rd.value);
+                    };
 
                     // Create a demuxer
-                    const demuxPromise = la.ff_init_demuxer_file(`input.${_name}`);
-                    await this._flushReaderDev();
-                    const [fmtCtx, streams] = await demuxPromise;
+                    const [fmtCtx, streams] =
+                        await la.ff_init_demuxer_file(filename);
                     this._fmtCtx = fmtCtx;
 
                     // Look for the video stream
@@ -73,11 +80,9 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                     }
 
                     // Get some initial frames
-                    const rdPromise = la.ff_read_multi(
-                        this._fmtCtx, this._pkt, void 0, {limit: 16*1024*1024}
+                    const [rdRes, allPackets] = await la.ff_read_frame_multi(
+                        this._fmtCtx, this._pkt, {limit: 16*1024*1024}
                     );
-                    await this._flushReaderDev();
-                    const [rdRes, allPackets] = await rdPromise;
 
                     // Maybe set up blank frames
                     const mainPkts = allPackets[streamIdx];
@@ -200,11 +205,9 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                     const la = this._la;
 
                     // Read some data
-                    const rdPromise = la.ff_read_multi(
-                        this._fmtCtx, this._pkt, void 0, {limit: 1024*1024}
+                    const [rdRes, allPackets] = await la.ff_read_frame_multi(
+                        this._fmtCtx, this._pkt, {limit: 1024*1024}
                     );
-                    await this._flushReaderDev();
-                    const [rdRes, allPackets] = await rdPromise;
                     const packets = allPackets[this._stream.index];
 
                     if (rdRes !== 0 &&
@@ -251,21 +254,6 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
             this._stream.time_base_num,
             this._stream.time_base_den
         ];
-    }
-
-    /**
-     * Send as much data as the reader device demands.
-     * @private
-     */
-    private async _flushReaderDev() {
-        const la = this._la;
-        while (await la.ff_reader_dev_waiting()) {
-            const rd = await this._inputRdr.read();
-            if (rd.done)
-                await la.ff_reader_dev_send(`input.${this._name}`, null);
-            else
-                await la.ff_reader_dev_send(`input.${this._name}`, rd.value);
-        }
     }
 
     /**
