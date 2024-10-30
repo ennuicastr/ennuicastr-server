@@ -46,7 +46,7 @@ export class DecoderProcessor extends proc.Processor<LibAVT.Frame[]> {
                     // Create a libav instance
                     const la = this._la = await LibAV.libav("decoder");
 
-                    const filename = `input.${_name}`;
+                    const filename = LibAV.freshName(la, "input.");
                     await la.mkreaderdev(filename);
                     la.ecSharedReaders![filename] = async () => {
                         const rd = await this._inputRdr.read();

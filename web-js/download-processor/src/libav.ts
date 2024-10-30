@@ -21,8 +21,14 @@ type SharedReaders = Record<
     string, (pos: number, len: number) => void
 >;
 
-type ShareableLibAV = LibAVT.LibAV & {
-    ecSharedReaders?: SharedReaders
+type SharedWriters = Record<
+    string, (pos: number, buf: Uint8Array | Int8Array) => void
+>;
+
+export type ShareableLibAV = LibAVT.LibAV & {
+    ecSharedReaders?: SharedReaders,
+    ecSharedWriters?: SharedWriters,
+    ecFileIdx?: number
 };
 
 const libavPromises: Record<string, Promise<ShareableLibAV>> =
@@ -44,8 +50,22 @@ export async function libav(name: string) {
                 if (la.ecSharedReaders![name])
                     la.ecSharedReaders![name](pos, len);
             };
+            la.ecSharedWriters = Object.create(null);
+            la.onwrite = (name, pos, buf) => {
+                if (la.ecSharedWriters[name])
+                    la.ecSharedWriters[name](pos, buf);
+            };
             return la;
         });
     }
     return libavPromises[name];
+}
+
+/**
+ * Get a fresh filename for this instance.
+ */
+export function freshName(libav: ShareableLibAV, prefix: string) {
+    const idx = (libav.ecFileIdx || 0);
+    libav.ecFileIdx = idx + 1;
+    return `${prefix}${idx}`;
 }

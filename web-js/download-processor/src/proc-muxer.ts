@@ -22,10 +22,6 @@ import * as pVidT from "./proc-video-timer";
 import type * as LibAVT from "libav.js";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
-const sharedWriters: Record<
-    string, (pos: number, buf: Uint8Array | Int8Array) => void
-> = Object.create(null);
-
 export class MuxerProcessor extends proc.Processor<Uint8Array> {
     constructor(
         private _name: string,
@@ -44,13 +40,8 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                     this._codecpars = new Array(this._input.length);
                 }
 
-                if (!this._la) {
+                if (!this._la)
                     this._la = await LibAV.libav("muxer");
-                    this._la.onwrite = (name, pos, buf) => {
-                        if (sharedWriters[name])
-                            sharedWriters[name](pos, buf);
-                    };
-                }
                 const la = this._la;
 
                 while (true) {
@@ -142,17 +133,18 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                             }
                         }
 
-                        sharedWriters[`output.${_name}`] = (pos, chunk) => {
+                        const filename = LibAV.freshName(la, "output.");
+                        la.ecSharedWriters[filename] = (pos, chunk) => {
                             if (chunk.byteOffset)
                                 chunk = chunk.slice(0);
                             buf.push(new Uint8Array(chunk.buffer));
                         };
 
-                        await la.mkstreamwriterdev(`output.${_name}`);
+                        await la.mkstreamwriterdev(filename);
 
                         [this._fmtCtx, , this._pb] = await la.ff_init_muxer({
                             format_name: _format,
-                            filename: `output.${_name}`,
+                            filename: filename,
                             open: true,
                             codecpars: true
                         }, codecpars);
@@ -219,7 +211,7 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
     private _inputRdr: wsp.ReadableStreamDefaultReader<LibAVT.Packet[]>[];
     private _inputBufs: (LibAVT.Packet[]|undefined|"eof")[];
     private _codecpars: [LibAVT.CodecParameters, number, number][];
-    private _la: LibAVT.LibAV;
+    private _la: LibAV.ShareableLibAV;
     private _pkt: number;
     private _fmtCtx: number;
     private _pb: number;

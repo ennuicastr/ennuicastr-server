@@ -46,7 +46,7 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                     // Create a libav instance
                     const la = this._la = await LibAV.libav("decoder");
 
-                    const filename = `vinput.${_name}`;
+                    const filename = LibAV.freshName(la, "vinput.");
                     await la.mkreaderdev(filename);
                     la.ecSharedReaders![filename] = async () => {
                         const rd = await this._inputRdr.read();
