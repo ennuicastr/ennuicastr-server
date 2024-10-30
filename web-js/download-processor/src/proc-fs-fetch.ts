@@ -74,8 +74,6 @@ export class FSFetchProcessor extends proc.CorkableProcessor<Uint8Array> {
                 if (!this._fetchRdr) {
                     const fmc = new MessageChannel();
                     const fmp = fmc.port1;
-                    console.log(this._file);
-                    console.log(this._port);
                     const strp = new Promise<ReadableStream<Uint8Array>>(res => {
                         fmp.onmessage = ev => {
                             if (ev.data && ev.data.c === "stream")
