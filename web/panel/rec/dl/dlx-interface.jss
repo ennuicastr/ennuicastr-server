@@ -32,7 +32,7 @@ EnnuicastrDownloadProcessor.dsLoad({prefix: "/"}).then(function() {
     LibAV = {base: "/assets/libav"};
     return ecLoadLibrary({
         name: "Audio processing",
-        file: "/assets/libav/libav-6.3.7.1-ecdl.js"
+        file: "/assets/libav/libav-6.4.7.1-ecdl.js"
     });
 }).then(function() {
     return ecLoadLibrary({
