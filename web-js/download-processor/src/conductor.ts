@@ -394,7 +394,8 @@ export async function download(opts: DownloadOptions) {
             let trackNoStr = "" + videoInfo.track;
             if (trackNoStr.length < 2)
                 trackNoStr = "0" + trackNoStr;
-            let fname = `${trackNoStr}-${videoInfo.name}`;
+            let fname =
+                `${trackNoStr}-${videoInfo.name.replace(/\.[^\.]*$/, "")}`;
 
             // Choose an output format
             let webm = true;
