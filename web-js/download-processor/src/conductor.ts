@@ -195,6 +195,8 @@ export async function download(opts: DownloadOptions) {
     else if (opts.format === "opus")
         libavFormat = "ogg";
 
+    let suffix = opts.format;
+
     // Turn the tracks into files
     const files: archive.Archive = [];
     const fileNames: Record<string, boolean> = Object.create(null);
@@ -354,6 +356,7 @@ export async function download(opts: DownloadOptions) {
                         ext = "mkv";
                         laFormat = "matroska";
                     }
+                    suffix = ext;
                 }
 
                 // Mux
@@ -423,6 +426,7 @@ export async function download(opts: DownloadOptions) {
                 ext = "mkv";
                 laFormat = "matroska";
             }
+            suffix = ext;
 
             // Mux
             const outp = new pMuxer.MuxerProcessor(
@@ -558,7 +562,6 @@ export async function download(opts: DownloadOptions) {
     }
 
     // Possibly convert the filelist for project packaging
-    let suffix = opts.format;
     if (opts.project === "aup") {
         suffix = "aup";
         pAup.aupProject(opts.name, files);
