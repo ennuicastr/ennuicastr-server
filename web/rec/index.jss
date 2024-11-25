@@ -69,7 +69,7 @@ if (isSafari) {
             ecLoadLibrary({file: "protocol.js?v=n", name: "Ennuicastr"})
             .then(function() {
             return ecLoadLibrary({
-                file: "ennuicastr.js?v=br",
+                file: "ennuicastr.js?v=bs",
                 name: "Ennuicastr"
             });
             });
