@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "boxicons": "^2.1.4",
-    "cookie": "^0.4.0",
+    "cookie": "^0.7.0",
     "cyclic-32": "^1.1.0",
     "firebase-admin": "^13.0.1",
     "google-auth-library": "^7.0.4",
