@@ -27,12 +27,12 @@ if (!module.rtes) {
     // Can't accept any crashes
     process.on("uncaughtException", (err, origin) => {
         fs.writeFileSync("tmp-uncaughtException",
-            `Uncaught: ${err}\nOrigin: ${origin}\n`);
+            `Uncaught: ${err} ${err.stack}\nOrigin: ${origin}\n`);
     });
 
     process.on("unhandledRejection", (reason, promise) => {
         fs.writeFileSync("tmp-unhandledRejection",
-            `Unhandled: ${promise}\nReason: ${reason}\n`);
+            `Unhandled: ${promise}\nReason: ${reason} ${reason.stack}\n`);
     });
 }
 const rtes = module.rtes;
