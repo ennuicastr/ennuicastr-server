@@ -107,7 +107,7 @@ async function multiSelector(
         const sel = opt.sel = radioButton(
             opt.other ? others! : addTo, name, ""+i, opt.name
         );
-        if (opt.selected) 
+        if (opt.selected)
             hadSelected = i;
         if (i === 0 || opt.selected || opt.default)
             hadDefault = i;
