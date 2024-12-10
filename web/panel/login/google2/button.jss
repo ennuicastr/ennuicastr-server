@@ -21,8 +21,8 @@ const config = require("../config.js");
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <span id="g_id_onload"
     data-client_id="<?JS= config.google.clientId ?>"
-    data-ux_mode="redirect"
-    data-login_uri="<?JS= config.panel ?>login/google2/">
+    data-login_uri="<?JS= config.panel ?>login/google2/"
+    data-auto_prompt="false">
 </span>
 <span class="loginblock">
     <span class="g_id_signin"
