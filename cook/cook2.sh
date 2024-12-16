@@ -365,7 +365,7 @@ fi
 # Make our fifos and surrounding content
 for c in $(seq -w 1 $NB_STREAMS)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" -ne "$c" ]
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$c" ]
     then
         continue
     fi
@@ -403,7 +403,7 @@ done
 # Handle the SFX files
 for c in $(seq -w 1 $NB_SFX)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" -a "$ONLY_TRACK" != "sfx0$c" -a "$ONLY_TRACK" != "sfx00$c" ]
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" ]
     then
         continue
     fi
@@ -440,7 +440,7 @@ fi
 # Encode thru fifos
 for c in $(seq -w 1 $NB_STREAMS)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" -ne "$c" ]
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$c" ]
     then
         continue
     fi
@@ -515,7 +515,7 @@ done &
 # Same for SFX
 for c in $(seq -w 1 $NB_SFX)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" -a "$ONLY_TRACK" != "sfx0$c" -a "$ONLY_TRACK" != "sfx00$c" ]
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" ]
     then
         continue
     fi
