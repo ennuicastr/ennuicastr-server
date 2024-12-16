@@ -365,7 +365,8 @@ fi
 # Make our fifos and surrounding content
 for c in $(seq -w 1 $NB_STREAMS)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$c" ]
+    cn=$(echo "$c" | sed 's/^0*//')
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$cn" ]
     then
         continue
     fi
@@ -403,7 +404,8 @@ done
 # Handle the SFX files
 for c in $(seq -w 1 $NB_SFX)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" ]
+    cn=$(echo "$c" | sed 's/^0*//')
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$cn" ]
     then
         continue
     fi
@@ -440,7 +442,8 @@ fi
 # Encode thru fifos
 for c in $(seq -w 1 $NB_STREAMS)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$c" ]
+    cn=$(echo "$c" | sed 's/^0*//')
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "$cn" ]
     then
         continue
     fi
@@ -453,13 +456,13 @@ do
     CAP_FFN="$OUTDIR/$CAP_FN"
 
     # Get the stream number of this track
-    TRACK_STREAMNO="$(echo "$STREAM_NOS" | sed -n "$c"p)"
+    TRACK_STREAMNO="$(echo "$STREAM_NOS" | sed -n "$cn"p)"
 
     if [ "$INCLUDE_AUDIO" = "yes" -o "$INCLUDE_DURATIONS" = "yes" ]
     then
         # Get the duration of this track
         TRACK_DURATION="$(timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $c)"
+            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $cn)"
     fi
 
     if [ "$INCLUDE_AUDIO" = "yes" ]
@@ -474,7 +477,7 @@ do
 
         else
             # Get out the codec for this track
-            TRACK_CODEC="$(echo "$CODECS" | sed -n "$c"p)"
+            TRACK_CODEC="$(echo "$CODECS" | sed -n "$cn"p)"
             [ "$TRACK_CODEC" = "opus" ] && TRACK_CODEC=libopus
 
             # Filter for this track (just the standard filter, but add a possible
@@ -502,7 +505,7 @@ do
     # Duration metadata
     if [ "$INCLUDE_DURATIONS" = "yes" ]
     then
-        printf '"duration_%s":%s' "$c" "$TRACK_DURATION" > "$TRACK_FFN.duration" &
+        printf '"duration_%s":%s' "$cn" "$TRACK_DURATION" > "$TRACK_FFN.duration" &
     fi
 
     # And the captions
@@ -515,7 +518,8 @@ done &
 # Same for SFX
 for c in $(seq -w 1 $NB_SFX)
 do
-    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$c" ]
+    cn=$(echo "$c" | sed 's/^0*//')
+    if [ "$ONLY_TRACK" != "no" -a "$ONLY_TRACK" != "sfx$cn" ]
     then
         continue
     fi
@@ -537,7 +541,7 @@ do
 
     if [ "$INCLUDE_DURATIONS" = "yes" ]
     then
-        printf '"sfx_duration_%s":%s' "$c" "$SFX_DURATION" > "$SFX_FFN.duration" &
+        printf '"sfx_duration_%s":%s' "$cn" "$SFX_DURATION" > "$SFX_FFN.duration" &
     fi
 done &
 
