@@ -45,7 +45,7 @@ if (isSafari) {
         <!--<link href="fa/css/all.min.css" rel="stylesheet" />
         <link href="ennuicastr2.css?v=h" rel="stylesheet" />-->
         <link href="bx/css/boxicons.min.css" rel="stylesheet" />
-        <link href="ennuicastr3.css?v=6" rel="stylesheet" />
+        <link href="ennuicastr3.css?v=8" rel="stylesheet" />
         <link href="ecastr.css" rel="stylesheet" />
         <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png" />
@@ -69,7 +69,7 @@ if (isSafari) {
             ecLoadLibrary({file: "protocol.js?v=n", name: "Ennuicastr"})
             .then(function() {
             return ecLoadLibrary({
-                file: "ennuicastr.js?v=bs",
+                file: "ennuicastr.js?v=bt",
                 name: "Ennuicastr"
             });
             });
