@@ -94,7 +94,9 @@ if (mode === "info") {
     ?>
     <p>You are logged into the organization account for <?JS= await unM.getDisplay(euid) ?>.</p>
 
-    <p><a href="?act=logout" class="button"><i class="bx bx-log-out"></i> Return to user account</a></p>
+    <p><a href="/panel/" class="button"><i class="bx bxs-user"></i> Return to main panel</a></p>
+
+    <p><a href="?act=logout" class="button"><i class="bx bx-log-out"></i> Log out of organization</a></p>
 
     <?JS
     if (users) {
