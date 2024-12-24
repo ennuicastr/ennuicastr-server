@@ -73,6 +73,12 @@
         "secret": ""
     },
 
+    "//googleDrive": "API key for Google Drive, which can be the same as above",
+    "googleDrive": {
+        "clientId": "",
+        "secret": ""
+    },
+
     "//firebase": "API key and config info for Firebase login",
     "firebase": {
         "config": {

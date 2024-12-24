@@ -65,14 +65,15 @@ export class CorkableProcessor<T> extends Processor<T> {
  */
 export class PopProcessor<T, U> extends Processor<U> {
     constructor(
-        public corkedInputStream: CorkableProcessor<T>,
+        public corkedInputStreams: CorkableProcessor<T>[],
         public outputStream: Processor<U>
     ) {
         let rdr: wsp.ReadableStreamDefaultReader<U> | null = null;
         super(new wsp.ReadableStream({
             pull: async (controller) => {
                 if (!rdr) {
-                    corkedInputStream.uncork();
+                    for (const cis of corkedInputStreams)
+                        cis.uncork();
                     rdr = outputStream.stream.getReader();
                 }
                 const rd = await rdr.read();

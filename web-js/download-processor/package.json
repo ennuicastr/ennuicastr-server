@@ -4,6 +4,7 @@
   "description": "Browser-side processor for Ennuicastr downloads",
   "main": "dist/ennuicastr-download-processor.min.js",
   "scripts": {
+    "build": "rollup -c",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -30,12 +31,12 @@
     "yalap.js": "=1.0.1"
   },
   "devDependencies": {
-    "browser-pack-flat": "^3.5.0",
-    "browserify": "^17.0.0",
-    "exorcist": "^2.0.0",
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
     "libav.js": "^6.2.7",
-    "tsify": "^5.0.4",
-    "typescript": "^5.3.3",
-    "uglify-js": "^3.17.4"
+    "rollup": "^4.20.0",
+    "tslib": "^2.6.3"
   }
 }

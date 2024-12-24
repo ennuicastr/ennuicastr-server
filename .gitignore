@@ -16,6 +16,8 @@ web/assets/js/localforage.min.js
 web/assets/libav/libav*
 web/assets/libs/libspecbleach*
 web/assets/libs/yalap*
+web-js/download-chooser/dist/
 web-js/download-processor/dist/
 web/ecdssw.min.js
+web/panel/rec/dl/ennuicastr-download-chooser*
 web/panel/rec/dl/ennuicastr-download-processor*

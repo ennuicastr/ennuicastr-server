@@ -1,5 +1,5 @@
 Please add the ecdl variant of libav.js (
-https://github.com/Yahweasel/libav.js/ ), version 6.3.7.1, here. Use
+https://github.com/Yahweasel/libav.js/ ), version 6.4.7.1, here. Use
 ecdl-mkconfig.sh to make the ennuicastr config.
 
 To update the libav version, update the number here and in web/panel/rec/dl/dlx-interface.jss .
