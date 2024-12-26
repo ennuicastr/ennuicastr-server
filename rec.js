@@ -240,7 +240,7 @@ function hostUrl(rec, opts) {
         features |= 0x10;
 
     // Make the URL
-    let url = config.client +
+    let url = config.clientShort +
         "?" + (opts.rid||rec.rid).toString(36) +
         "-" + (opts.key||rec.key).toString(36) +
         "-m" + (opts.master||rec.master).toString(36);

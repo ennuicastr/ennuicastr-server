@@ -327,7 +327,7 @@ function launchRecording() {
             features |= 0x10;
 
         // Make the URL
-        var url = <?JS= JSON.stringify(config.client) ?>;
+        var url = <?JS= JSON.stringify(config.clientShort) ?>;
         if (res.lid) {
             url +=
                 "?" + res.lid.toString(36) +

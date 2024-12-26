@@ -1027,7 +1027,7 @@ wss.on("connection", (ws, wsreq) => {
                 sounds.list = [];
                 rows.forEach((row) => {
                     var encd = Buffer.from(id36.enc(row.sid, key), "binary").toString("base64");
-                    var url = "/sound.jss?" + recInfo.rid.toString(36) + "-" + encd;
+                    var url = "sound.jss?" + recInfo.rid.toString(36) + "-" + encd;
                     sounds.urls[":" + row.sid] = url;
                     sounds.durations[":" + row.sid] = row.duration;
                     sounds.list.push({
