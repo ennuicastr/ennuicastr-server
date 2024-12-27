@@ -421,7 +421,6 @@ export async function dlChooser(opts: ChooserOptions) {
     }];
 
     // Create these together, as they're interconnected
-    /*
     {
         const ch = row(dlBox, "Combine\nvideo and audio?");
         multiSelector(ch, "ec-mux", muxOpts, v => {
@@ -433,7 +432,6 @@ export async function dlChooser(opts: ChooserOptions) {
             }
         });
     }
-    */
 
     {
         const ch = row(dlBox, haveVideo ? "Audio format:" : "Format:");

@@ -15,7 +15,7 @@
  */
  
 const rte = await import(
-    __dirname + "/../../../node_modules/rtennui-server/src/main.js");
+    __dirname + "/../../../../node_modules/rtennui-server/src/main.js");
 
 const db = require("../db.js").db;
 const fs = require("fs");
