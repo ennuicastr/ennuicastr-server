@@ -123,6 +123,14 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                             mainPkts[0].ptshi = mainPkts[0].dtshi = pts[1];
                         }
 
+                        // Make sure everything has dts
+                        for (const pkt of mainPkts) {
+                            if (pkt.dtshi === -2147483648 /* unset */) {
+                                pkt.dts = pkt.pts;
+                                pkt.dtshi = pkt.ptshi;
+                            }
+                        }
+
                         // Get the current last time
                         {
                             const lastPkt = mainPkts[mainPkts.length-1];
@@ -218,6 +226,15 @@ export class VideoTimerProcessor extends proc.Processor<LibAVT.Packet[]> {
                     let hadFrames = false;
                     if (packets && packets.length) {
                         hadFrames = true;
+
+                        // Make sure everything has dts
+                        for (const pkt of packets) {
+                            if (pkt.dtshi === -2147483648 /* unset */) {
+                                pkt.dts = pkt.pts;
+                                pkt.dtshi = pkt.ptshi;
+                            }
+                        }
+
                         controller.enqueue(packets);
                         {
                             const lastPkt = packets[packets.length-1];
