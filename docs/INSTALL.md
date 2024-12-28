@@ -343,6 +343,9 @@ As the `ennuicastr` user, fetch `ennuicastr`.
 git clone https://github.com/ennuicastr/ennuicastr.git
 ```
 
+Configure it by copying all the `.json.example` files in the `config` directory
+to `.json` files and setting them up appropriately.
+
 Compile it.
 
 ```
