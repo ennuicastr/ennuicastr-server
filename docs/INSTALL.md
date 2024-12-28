@@ -30,8 +30,14 @@ sudo apt install nginx nodejs npm build-essential curl zip unzip sqlite3 at \
     fdkaac opus-tools
 ```
 
+If you can't install fdkaac, don't worry too much about it. It's only used for
+AAC encoding, and only in the simple downloader.
+
 
 ## 2: Install Jitsi
+
+NOTE: This step is now optional. While Jitsi is still supported, the default is
+to use a new system, RTEnnui, which replaces Jitsi.
 
 Follow Jitsi's own installation instructions at
 https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart .
@@ -92,6 +98,9 @@ to redirect to your home page, like so:
 
 ## 3: Configure Prosody
 
+NOTE: This step is only needed if you installed Jitsi, above. If you plan on
+only supporting RTEnnui, you need neither of these.
+
 Jitsi relies on Prosody as its underlying comms server. We need to set up
 Prosody to use WebSockets. The configuration is done automatically for nginx,
 but still needs to be done in Prosody itself.
@@ -124,21 +133,35 @@ sudo adduser ennuicastr
 
 ## 5: Web server configuration (basic)
 
-Ennuicastr requires two major domain names: one for the server panel and one
-for the client. On the canonical implementation, these are `ennuicastr.com` and
+Ennuicastr requires a domain name, and most of the Ennuicastr software was
+designed under the assumption that it will have complete control over the
+content on that domain, i.e., that it controls / (the root).
+
+In addition, you can have a shorter domain name used for invites. This is
+optional.
+
+On the canonical implementation, these are `ennuicastr.com` and
 `weca.st`. In this example, we'll be using `testbed.ecastr.com` and
-`r.testbed.ecastr.com`.
+`tbr.ecastr.com`.
 
 In `/etc/nginx/sites-enabled/default`, set `server_name` to `testbed.ecastr.com`:
 
 ```
 ...
 	server_name testbed.ecastr.com;
+
+        location ~ ^/r/ {
+		add_header 'Cross-Origin-Opener-Policy' 'same-origin';
+		add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
+	}
 ...
 ```
 
-In addition, we'll need a second vhost configuration for
-`r.testbed.ecastr.com`, with a different root:
+The Cross-Origin headers are needed for [shared memory to work
+properly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer).
+
+If you want to use a short domain for invites, you'll need a second vhost
+configuration, in this case for `tbr.ecastr.com`, with a different root:
 
 ```
 server {
@@ -150,17 +173,11 @@ server {
 	root /var/www/rec;
 	index index.html;
 
-	add_header 'Cross-Origin-Opener-Policy' 'same-origin';
-	add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
-
 	location / {
 		try_files $uri $uri/ =404;
 	}
 }
 ```
-
-The Cross-Origin headers are needed for [shared memory to work
-properly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer).
 
 The web server needs to run as the selected user. In `/etc/nginx/nginx.conf`,
 `user www-data` needs to be replaced:
@@ -187,7 +204,9 @@ configuration made by Jitsi; simply comment out any line(s) it complains about.
 
 You will need to configure a service to copy the certificates from
 `/etc/letsencrypt/live/*` to `~ennuicastr/cert` periodically and chown them to
-the Ennuicastr user.
+the Ennuicastr user. This should be done with a cronjob. This is necessary
+because the server for the actual Ennuicastr chat must be able to establish an
+SSL connection.
 
 
 ## 7: Fetch and compile ennuicastr-server
@@ -208,7 +227,9 @@ make
 
 ## 8: Make config.json
 
-Copy `config.json.example` to `config.json` and modify it as needed.
+Copy `config.json.example` to `config.json` and modify it as needed. Note that
+`"clientShort"` is the invite-only domain. If not using one, just set it to the
+same as `"client"`.
 
 
 ## 9: Prepare the database
@@ -243,6 +264,28 @@ https://github.com/Yahweasel/nodejs-server-pages , but in short, in
 ...
 	index index.jss index.html;
 ...
+        location ~ ^/r/ {
+		add_header 'Cross-Origin-Opener-Policy' 'same-origin';
+		add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
+
+		location ~ \.jss$ {
+			fastcgi_pass unix:/tmp/nodejs-server-pages.sock;
+			include fastcgi_params;
+			fastcgi_buffering off;
+		}
+
+		location ~ /ws$ {
+			proxy_pass http://unix:/tmp/nodejs-server-pages-ws.sock;
+			proxy_http_version 1.1;
+			proxy_set_header Upgrade $http_upgrade;
+			proxy_set_header Connection "Upgrade";
+			proxy_set_header Host $host;
+			proxy_read_timeout 86400;
+			proxy_send_timeout 86400;
+			send_timeout 86400;
+		}
+	}
+
 	location ~ \.jss$ {
 		fastcgi_pass unix:/tmp/nodejs-server-pages.sock;
 		include fastcgi_params;
@@ -262,7 +305,12 @@ https://github.com/Yahweasel/nodejs-server-pages , but in short, in
 ...
 ```
 
-Both vhosts will require these components. Make sure to `sudo service nginx reload`.
+If you're using a short invite domain, it will require the `.jss` component as
+well. Make sure to `sudo service nginx reload`.
+
+Note that both components have to be duplicated under the `/r/` component we
+created above because of how `location` directives work in nginx. If you know
+of a better way, please tell me!
 
 
 ## 12: Web content (server panel)
@@ -276,6 +324,15 @@ lndir ~/ennuicastr-server/web /var/www/html
 
 At this point, e.g. `https://testbed.ecastr.com/panel/` should work, though the
 login services will only work if you configured them in `config.json`.
+
+If you're using an invite domain, it needs its own path, configured above as
+`/var/www/rec`, and must be linked similarly:
+
+```
+sudo mkdir /var/www/rec
+sudo chown ennuicastr:ennuicastr /var/www/rec
+lndir ~/ennuicastr-server/web/rec /var/www/rec
+```
 
 
 ## 13: Fetch and compile ennuicastr
@@ -299,33 +356,16 @@ https://github.com/Yahweasel/libav.js/ , in the `libav` directory. This is
 process, and probably not something you should build on a server. Follow the
 instructions in `libav/README` and `libav.js`'s own README.
 
-Similarly, you'll need to install `noise-repellent-m.js*`, from
-https://github.com/Yahweasel/noise-repellent.js , to `noise-repellent`.
-
-You'll also need to get FontAwesome (https://fontawesome.com) version 5 (though
-later versions should work) and extract it to `~/ennuicastr/fa`.
-
 
 ## 14: Web content (client)
 
-The content of `~/ennuicastr` and `~/ennuicastr-server/web/rec` must be
-accessible from the web server. First, we'll need to create the `/var/www/rec`
-directory we used above:
-
-```
-sudo mkdir /var/www/rec
-sudo chown ennuicastr:ennuicastr /var/www/rec
-```
+The Ennuicastr client must be installed in the `/r/` directory of the server.
+The server components were linked there above.
 
 `ennuicastr` can be installed with `make install`. The default install prefix
 is `inst` (in the `ennuicastr` directory). You can either `make install
 PREFIX=/var/www/rec` or simply link `/var/www/rec` to `inst`.
 
-Then, link in the server's components:
-
-```
-lndir ~/ennuicastr-server/web/rec /var/www/rec
-```
 
 
 ## 15: More components
