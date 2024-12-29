@@ -32,6 +32,7 @@ const {rid, recInfo} = arguments[1];
 
 <script type="text/javascript" src="<?JS= config.client + "libs/sha512-es.min.js" ?>"></script>
 <script type="text/javascript">(function() {
+    const videoBox = document.getElementById("video-box");
     var fs = new URL(<?JS= JSON.stringify(config.client + "fs/") ?>);
     var ifr = document.createElement("iframe");
     ifr.style.display = "none";
@@ -61,7 +62,7 @@ const {rid, recInfo} = arguments[1];
             case "ennuicastr-file-storage":
                 // Communication port
                 ifr.style.display = "none";
-                videoBox.style.display = videoDLBox.style.display;
+                videoBox.style.display = "none";
                 keys = {};
                 backends = ev.data.backends || {local: true};
                 backendsReceived = {};
@@ -93,7 +94,7 @@ const {rid, recInfo} = arguments[1];
             if (!backendsReceived[backend])
                 return;
         }
-        videoBox.style.display = videoDLBox.style.display = "";
+        videoBox.style.display = "";
         videoBox.style.visibility = "";
     }
 
@@ -106,7 +107,7 @@ const {rid, recInfo} = arguments[1];
                     <?= JSON.stringify(rid + ":" + recInfo.key + ":" + recInfo.master) ?> +
                     ":" + msg.global) +
                     ":" + msg.local);
-                mp.postMessage({c: "list", key: key});
+                mp.postMessage({c: "list", ctx: msg.ctx, key: key});
                 break;
 
             case "list":
