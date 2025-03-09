@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Copyright (c) 2020-2023 Yahweasel
+ * Copyright (c) 2020-2025 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -59,7 +59,7 @@ async function main() {
     for (const line of meta) {
         try {
             const c = JSON.parse(line);
-            if (c.c !== "text")
+            if (!c.d || c.d.c !== "text")
                 continue;
             if (!info.chat)
                 info.chat = [];
