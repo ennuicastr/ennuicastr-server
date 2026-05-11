@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Yahweasel
+ * Copyright (c) 2024-2026 Yahweasel
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,7 @@ import * as proc from "./processor";
 import * as pEnc from "./proc-encoder";
 import * as pVidT from "./proc-video-timer";
 
-import type * as LibAVT from "libav.js";
+import type * as LibAVT from "@libav.js/types";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
 export class MuxerProcessor extends proc.Processor<Uint8Array> {
@@ -32,6 +32,7 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
     ) {
         let buf: Uint8Array[] = [];
         let eof = false;
+        let wavSawDuration = (_format !== "wav");
         super(new wsp.ReadableStream<Uint8Array>({
             pull: async (controller) => {
                 if (!this._inputRdr) {
@@ -46,7 +47,27 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
 
                 while (true) {
                     if (buf.length) {
-                        controller.enqueue(buf.shift());
+                        const chunk = buf.shift();
+                        if (!wavSawDuration && _format === "wav") {
+                            // We have to set the duration "by hand"
+                            for (let i = 0; i < chunk.length - 7; i++) {
+                                if (chunk[i] === 0x64 /* d */ &&
+                                    chunk[i+1] === 0x61 /* a */ &&
+                                    chunk[i+2] === 0x74 /* t */ &&
+                                    chunk[i+3] === 0x61 /* a */) {
+                                    // Found the data chunk. Update the size.
+                                    const codecpar = this._codecpars[0][0];
+                                    const samplesPerSec = 2 /* 16 bits */ *
+                                        codecpar.channels *
+                                        codecpar.sample_rate;
+                                    const sz = Math.floor(_duration * samplesPerSec);
+                                    const chunkView = new DataView(chunk.buffer);
+                                    chunkView.setUint32(i + 4, sz, true);
+                                    wavSawDuration = true;
+                                }
+                            }
+                        }
+                        controller.enqueue(chunk);
                         break;
                     }
 
@@ -158,6 +179,12 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
 
                         // Set the duration (needed here for some formats)
                         if (_duration) {
+                            {
+                                const dur = Math.floor(_duration * 1000000);
+                                const dur64 = la.f64toi64(dur);
+                                await la.AVFormatContext_duration_s(this._fmtCtx, dur64[0]);
+                                await la.AVFormatContext_durationhi_s(this._fmtCtx, dur64[1]);
+                            }
                             for (let i = 0; i < this._input.length; i++) {
                                 const st = await la.AVFormatContext_streams_a(
                                     this._fmtCtx, i

@@ -23,7 +23,7 @@ const {rid, recInfo, safeName, noRedirect} = arguments[1];
 <div id="downloader-box" class="ecdl-main">Loading...</div>
 
 <script type="text/javascript" src="<?JS= config.client ?>ecloader.min.js"></script>
-<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=8"></script>
+<script type="text/javascript" src="ennuicastr-download-processor.min.js?v=9"></script>
 <script type="text/javascript" src="ennuicastr-download-chooser.min.js?v=3"></script>
 <script type="text/javascript" src="<?JS= config.client ?>libs/sha512-es.min.js"></script>
 

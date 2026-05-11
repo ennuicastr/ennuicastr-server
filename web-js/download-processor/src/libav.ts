@@ -14,7 +14,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-import type * as LibAVT from "libav.js";
+import type * as LibAVT from "@libav.js/types";
 declare let LibAV: LibAVT.LibAVWrapper;
 
 type SharedReaders = Record<

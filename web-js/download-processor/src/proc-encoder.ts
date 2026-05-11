@@ -17,7 +17,7 @@
 import * as LibAV from "./libav";
 import * as proc from "./processor";
 
-import type * as LibAVT from "libav.js";
+import type * as LibAVT from "@libav.js/types";
 import * as wsp from "web-streams-polyfill/ponyfill";
 
 export class EncoderProcessor extends proc.Processor<LibAVT.Packet[]> {

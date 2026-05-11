@@ -25,6 +25,7 @@
   "dependencies": {
     "@ennuicastr/dl-stream": "^1.1.0",
     "@ennuicastr/libspecbleach.js": "=0.1.7-js2",
+    "@libav.js/types": "^6.8.8",
     "localforage": "^1.10.0",
     "setimmediate": "^1.0.5",
     "web-streams-polyfill": "^3.3.2",
@@ -33,9 +34,8 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^11.1.6",
-    "libav.js": "^6.2.7",
     "rollup": "^4.20.0",
     "tslib": "^2.6.3"
   }

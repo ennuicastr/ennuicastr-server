@@ -30,7 +30,7 @@ import * as pSave from "./proc-save";
 import * as pAup from "./proj-aup";
 
 import * as downloadStream from "@ennuicastr/dl-stream";
-import type * as LibAVT from "libav.js";
+import type * as LibAVT from "@libav.js/types";
 import type * as YALAPT from "yalap.js";
 declare let YALAP: YALAPT.YALAPWrapper;
 import * as wsp from "web-streams-polyfill/ponyfill";

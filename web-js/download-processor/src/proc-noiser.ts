@@ -16,7 +16,7 @@
 
 import * as proc from "./processor";
 
-import type * as LibAVT from "libav.js";
+import type * as LibAVT from "@libav.js/types";
 import type * as LibSpecBleachT from "@ennuicastr/libspecbleach.js";
 declare let LibSpecBleach: LibSpecBleachT.LibSpecBleachWrapper;
 import * as wsp from "web-streams-polyfill/ponyfill";
