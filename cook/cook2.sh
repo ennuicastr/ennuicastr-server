@@ -439,6 +439,13 @@ then
 fi
 
 
+# Get the durations
+if [ "$INCLUDE_AUDIO" = "yes" -o "$INCLUDE_DURATIONS" = "yes" ]
+then
+    TRACK_DURATIONS="$(timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration3" $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data)"
+fi
+
+
 # Encode thru fifos
 for c in $(seq -w 1 $NB_STREAMS)
 do
@@ -461,8 +468,7 @@ do
     if [ "$INCLUDE_AUDIO" = "yes" -o "$INCLUDE_DURATIONS" = "yes" ]
     then
         # Get the duration of this track
-        TRACK_DURATION="$(timeout $DEF_TIMEOUT cat $ID.ogg.header1 $ID.ogg.header2 $ID.ogg.data |
-            timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/oggduration" $cn)"
+        TRACK_DURATION="$(timeout $DEF_TIMEOUT $NICE "$SCRIPTBASE/json-rd.js" "$TRACK_DURATIONS" "$cn" 2.0)"
     fi
 
     if [ "$INCLUDE_AUDIO" = "yes" ]
