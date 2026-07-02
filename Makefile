@@ -1,10 +1,11 @@
 CC=gcc
+CXX=g++
 CFLAGS=-O3
 
 all: rec sounds \
 	server/ennuicastr.js \
-        cook/oggcorrect cook/oggduration cook/oggmeta cook/oggstender \
-        cook/oggtracks cook/wavduration \
+        cook/oggcorrect cook/oggduration cook/oggduration3 cook/oggmeta \
+        cook/oggstender cook/oggtracks cook/wavduration \
 	web/ecdssw.min.js \
 	web/panel/rec/dl/ennuicastr-download-processor.min.js \
 	web/panel/rec/dl/ennuicastr-download-chooser.min.js \
@@ -58,3 +59,6 @@ node_modules/.bin/tsc:
 
 %: %.c
 	$(CC) $(CFLAGS) $< -o $@
+
+%: %.cc
+	$(CXX) $(CFLAGS) $< -o $@

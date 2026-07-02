@@ -57,10 +57,8 @@ export class MuxerProcessor extends proc.Processor<Uint8Array> {
                                     chunk[i+3] === 0x61 /* a */) {
                                     // Found the data chunk. Update the size.
                                     const codecpar = this._codecpars[0][0];
-                                    const samplesPerSec = 2 /* 16 bits */ *
-                                        codecpar.channels *
-                                        codecpar.sample_rate;
-                                    const sz = Math.floor(_duration * samplesPerSec);
+                                    const bytesPerSample = 2 /* 16 bits */ * codecpar.channels;
+                                    const sz = Math.floor(_duration * codecpar.sample_rate) * bytesPerSample;
                                     const chunkView = new DataView(chunk.buffer);
                                     chunkView.setUint32(i + 4, sz, true);
                                     wavSawDuration = true;
