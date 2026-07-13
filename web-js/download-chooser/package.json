@@ -3,7 +3,7 @@
     "build": "rollup -c"
   },
   "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^11.1.6",
     "libav.js": "^5.4.6",
     "localforage": "^1.10.0",
